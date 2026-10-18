@@ -202,6 +202,43 @@ model User {
   @@index([createdAt])
 }
 
+
+model SiteAnalyticsVisitor {
+  id          String                @id
+  firstSeenAt DateTime              @default(now())
+  lastSeenAt  DateTime              @default(now())
+  sessions    SiteAnalyticsSession[]
+
+  @@index([firstSeenAt])
+  @@index([lastSeenAt])
+}
+
+model SiteAnalyticsSession {
+  id            String                 @id
+  visitorId     String
+  visitor       SiteAnalyticsVisitor   @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  startedAt     DateTime               @default(now())
+  lastSeenAt    DateTime               @default(now())
+  activeSeconds Int                    @default(0)
+  pageViews     SiteAnalyticsPageView[]
+
+  @@index([startedAt])
+  @@index([visitorId, startedAt])
+}
+
+model SiteAnalyticsPageView {
+  id             String               @id @default(uuid())
+  sessionId      String
+  session        SiteAnalyticsSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  page           String
+  startedAt      DateTime             @default(now())
+  visibleSeconds Int                  @default(0)
+
+  @@index([startedAt])
+  @@index([page, startedAt])
+  @@index([sessionId, startedAt])
+}
+
 model CreatorApplication {
   id           String    @id @default(uuid())
   userId       String    @unique

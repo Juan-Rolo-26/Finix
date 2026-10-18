@@ -8,10 +8,11 @@ import { Cookie, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 interface CookiePreferences {
     necessary: boolean;   // Always true, cannot be disabled
     preferences: boolean; // UI preferences (theme, sidebar)
+    analytics: boolean; // First-party anonymous site analytics
 }
 
 const STORAGE_KEY = 'finix_cookie_consent';
-const CONSENT_VERSION = '1';
+const CONSENT_VERSION = '2';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 function loadSavedConsent(): { decided: boolean; prefs: CookiePreferences } | null {
@@ -20,6 +21,8 @@ function loadSavedConsent(): { decided: boolean; prefs: CookiePreferences } | nu
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (parsed.version !== CONSENT_VERSION) return null;
+        const savedAt = Date.parse(parsed.timestamp || '');
+        if (!Number.isFinite(savedAt) || Date.now() - savedAt > 365 * 24 * 60 * 60 * 1000) return null;
         return { decided: true, prefs: parsed.prefs };
     } catch {
         return null;
@@ -33,6 +36,7 @@ function saveConsent(prefs: CookiePreferences) {
             timestamp: new Date().toISOString(),
             prefs,
         }));
+        window.dispatchEvent(new Event('finix-consent-updated'));
     } catch {
         // localStorage might be unavailable
     }
@@ -93,10 +97,9 @@ export default function CookieConsent() {
 
     const [visible, setVisible] = useState(false);
     const [showConfig, setShowConfig] = useState(false);
-    const [prefs, setPrefs] = useState<CookiePreferences>({
-        necessary: true,
-        preferences: true,
-    });
+    const [prefs, setPrefs] = useState<CookiePreferences>(() =>
+        loadSavedConsent()?.prefs ?? { necessary: true, preferences: true, analytics: false }
+    );
 
     useEffect(() => {
         // Delay slightly so it doesn't flash on first paint
@@ -110,23 +113,37 @@ export default function CookieConsent() {
     }, []);
 
     const handleAcceptAll = () => {
-        const all: CookiePreferences = { necessary: true, preferences: true };
+        const all: CookiePreferences = { necessary: true, preferences: true, analytics: true };
         saveConsent(all);
+        setPrefs(all);
         setVisible(false);
     };
 
     const handleNecessaryOnly = () => {
-        const minimal: CookiePreferences = { necessary: true, preferences: false };
+        const minimal: CookiePreferences = { necessary: true, preferences: false, analytics: false };
         saveConsent(minimal);
+        setPrefs(minimal);
         setVisible(false);
     };
 
     const handleSaveConfig = () => {
-        saveConsent({ ...prefs, necessary: true });
+        const selected = { ...prefs, necessary: true };
+        saveConsent(selected);
+        setPrefs(selected);
         setVisible(false);
     };
 
-    if (!visible) return null;
+    if (!visible) return (
+        <button
+            type="button"
+            onClick={() => { setShowConfig(true); setVisible(true); }}
+            className="fixed bottom-20 left-3 z-[998] sm:bottom-3 flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-2 text-[11px] font-medium text-muted-foreground shadow-lg backdrop-blur hover:text-foreground"
+            aria-label={finixUi("Abrir preferencias de cookies")}
+        >
+            <Cookie className="h-3.5 w-3.5" />
+            <FinixUiText text={"Cookies"} />
+        </button>
+    );
 
     return (
         <>
@@ -167,7 +184,7 @@ export default function CookieConsent() {
                         </div>
 
                         <p className="text-xs text-muted-foreground leading-relaxed mb-1">
-                            {" "}<FinixUiText text={"Usamos almacenamiento local necesario para que Finix funcione correctamente. No usamos cookies de publicidad ni rastreo."} />{""}{' '}
+                            {" "}<FinixUiText text={"Usamos almacenamiento local necesario para el funcionamiento de Finix. La analítica anónima es opcional y solo se activa si la aceptás."} />{""}{' '}
                             <Link to="/cookies" className="text-primary hover:underline" tabIndex={0}>
                                 {" "}<FinixUiText text={"Política de Cookies"} />{" "}</Link>
                         </p>
@@ -192,10 +209,16 @@ export default function CookieConsent() {
                                     checked={prefs.preferences}
                                     onChange={v => setPrefs(p => ({ ...p, preferences: v }))}
                                 />
+                                <CookieToggle
+                                    label="Analítica anónima"
+                                    description="Mide visitas, páginas consultadas y tiempo visible para mejorar Finix. Usa un identificador aleatorio propio; no guarda IP, nombre ni contenido."
+                                    checked={prefs.analytics}
+                                    onChange={v => setPrefs(p => ({ ...p, analytics: v }))}
+                                />
                             </div>
                             <div className="mt-1 p-3 rounded-xl bg-muted/20 border border-border/30">
                                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                    <strong className="text-foreground">{""}<FinixUiText text={"Nota:"} />{""}</strong> {" "}<FinixUiText text={"Finix no utiliza cookies de analítica, publicidad ni rastreo de terceros. TradingView (widgets de gráficos) puede establecer sus propias cookies según sus políticas."} />{" "}</p>
+                                    <strong className="text-foreground">{""}<FinixUiText text={"Nota:"} />{""}</strong> {" "}<FinixUiText text={"La analítica propia es anónima y opcional. Finix no usa cookies de publicidad ni rastreo entre sitios. TradingView puede establecer sus propias cookies según sus políticas."} />{" "}</p>
                             </div>
                         </div>
                     )}
@@ -253,5 +276,5 @@ export default function CookieConsent() {
 // ─── Hook to access consent preferences ───────────────────────────────────────
 export function useCookieConsent(): CookiePreferences {
     const saved = loadSavedConsent();
-    return saved?.prefs ?? { necessary: true, preferences: true };
+    return saved?.prefs ?? { necessary: true, preferences: true, analytics: false };
 }

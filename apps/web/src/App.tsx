@@ -7,6 +7,7 @@ import { usePreferencesStore } from './stores/preferencesStore';
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
 const InformationLayout = lazy(() => import('./layouts/InformationLayout'));
 import InstallBanner from './components/InstallBanner';
+import SiteAnalyticsTracker from './components/SiteAnalyticsTracker';
 const CookieConsent = lazy(() => import('./components/CookieConsent'));
 import { usePlatformAccessStore } from './stores/platformAccessStore';
 import { isWatchlistEnabled, isEducationEnabled } from './lib/featureFlags';
@@ -151,6 +152,7 @@ export default function App() {
     return (
         <>
             <InstallBanner />
+            <SiteAnalyticsTracker />
             <Suspense fallback={null}><CookieConsent /></Suspense>
             <ThemeApplier />
             <Suspense

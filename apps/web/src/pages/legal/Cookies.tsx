@@ -148,7 +148,7 @@ export default function Cookies() {
                         <div className="rounded-3xl border border-primary/25 bg-primary/5 p-6 sm:p-7 mb-8">
                             <h2 className="text-xl font-bold text-foreground mb-3">{""}<FinixUiText text={"Resumen"} />{""}</h2>
                             <p className="text-base sm:text-[17px] text-foreground/90 leading-relaxed">
-                                {" "}<FinixUiText text={"En Finix usamos almacenamiento local del navegador para mantener tu sesión activa y guardar tus preferencias de interfaz."} />{" "}<strong>{""}<FinixUiText text={"No utilizamos cookies de publicidad, de rastreo entre sitios ni analytics de terceros."} />{""}</strong> {" "}<FinixUiText text={"La excepción son los widgets de gráficos de TradingView, que pueden establecer sus propias cookies según sus propias políticas."} />{" "}</p>
+                                {" "}<FinixUiText text={"En Finix usamos almacenamiento local del navegador para mantener tu sesión activa y guardar tus preferencias de interfaz."} />{" "}<strong>{""}<FinixUiText text={"La analítica propia es anónima y opcional, y solo se activa si la aceptás en el panel de cookies. No utilizamos cookies de publicidad ni rastreo entre sitios."} />{""}</strong> {" "}<FinixUiText text={"La excepción son los widgets de gráficos de TradingView, que pueden establecer sus propias cookies según sus propias políticas."} />{" "}</p>
                         </div>
 
                         <MobileToc activeId={activeId} />
@@ -226,7 +226,7 @@ export default function Cookies() {
                                     {" "}<FinixUiText text={"Para ser completamente transparentes, Finix"} />{" "}<strong>{""}<FinixUiText text={"no utiliza"} />{""}</strong>:
                                 </p>
                                 <ul className="list-disc pl-5 space-y-1.5">
-                                    <li>{""}<FinixUiText text={"❌ Google Analytics ni ningún servicio similar de analítica de comportamiento"} />{""}</li>
+                                    <li>{""}<FinixUiText text={"❌ Google Analytics ni analítica de terceros (la opción propia de Finix es anónima y requiere aceptación)"} />{""}</li>
                                     <li>{""}<FinixUiText text={"❌ Cookies de publicidad o retargeting"} />{""}</li>
                                     <li>{""}<FinixUiText text={"❌ Cookies de rastreo entre sitios (cross-site tracking)"} />{""}</li>
                                     <li>{""}<FinixUiText text={"❌ Píxeles de seguimiento de redes sociales"} />{""}</li>
@@ -272,6 +272,12 @@ export default function Cookies() {
                                                 <td className="py-3 pr-4">{""}<FinixUiText text={"localStorage"} />{""}</td>
                                                 <td className="py-3 pr-4">{""}<FinixUiText text={"Preferencias de tema, sidebar y UI"} />{""}</td>
                                                 <td className="py-3">{""}<FinixUiText text={"Persistente (hasta borrar)"} />{""}</td>
+                                            </tr>
+                                            <tr>
+                                                <td className="py-3 pr-4 font-mono text-foreground font-medium">{""}<FinixUiText text={"finix_analytics_visitor / finix_analytics_session"} />{""}</td>
+                                                <td className="py-3 pr-4">{""}<FinixUiText text={"localStorage"} />{""}</td>
+                                                <td className="py-3 pr-4">{""}<FinixUiText text={"Identificadores aleatorios; medición anónima solo con consentimiento (los datos de visitas se conservan hasta 13 meses)"} />{""}</td>
+                                                <td className="py-3">{""}<FinixUiText text={"Hasta borrar el almacenamiento del navegador"} />{""}</td>
                                             </tr>
                                             <tr>
                                                 <td className="py-3 pr-4 font-mono text-foreground font-medium">{""}<FinixUiText text={"finix_cookie_consent"} />{""}</td>

@@ -35,6 +35,7 @@ import { FinanceModule } from './finance/finance.module';
 import { WatchlistModule } from './watchlist/watchlist.module';
 import { EducationModule } from './education/education.module';
 import { isLocalMode } from './config/local-mode';
+import { SiteAnalyticsModule } from './site-analytics/site-analytics.module';
 
 @Module({
     imports: [
@@ -88,6 +89,7 @@ import { isLocalMode } from './config/local-mode';
         FinanceModule,
         WatchlistModule,
         EducationModule,
+        SiteAnalyticsModule,
     ],
     controllers: [],
     providers: [
