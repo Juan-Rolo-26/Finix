@@ -59,14 +59,14 @@ function CookieToggle({
     return (
         <div className="flex items-start justify-between gap-4 py-3 border-b border-border/30 last:border-0">
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <p className="text-base font-semibold text-foreground flex items-center gap-2">
                     {label}
                     {disabled && (
-                        <span className="text-[10px] font-bold uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+                        <span className="text-xs font-bold uppercase tracking-wide bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
                             {" "}<FinixUiText text={"Siempre activo"} />{" "}</span>
                     )}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{description}</p>
             </div>
             <button
                 role="switch"
@@ -167,23 +167,23 @@ export default function CookieConsent() {
                         : 'bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:bottom-4 sm:max-w-sm'
                 }`}
             >
-                <div className={`relative bg-card border border-border/60 shadow-2xl rounded-2xl overflow-hidden transition-all duration-300 ${showConfig ? 'w-full max-w-md' : 'w-full'}`}>
+                <div className={`relative bg-card border border-border/60 shadow-2xl rounded-2xl transition-all duration-300 max-h-[calc(100dvh-2rem)] ${showConfig ? 'w-full max-w-xl overflow-y-auto overscroll-contain' : 'w-full overflow-hidden'}`}>
 
                     {/* ── Header ── */}
                     <div className="p-5 pb-0">
                         <div className="flex items-start justify-between gap-3 mb-3">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
-                                    <Cookie className="w-4 h-4" />
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                                    <Cookie className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="font-bold text-sm text-foreground">{""}<FinixUiText text={"Configuración de cookies"} />{""}</p>
+                                    <p className="font-bold text-base sm:text-lg text-foreground">{""}<FinixUiText text={"Configuración de cookies"} />{""}</p>
                                     <p className="text-[10px] text-muted-foreground">{""}<FinixUiText text={"Finix ·"} />{" "}{new Date().getFullYear()}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <p className="text-xs text-muted-foreground leading-relaxed mb-1">
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-1">
                             {" "}<FinixUiText text={"Usamos almacenamiento local necesario para el funcionamiento de Finix. La analítica anónima es opcional y solo se activa si la aceptás."} />{""}{' '}
                             <Link to="/cookies" className="text-primary hover:underline" tabIndex={0}>
                                 {" "}<FinixUiText text={"Política de Cookies"} />{" "}</Link>
@@ -192,8 +192,8 @@ export default function CookieConsent() {
 
                     {/* ── Config panel (expandable) ── */}
                     {showConfig && (
-                        <div className="px-5 mt-4 border-t border-border/40 pt-4">
-                            <p className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                        <div className="px-6 sm:px-7 mt-5 border-t border-border/40 pt-5">
+                            <p className="text-sm sm:text-base font-semibold text-foreground mb-3 flex items-center gap-2">
                                 <Shield className="w-3.5 h-3.5 text-primary" />
                                 {" "}<FinixUiText text={"Personalizar preferencias"} />{" "}</p>
                             <div className="space-y-0">
@@ -216,31 +216,31 @@ export default function CookieConsent() {
                                     onChange={v => setPrefs(p => ({ ...p, analytics: v }))}
                                 />
                             </div>
-                            <div className="mt-1 p-3 rounded-xl bg-muted/20 border border-border/30">
-                                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                            <div className="mt-2 p-4 rounded-xl bg-muted/20 border border-border/30">
+                                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                                     <strong className="text-foreground">{""}<FinixUiText text={"Nota:"} />{""}</strong> {" "}<FinixUiText text={"La analítica propia es anónima y opcional. Finix no usa cookies de publicidad ni rastreo entre sitios. TradingView puede establecer sus propias cookies según sus políticas."} />{" "}</p>
                             </div>
                         </div>
                     )}
 
                     {/* ── Action buttons ── */}
-                    <div className={`p-4 ${showConfig ? 'pt-3' : 'pt-3'}`}>
+                    <div className={`p-5 sm:px-6 ${showConfig ? 'pt-4' : 'pt-3'}`}>
                         {!showConfig ? (
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <button
                                     onClick={handleAcceptAll}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all"
                                 >
                                     {" "}<FinixUiText text={"Aceptar todas"} />{" "}</button>
                                 <button
                                     onClick={() => setShowConfig(true)}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-muted text-foreground border border-border/60 text-xs font-semibold hover:bg-muted/80 transition-all flex items-center justify-center gap-1"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-muted text-foreground border border-border/60 text-sm font-semibold hover:bg-muted/80 transition-all flex items-center justify-center gap-1"
                                 >
                                     {" "}<FinixUiText text={"Configurar"} />{" "}<ChevronUp className="w-3 h-3" />
                                 </button>
                                 <button
                                     onClick={handleNecessaryOnly}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border border-border/60 text-muted-foreground text-xs font-semibold hover:text-foreground hover:border-border transition-all"
+                                    className="flex-1 px-4 py-3 rounded-xl border border-border/60 text-muted-foreground text-sm font-semibold hover:text-foreground hover:border-border transition-all"
                                 >
                                     {" "}<FinixUiText text={"Solo necesarias"} />{" "}</button>
                             </div>
@@ -248,18 +248,18 @@ export default function CookieConsent() {
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <button
                                     onClick={handleSaveConfig}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:opacity-90 transition-all"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 transition-all"
                                 >
                                     {" "}<FinixUiText text={"Guardar preferencias"} />{" "}</button>
                                 <button
                                     onClick={handleAcceptAll}
-                                    className="flex-1 px-4 py-2.5 rounded-xl bg-muted border border-border/60 text-foreground text-xs font-semibold hover:bg-muted/80 transition-all"
+                                    className="flex-1 px-4 py-3 rounded-xl bg-muted border border-border/60 text-foreground text-sm font-semibold hover:bg-muted/80 transition-all"
                                 >
                                     {" "}<FinixUiText text={"Aceptar todas"} />{" "}</button>
                                 <button
                                     onClick={() => setShowConfig(false)}
                                     aria-label={finixUi("Cerrar configuración")}
-                                    className="sm:flex-none px-3 py-2.5 rounded-xl border border-border/60 text-muted-foreground text-xs hover:text-foreground transition-all flex items-center gap-1"
+                                    className="sm:flex-none px-4 py-3 rounded-xl border border-border/60 text-muted-foreground text-sm hover:text-foreground transition-all flex items-center gap-1"
                                 >
                                     <ChevronDown className="w-3 h-3" />
                                     <span className="sm:hidden">{""}<FinixUiText text={"Volver"} />{""}</span>

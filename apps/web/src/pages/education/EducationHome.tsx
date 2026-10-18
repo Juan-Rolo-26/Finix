@@ -176,23 +176,23 @@ export default function EducationHome() {
     return (
         <div className="min-h-screen bg-background text-foreground pb-20">
             {/* HERO & SEARCH BAR */}
-            <section className="relative border-b border-border/80 bg-gradient-to-b from-primary/5 via-card to-background px-4 py-10 sm:py-14 md:py-16 overflow-hidden">
+            <section className="relative border-b border-border/80 bg-gradient-to-b from-primary/5 via-card to-background px-4 py-14 sm:py-16 lg:py-20 overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(16,185,129,0.12),rgba(0,0,0,0))] pointer-events-none" />
 
-                <div className="max-w-4xl mx-auto text-center space-y-5 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold tracking-wider uppercase">
+                <div className="max-w-6xl mx-auto text-center space-y-6 relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-bold tracking-wider uppercase">
                         <GraduationCap className="w-4 h-4" />
                         {" "}<FinixUiText text={"Finix · Biblioteca de Consulta Financiera"} />{" "}</div>
 
-                    <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
+                    <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground">
                         {" "}<FinixUiText text={"Biblioteca Educativa"} />{" "}</h1>
 
-                    <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto font-normal leading-relaxed">
+                    <p className="text-base sm:text-lg lg:text-xl text-muted-foreground max-w-3xl mx-auto font-normal leading-relaxed">
                         {" "}<FinixUiText text={"Consultá conceptos, fórmulas, indicadores y métricas de mercado con rigor técnico institucional. Libre acceso y sin registro requerido."} />{" "}</p>
 
-                    <Link to="/laboratorio" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary">{""}<FinixUiText text={"Probá los conceptos en el Laboratorio"} />{" "}<ArrowRight className="h-4 w-4 shrink-0" /></Link>
+                    <Link to="/laboratorio" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-5 py-3 text-base font-semibold text-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-primary">{""}<FinixUiText text={"Probá los conceptos en el Laboratorio"} />{" "}<ArrowRight className="h-4 w-4 shrink-0" /></Link>
                     {/* BUSCADOR INSTANTÁNEO */}
-                    <div className="max-w-2xl mx-auto relative pt-2">
+                    <div className="max-w-3xl mx-auto relative pt-2">
                         <div className="relative flex items-center shadow-md shadow-black/5 rounded-2xl bg-card border border-border/80 focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary transition-all">
                             <Search className="w-5 h-5 ml-4 text-muted-foreground shrink-0" />
                             <input
@@ -200,7 +200,7 @@ export default function EducationHome() {
                                 value={search}
                                 onChange={e => handleSearchChange(e.target.value)}
                                 placeholder={finixUi("Buscar por métrica, sigla o fórmula (ej: PE, P-E, RSI, MACD, Media Móvil 20/200, CEDEAR, TIR)...")}
-                                className="w-full bg-transparent px-3 py-3.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
+                                className="w-full bg-transparent px-4 py-4 text-base sm:text-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
                                 aria-label={finixUi("Buscador instantáneo de conceptos financieros")}
                             />
                             {search && (
@@ -215,7 +215,7 @@ export default function EducationHome() {
                     </div>
 
                     {/* ACCESOS DIRECTOS POPULARES */}
-                    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1 text-xs">
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-sm">
                         <span className="text-muted-foreground font-medium mr-1">{""}<FinixUiText text={"Consultas rápidas:"} />{""}</span>
                         {[
                             { label: 'PER (P/E)', term: 'PER' },
@@ -235,7 +235,7 @@ export default function EducationHome() {
                                 key={item.label}
                                 type="button"
                                 onClick={() => handleSearchChange(item.term)}
-                                className={`px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all ${
+                                className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
                                     search.toLowerCase() === item.term.toLowerCase()
                                         ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                                         : 'bg-card border-border/80 hover:border-primary/50 text-foreground hover:text-primary'
@@ -249,11 +249,11 @@ export default function EducationHome() {
             </section>
 
             {/* MAIN CATALOG & FILTERS */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 xl:px-10 py-8 space-y-8">
                 {/* CATEGORY & LEVEL FILTER BAR */}
                 <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 border-b border-border/80 pb-5">
                     {/* Category tabs */}
-                    <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full text-xs">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full text-sm">
                         <button
                             type="button"
                             onClick={() => setSelectedCategory('ALL')}
@@ -282,7 +282,7 @@ export default function EducationHome() {
                     </div>
 
                     {/* Level selector */}
-                    <div className="flex flex-wrap items-center gap-1.5 shrink-0 text-xs">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 text-sm">
                         <span className="text-muted-foreground font-medium hidden md:inline">{""}<FinixUiText text={"Nivel:"} />{""}</span>
                         {[
                             { label: 'Todos', value: 'ALL' },
@@ -307,7 +307,7 @@ export default function EducationHome() {
                 </div>
 
                 {/* RESULTS SUMMARY BAR */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <div>
                         <span>{""}<FinixUiText text={"Mostrando"} />{" "}</span>
                         <strong className="text-foreground font-bold">{filteredArticles.length}</strong>
@@ -348,23 +348,23 @@ export default function EducationHome() {
                             {" "}<FinixUiText text={"Ver todos los artículos"} />{" "}</button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                         {filteredArticles.map(art => {
                             const IconComp = CATEGORY_ICONS[art.category?.icon || 'BookOpen'] || BookOpen;
                             return (
                                 <Link
                                     key={art.id}
                                     to={`/educativa/${art.category?.slug || 'general'}/${art.slug}`}
-                                    className="group p-5 rounded-2xl border border-border/80 bg-card hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between"
+                                    className="group p-6 rounded-2xl border border-border/80 bg-card hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between"
                                 >
                                     <div className="space-y-3">
                                         <EducationCover image={art.coverImage} />
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className="text-[11px] font-bold text-primary flex items-center gap-1 truncate">
+                                            <span className="text-xs font-bold text-primary flex items-center gap-1.5 truncate">
                                                 <IconComp className="w-3.5 h-3.5 shrink-0" />
                                                 {art.category?.name}
                                             </span>
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                                            <span className={`text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
                                                 art.level === 'BEGINNER' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
                                                 art.level === 'INTERMEDIATE' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
                                                 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
@@ -373,22 +373,22 @@ export default function EducationHome() {
                                             </span>
                                         </div>
 
-                                        <h2 className="font-bold text-base text-foreground group-hover:text-primary transition-colors leading-snug">
+                                        <h2 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors leading-snug">
                                             {art.title}
                                         </h2>
 
-                                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
                                             {art.summary}
                                         </p>
 
                                         {art.formula && (
-                                            <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-emerald-300 truncate">
+                                            <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-mono text-emerald-300 truncate">
                                                 {art.formula.split('\n')[0]}
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="pt-4 border-t border-border/60 mt-4 flex items-center justify-between text-xs text-muted-foreground">
+                                    <div className="pt-4 border-t border-border/60 mt-4 flex items-center justify-between text-sm text-muted-foreground">
                                         <span className="flex items-center gap-1 font-medium">
                                             <Clock className="w-3.5 h-3.5" /> {art.readTimeMinutes} {" "}<FinixUiText text={"min de lectura"} />{" "}</span>
                                         <span className="font-bold text-primary flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
