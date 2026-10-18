@@ -3,7 +3,7 @@ set -eu
 umask 077
 FINIX_REDIS_PASSWORD=$(cat /run/secrets/redis_password)
 case "$FINIX_REDIS_PASSWORD" in *[!a-f0-9]*|'') echo 'Redis requires a generated hexadecimal password' >&2; exit 1;; esac
-FINIX_REDIS_CONFIG=$(mktemp /tmp/finix-redis.XXXXXX.conf)
+FINIX_REDIS_CONFIG=$(mktemp /tmp/finix-redis.XXXXXX)
 cleanup() {
   rm -f "$FINIX_REDIS_CONFIG"
 }
