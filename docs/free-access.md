@@ -1,38 +1,16 @@
-# Etapa gratuita de Finix
+# Acceso y suscripciones de Finix
 
-La opción del servidor `FINIX_FREE_ACCESS_ENABLED=true` habilita temporalmente
-las funciones de PRO y Creator para todas las cuentas autenticadas y pausa las
-nuevas compras. Si la variable no existe, el valor predeterminado es `true`.
-Las credenciales de Mercado Pago y Stripe, los precios, la sección de planes,
-los webhooks y las suscripciones existentes se conservan.
+`FINIX_FREE_ACCESS_ENABLED` permite habilitar temporalmente el acceso gratis y pausar las compras. Por defecto queda desactivado (`false`). Pro y Creador requieren un plan activo; sus checkouts ofrecen una prueba gratuita de 2 días y luego cobran el importe mensual con renovación automática.
 
 ## Publicación
 
-Desplegar el cambio con el procedimiento habitual de Finix. En el `.env` de la
-API del VPS, mantener `FINIX_FREE_ACCESS_ENABLED=true` y recargar la API con el
-ecosistema de PM2 habitual. No hace falta cambiar variables del frontend.
+Para habilitar ventas en producción, mantener `FINIX_FREE_ACCESS_ENABLED=false` en la API y desplegar con el procedimiento habitual de Finix.
 
-Comprobar `https://finixarg.com/api/mercadopago/config`: debe devolver
-`freeAccessEnabled: true`, `purchasesPaused: true` y `checkoutReady: false`.
-Ingresar con una cuenta básica y comprobar PRO, Creator, listas de seguimiento
-y finanzas personales. Las páginas de planes muestran acceso gratuito y sus
-botones llevan a las funciones o al registro, sin crear un checkout.
+Comprobar `https://finixarg.com/api/mercadopago/config`: debe devolver `freeAccessEnabled: false` y permitir el checkout si Mercado Pago está configurado. Verificar la prueba de 2 días y el precio mensual en las pantallas previas al checkout.
 
-## Qué se pausa
+## Pruebas gratuitas
 
-- Las compras nuevas de PRO y Creator en Mercado Pago y Stripe.
-- Los pagos nuevos por comunidades: el ingreso es gratuito durante la etapa.
-- Los bloqueos y límites comerciales de funciones de la plataforma.
-
-El cambio no edita masivamente el plan ni el rol guardado de los usuarios.
-Las comunidades privadas conservan las solicitudes de ingreso, y administrar
-una comunidad sigue requiriendo ser su dueño o contar con permisos de esa
-comunidad. El modo gratuito no concede permisos de administración de Finix.
-
-Las membresías temporales a planes de comunidad que normalmente requieren pago
-se identifican con `paymentStatus=FREE_ACCESS`. No se registran cobros ficticios
-ni ingresos, y dejan de conceder acceso pago cuando termina esta etapa. Las
-membresías pagas existentes no se reemplazan al ingresar durante el modo gratis.
+Stripe inicia el período en estado de prueba mediante `trial_period_days=2`. Mercado Pago activa la membresía al autorizar la suscripción y usa el siguiente cobro como vencimiento del período de dos días. Si no llega un pago al vencer, la conciliación expira el acceso. El usuario puede cancelar desde Configuración antes del primer cobro.
 
 ## Renovaciones existentes
 
@@ -42,13 +20,9 @@ de anunciar que no habrá más cobros. El historial y las opciones de cancelaci�
 siguen disponibles en Configuración. Los webhooks continúan acreditando los
 pagos reales que ya estaban en proceso.
 
-## Volver a planes pagos
+## Modo gratuito temporal
 
-Cambiar `FINIX_FREE_ACCESS_ENABLED=false` en la API, recargarla y actualizar la
-página del navegador. Vuelven los precios, las compras y los permisos por plan
-guardados. No hace falta migrar usuarios ni reconstruir el frontend.
-Las renovaciones pausadas en los proveedores deben reanudarse por separado,
-según la decisión comercial y la autorización de los suscriptores.
+Para volver a habilitar temporalmente el acceso sin costo, definir `FINIX_FREE_ACCESS_ENABLED=true` en la API. Esto pausa las compras de los planes y habilita los permisos generales del lanzamiento.
 
 ## Validación
 

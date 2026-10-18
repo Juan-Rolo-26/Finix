@@ -2,7 +2,7 @@ import { ServiceUnavailableException } from '@nestjs/common';
 
 /** Temporary launch mode. Paid plans and provider credentials remain intact. */
 export function isFreeAccessEnabled(): boolean {
-    return (process.env.FINIX_FREE_ACCESS_ENABLED ?? 'true').trim().toLowerCase() === 'true';
+    return (process.env.FINIX_FREE_ACCESS_ENABLED ?? 'false').trim().toLowerCase() === 'true';
 }
 
 export function assertPurchasesEnabled(): void {

@@ -111,7 +111,7 @@ const FAQS = [
     ],
     [
         '¿Cómo se abona un plan cuando esté disponible?',
-        'Los pagos son mensuales. Mercado Pago permite abonar mes a mes en pesos argentinos (ARS) sin renovación obligatoria o activar cobros automáticos recurrentes. Stripe permite suscribirse de forma mensual automática con cargo en moneda internacional.',
+        'PRO y Creador incluyen una prueba gratis de 2 días al iniciar una suscripción. Luego se cobra el precio mensual indicado en el checkout y la suscripción se renueva automáticamente hasta que la canceles desde Configuración.',
     ],
     [
         '¿Cómo cancelo o administro mi suscripción?',

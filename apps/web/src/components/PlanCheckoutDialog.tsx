@@ -13,7 +13,7 @@ export function PlanCheckoutDialog({ checkout }: { checkout: ReturnType<typeof u
         stripeAvailable={checkout.catalog?.stripeAvailable === true}
         stripeMonthlyPrice={checkout.selectedPlan === 'PRO' ? checkout.catalog?.proPriceUsd : null}
         onClose={checkout.close}
-        onConfirm={autoRenew => { void checkout.confirm('mercadopago', autoRenew); }}
+        onConfirm={() => { void checkout.confirm('mercadopago'); }}
         onConfirmStripe={() => { void checkout.confirm('stripe'); }}
     />;
 }

@@ -20,7 +20,8 @@ const userPrisma = { user: { findUnique: async () => ({ ...basic }) } };
 
 test('launch mode opens all platform features without rewriting accounts', async () => {
     delete process.env.FINIX_FREE_ACCESS_ENABLED;
-    assert.equal(isFreeAccessEnabled(), true);
+    assert.equal(isFreeAccessEnabled(), false);
+    process.env.FINIX_FREE_ACCESS_ENABLED = 'true';
     assert.equal(hasEffectiveProAccess(basic), true);
     assert.equal(hasEffectiveProAccess(null), false);
     const access = new AccessControlService(userPrisma);

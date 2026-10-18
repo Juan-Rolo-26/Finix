@@ -85,7 +85,7 @@ export function usePlanCheckout() {
         setSelectedPlan(plan);
     };
 
-    const confirm = async (provider: 'mercadopago' | 'stripe', autoRenew = false) => {
+    const confirm = async (provider: 'mercadopago' | 'stripe') => {
         if (!selectedPlan || !catalog || busy || catalog.purchasesPaused || catalog.freeAccessEnabled || !user) return;
         const amount = selectedPlan === 'PRO' ? catalog.proPriceArs : catalog.creatorPriceArs;
         if (provider === 'mercadopago' && (!catalog.mercadoPagoAvailable || amount == null)) return;
@@ -95,7 +95,7 @@ export function usePlanCheckout() {
         try {
             const plan = selectedPlan.toLowerCase();
             const path = provider === 'mercadopago' ? `/mercadopago/checkout/${plan}` : `/stripe/subscriptions/${plan}/checkout`;
-            const response = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, ...(provider === 'mercadopago' ? { body: JSON.stringify({ autoRenew }) } : {}) });
+            const response = await apiFetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, ...(provider === 'mercadopago' ? { body: JSON.stringify({ autoRenew: true }) } : {}) });
             const data = await response.json();
             if (!response.ok) throw new Error(Array.isArray(data.message) ? data.message.join(' ') : data.message || 'No se pudo iniciar el pago.');
             const url = data.checkoutUrl || data.url || (data.environment === 'sandbox' ? data.sandbox_init_point : data.init_point);

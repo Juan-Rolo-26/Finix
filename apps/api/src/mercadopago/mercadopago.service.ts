@@ -120,6 +120,8 @@ export class MercadoPagoService {
     }
 
     async createPreference(userId: string, planType: 'pro' | 'creator', autoRenew = false) {
+        // Pro and Creator always start with a trial-backed recurring subscription.
+        autoRenew = true;
         this.ensureCheckoutReady();
 
         const user = await this.prisma.user.findUnique({
@@ -171,6 +173,7 @@ export class MercadoPagoService {
                             frequency_type: 'months',
                             transaction_amount: price,
                             currency_id: 'ARS',
+                            free_trial: { frequency: 2, frequency_type: 'days' },
                         },
                         back_url: `${this.frontendUrl}/payment-result?provider=mercadopago&reference=${encodeURIComponent(externalReference)}`,
                         notification_url: this.notificationUrl,
@@ -359,9 +362,29 @@ export class MercadoPagoService {
         }
 
         if (preapproval.status === 'authorized') {
-            // Payment webhooks, not authorization alone, grant paid access.
-            if (local.status !== 'ACTIVE' || !local.endDate || local.endDate <= new Date()) {
-                await this.prisma.subscription.update({ where: { id: local.id }, data: { status: 'PENDING' } });
+            if (local.status === 'ACTIVE' && local.endDate && local.endDate <= new Date()) {
+                await this.prisma.subscription.update({ where: { id: local.id }, data: { status: 'EXPIRED' } });
+                await this.refreshUserEntitlements(local.userId);
+                return;
+            }
+            // Authorization grants the two-day trial before Mercado Pago's first invoice.
+            // Keep this expiration stable when the provider retries its webhook.
+            if (local.status !== 'ACTIVE' || !local.endDate) {
+                const nextPayment = preapproval.next_payment_date ? new Date(preapproval.next_payment_date) : null;
+                const trialEndsAt = nextPayment && Number.isFinite(nextPayment.getTime()) && nextPayment > new Date()
+                    ? nextPayment
+                    : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+                await this.prisma.subscription.update({
+                    where: { id: local.id },
+                    data: { status: 'ACTIVE', startDate: new Date(), endDate: trialEndsAt },
+                });
+                const plan = this.normalizePlanType(local.planType);
+                if (plan) {
+                    await this.prisma.user.update({
+                        where: { id: local.userId },
+                        data: { plan, subscriptionStatus: 'ACTIVE', accountType: plan === 'CREATOR' ? 'CREATOR' : 'PRO', ...(plan === 'CREATOR' ? { isCreator: true } : {}) },
+                    });
+                }
             }
             return;
         }
@@ -674,6 +697,7 @@ export class MercadoPagoService {
             const preapprovalId = subscription.mercadoPagoPreapprovalId;
             if (!preapprovalId) continue;
             try {
+                await this.processPreapproval(preapprovalId);
                 const invoices = await this.providerGet(`/authorized_payments/search?preapproval_id=${encodeURIComponent(preapprovalId)}`);
                 for (const invoice of invoices.results || []) {
                     if (invoice.payment?.id && invoice.payment.status === 'approved') {

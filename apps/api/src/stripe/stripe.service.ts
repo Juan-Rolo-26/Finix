@@ -91,6 +91,7 @@ export class StripeService {
                 userId: user.id,
             },
             subscription_data: {
+                trial_period_days: 2,
                 metadata: {
                     type: 'plan_subscription',
                     planType,
