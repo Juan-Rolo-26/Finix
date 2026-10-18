@@ -176,7 +176,7 @@ export class CalendarService {
             if (params.weekStart) {
                 monday = new Date(params.weekStart);
             } else {
-                monday = this.getMondayOfWeek(new Date());
+                monday = this.getActiveCalendarWeekMonday(new Date());
             }
 
             const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
@@ -1265,7 +1265,7 @@ export class CalendarService {
                 where.date = todayStr;
             } else if (params.range === 'week') {
                 const now = new Date();
-                const monday = this.getMondayOfWeek(now);
+                const monday = this.getActiveCalendarWeekMonday(now);
                 const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
                 where.date = {
                     gte: monday.toISOString().substring(0, 10),
@@ -1329,7 +1329,7 @@ export class CalendarService {
             where.date = todayStr;
         } else if (params.range === 'week') {
             const now = new Date();
-            const monday = this.getMondayOfWeek(now);
+            const monday = this.getActiveCalendarWeekMonday(now);
             const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
             where.date = {
                 gte: monday.toISOString().substring(0, 10),
@@ -1627,7 +1627,7 @@ export class CalendarService {
             const tomorrow = new Date(now.getTime() + 24 * 3600 * 1000).toISOString().substring(0, 10);
             where.date = tomorrow;
         } else if (params.range === 'week') {
-            const monday = this.getMondayOfWeek(now);
+            const monday = this.getActiveCalendarWeekMonday(now);
             const sunday = new Date(monday.getTime() + 6 * 24 * 3600 * 1000);
             where.date = {
                 gte: monday.toISOString().substring(0, 10),
@@ -1684,12 +1684,22 @@ export class CalendarService {
     // --- Helper Utilities ---
 
     private getCurrentWeekBounds(): { mondayStr: string; fridayStr: string } {
-        const monday = this.getMondayOfWeek(new Date());
+        const monday = this.getActiveCalendarWeekMonday(new Date());
         const friday = new Date(monday.getTime() + 4 * 24 * 3600 * 1000);
         return {
             mondayStr: monday.toISOString().substring(0, 10),
             fridayStr: friday.toISOString().substring(0, 10),
         };
+    }
+
+    private getActiveCalendarWeekMonday(d: Date): Date {
+        const monday = this.getMondayOfWeek(d);
+        const weekday = new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            weekday: 'short',
+        }).format(d);
+        if (weekday === 'Sat' || weekday === 'Sun') monday.setUTCDate(monday.getUTCDate() + 7);
+        return monday;
     }
 
     private getMondayOfWeek(d: Date): Date {

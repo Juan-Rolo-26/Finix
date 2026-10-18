@@ -9,100 +9,49 @@ export class CalendarScheduler {
     constructor(private readonly calendarService: CalendarService) { }
 
     /**
-     * Sincronización diaria matutina de eventos económicos y resultados corporativos.
-     * Se ejecuta de lunes a viernes a las 06:00 AM hora de Nueva York.
+     * Actualiza el calendario y los dividendos después del cierre del viernes,
+     * dejando preparados los eventos de lunes a domingo de la semana siguiente.
      */
-    @Cron('0 6 * * 1-5', {
+    @Cron('15 16 * * 5', {
         timeZone: 'America/New_York',
     })
-    async handleMorningSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización matutina del Calendario...');
+    async handleFridayWeeklySync() {
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/New_York',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(now);
+        const part = (type: string) => parts.find(item => item.type === type)?.value || '';
+        const nextMonday = new Date(Date.UTC(Number(part('year')), Number(part('month')) - 1, Number(part('day')) + 3));
+        const nextSunday = new Date(nextMonday);
+        nextSunday.setUTCDate(nextSunday.getUTCDate() + 6);
+        const from = nextMonday.toISOString().slice(0, 10);
+        const to = nextSunday.toISOString().slice(0, 10);
+
+        this.logger.log(`[CalendarScheduler] Viernes tras el cierre: preparando calendario de la semana siguiente (${from} a ${to})...`);
         try {
-            await this.calendarService.syncWeeklyData();
-            this.logger.log('[CalendarScheduler] Sincronización matutina finalizada exitosamente.');
+            const result = await this.calendarService.syncWeeklyData(from, to);
+            this.logger.log(`[CalendarScheduler] Sincronización semanal finalizada: ${result.eventsProcessed} eventos procesados y ${result.errors} errores.`);
         } catch (error: any) {
-            this.logger.error(`[CalendarScheduler] Error en sincronización matutina: ${error.message}`);
+            this.logger.error(`[CalendarScheduler] Error en sincronización semanal: ${error.message}`);
         }
     }
 
     /**
-     * Sincronización semanal automática todos los domingos.
-     * Prepara todo el calendario completo para la semana entrante (Lunes a Domingo).
-     * Se ejecuta todos los domingos a las 12:00 PM hora de Nueva York.
-     */
-    @Cron('0 12 * * 0', {
-        timeZone: 'America/New_York',
-    })
-    async handleSundayWeeklySync() {
-        this.logger.log('[CalendarScheduler] Domingo: Sincronizando y preparando todo el calendario semanal completo...');
-        try {
-            await this.calendarService.syncWeeklyData();
-            this.logger.log('[CalendarScheduler] Sincronización dominical completada exitosamente.');
-        } catch (error: any) {
-            this.logger.error(`[CalendarScheduler] Error en sincronización dominical: ${error.message}`);
-        }
-    }
-
-    /**
-     * Sincronización económica cada hora, incluidos fines de semana.
-     */
-    @Cron('0 * * * *', {
-        timeZone: 'America/New_York',
-    })
-    async handlePeriodicMacroSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de datos Macro...');
-        try {
-            await this.calendarService.syncMacroData();
-        } catch (error: any) {
-            this.logger.error(`[CalendarScheduler] Error en sincronización periódica Macro: ${error.message}`);
-        }
-    }
-
-    /**
-     * Sincronización periódica de balances de acciones estadounidenses durante días hábiles.
-     */
-    @Cron('0 */6 * * 1-5', {
-        timeZone: 'America/New_York',
-    })
-    async handlePeriodicEarningsSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Balances US...');
-        try {
-            await this.calendarService.syncTradingViewEarnings();
-        } catch (error: any) {
-            this.logger.error(`[CalendarScheduler] Error en sincronización de balances: ${error.message}`);
-        }
-    }
-
-    /**
-     * Sincronización periódica de dividendos del S&P 500 durante días hábiles.
-     */
-    @Cron('30 */6 * * 1-5', {
-        timeZone: 'America/New_York',
-    })
-    async handlePeriodicDividendsSync() {
-        this.logger.log('[CalendarScheduler] Iniciando sincronización periódica de Dividendos S&P 500...');
-        try {
-            await this.calendarService.syncTradingViewDividends();
-        } catch (error: any) {
-            this.logger.error(`[CalendarScheduler] Error en sincronización de dividendos: ${error.message}`);
-        }
-    }
-
-    /**
-     * Sincronización diaria de Lunes a Viernes a las 11:00 AM (Hora Argentina / Local).
-     * Actualiza automáticamente los balances que ya reportaron: EPS real vs estimado,
-     * ingresos reales vs estimados y sorpresas del mismo período.
+     * Actualiza balances ya reportados durante los días hábiles.
      */
     @Cron('0 11 * * 1-5', {
         timeZone: 'America/Argentina/Buenos_Aires',
     })
     async handleWeekday11AmReportedEarningsSync() {
-        this.logger.log('[CalendarScheduler] 11:00 AM Lunes a Viernes: Sincronizando balances reportados y sorpresas...');
+        this.logger.log('[CalendarScheduler] Sincronizando balances reportados y sorpresas...');
         try {
             await this.calendarService.syncReportedEarningsResults();
-            this.logger.log('[CalendarScheduler] Sincronización de balances 11:00 AM finalizada con éxito.');
+            this.logger.log('[CalendarScheduler] Sincronización de balances reportados finalizada.');
         } catch (error: any) {
-            this.logger.error(`[CalendarScheduler] Error en sincronización de balances 11:00 AM: ${error.message}`);
+            this.logger.error(`[CalendarScheduler] Error al actualizar balances reportados: ${error.message}`);
         }
     }
 }

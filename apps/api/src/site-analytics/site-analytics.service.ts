@@ -55,7 +55,7 @@ export class SiteAnalyticsService {
     const from = new Date();
     from.setUTCHours(0, 0, 0, 0);
     from.setUTCDate(from.getUTCDate() - (days - 1));
-    const [visitors, sessions, pageViews, returningVisitors, average, topPages, daily] = await Promise.all([
+    const [visitors, sessions, pageViews, returningVisitors, average, median, engagement, visibleTime, topPages, daily] = await Promise.all([
       this.prisma.siteAnalyticsVisitor.count({ where: { lastSeenAt: { gte: from } } }),
       this.prisma.siteAnalyticsSession.count({ where: { startedAt: { gte: from } } }),
       this.prisma.siteAnalyticsPageView.count({ where: { startedAt: { gte: from } } }),
@@ -64,13 +64,22 @@ export class SiteAnalyticsService {
         from,
       ),
       this.prisma.siteAnalyticsSession.aggregate({ where: { startedAt: { gte: from } }, _avg: { activeSeconds: true } }),
+      this.prisma.$queryRawUnsafe<Array<{ median: number | null }>>(
+        'SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY "activeSeconds") AS median FROM "SiteAnalyticsSession" WHERE "startedAt" >= $1',
+        from,
+      ),
+      this.prisma.$queryRawUnsafe<Array<{ engaged: bigint; bounce: bigint }>>(
+        'SELECT COUNT(*) FILTER (WHERE COALESCE(pv.views, 0) >= 2 OR s."activeSeconds" >= 10)::bigint AS engaged, COUNT(*) FILTER (WHERE COALESCE(pv.views, 0) = 1 AND s."activeSeconds" < 10)::bigint AS bounce FROM "SiteAnalyticsSession" s LEFT JOIN (SELECT "sessionId", COUNT(*)::int AS views FROM "SiteAnalyticsPageView" WHERE "startedAt" >= $1 GROUP BY "sessionId") pv ON pv."sessionId" = s.id WHERE s."startedAt" >= $1',
+        from,
+      ),
+      this.prisma.siteAnalyticsPageView.aggregate({ where: { startedAt: { gte: from } }, _sum: { visibleSeconds: true } }),
       this.prisma.siteAnalyticsPageView.groupBy({
         by: ['page'], where: { startedAt: { gte: from } }, _count: { _all: true }, _sum: { visibleSeconds: true },
         orderBy: { _count: { page: 'desc' } }, take: 8,
       }),
       this.prisma.$queryRawUnsafe<Array<{ day: Date; visitors: bigint; sessions: bigint; pageViews: bigint }>>(
-        'SELECT date_trunc($2, s."startedAt") AS day, COUNT(DISTINCT s."visitorId")::bigint AS visitors, COUNT(*)::bigint AS sessions, COALESCE((SELECT COUNT(*) FROM "SiteAnalyticsPageView" p WHERE p."startedAt" >= date_trunc($2, s."startedAt") AND p."startedAt" < date_trunc($2, s."startedAt") + interval \'1 day\'), 0)::bigint AS "pageViews" FROM "SiteAnalyticsSession" s WHERE s."startedAt" >= $1 GROUP BY date_trunc($2, s."startedAt") ORDER BY day ASC',
-        from, 'day',
+        `WITH session_days AS (SELECT date_trunc('day', "startedAt") AS day, "visitorId" FROM "SiteAnalyticsSession" WHERE "startedAt" >= $1), page_days AS (SELECT date_trunc('day', "startedAt") AS day, COUNT(*)::bigint AS page_views FROM "SiteAnalyticsPageView" WHERE "startedAt" >= $1 GROUP BY 1) SELECT sd.day, COUNT(DISTINCT sd."visitorId")::bigint AS visitors, COUNT(*)::bigint AS sessions, COALESCE(pd.page_views, 0)::bigint AS "pageViews" FROM session_days sd LEFT JOIN page_days pd ON pd.day = sd.day GROUP BY sd.day, pd.page_views ORDER BY sd.day ASC`,
+        from,
       ),
     ]);
     const byDay = new Map(daily.map(row => [new Date(row.day).toISOString().slice(0, 10), row]));
@@ -86,6 +95,12 @@ export class SiteAnalyticsService {
     return {
       days, visitors, returningVisitors: Number(returningVisitors[0]?.count || 0), newVisitors: Math.max(0, visitors - Number(returningVisitors[0]?.count || 0)), sessions, pageViews,
       averageSessionSeconds: Math.round(average._avg.activeSeconds || 0),
+      medianSessionSeconds: Math.round(Number(median[0]?.median || 0)),
+      engagedSessions: Number(engagement[0]?.engaged || 0),
+      engagementRate: sessions ? Math.round(Number(engagement[0]?.engaged || 0) / sessions * 100) : 0,
+      bounceSessions: Number(engagement[0]?.bounce || 0),
+      bounceRate: sessions ? Math.round(Number(engagement[0]?.bounce || 0) / sessions * 100) : 0,
+      averageVisibleSecondsPerPage: pageViews ? Math.round((visibleTime._sum.visibleSeconds || 0) / pageViews) : 0,
       pagesPerSession: sessions ? Number((pageViews / sessions).toFixed(1)) : 0,
       topPages: topPages.map(row => ({ page: row.page, views: row._count._all, visibleSeconds: row._sum.visibleSeconds || 0 })),
       series,

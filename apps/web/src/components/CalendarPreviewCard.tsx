@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
@@ -24,18 +24,35 @@ export function CalendarPreviewCard() {
     const [error, setError] = useState(false);
     const [page, setPage] = useState(0);
     const [paused, setPaused] = useState(false);
-    useEffect(() => {
-        const controller = new AbortController();
-        apiFetch('/calendar/home', { signal: controller.signal }).then(async response => {
+    const loadEvents = useCallback(async (signal?: AbortSignal, showLoading = false) => {
+        if (showLoading) setLoading(true);
+        try {
+            const response = await apiFetch('/calendar/home', { signal });
             if (!response.ok) throw new Error('calendar');
             const data = await response.json();
-            if (!controller.signal.aborted) setEvents((Array.isArray(data.events) ? data.events : [])
-                .map((event: CalendarHomeItem) => event.type === 'EARNINGS' ? normalizeEarnings(event) : event)
-                .filter((event: CalendarHomeItem) => TYPES.includes(event.type) && /^\d{4}-\d{2}-\d{2}$/.test(event.date) && (event.type !== 'EARNINGS' || hasEarningsData(event))));
-        }).catch(() => { if (!controller.signal.aborted) setError(true); })
-            .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-        return () => controller.abort();
+            if (!signal?.aborted) {
+                setEvents((Array.isArray(data.events) ? data.events : [])
+                    .map((event: CalendarHomeItem) => event.type === 'EARNINGS' ? normalizeEarnings(event) : event)
+                    .filter((event: CalendarHomeItem) => TYPES.includes(event.type) && /^\d{4}-\d{2}-\d{2}$/.test(event.date) && (event.type !== 'EARNINGS' || hasEarningsData(event))));
+                setError(false);
+            }
+        } catch {
+            if (!signal?.aborted) setError(true);
+        } finally {
+            if (showLoading && !signal?.aborted) setLoading(false);
+        }
     }, []);
+    useEffect(() => {
+        const controller = new AbortController();
+        void loadEvents(controller.signal, true);
+        return () => controller.abort();
+    }, [loadEvents]);
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            if (!document.hidden) void loadEvents();
+        }, 30_000);
+        return () => window.clearInterval(timer);
+    }, [loadEvents]);
     const groups = useMemo(() => TYPES.map(type => events.filter(event => event.type === type)), [events]);
     const canRotate = groups.some(group => group.length > 1);
     const maxPages = Math.max(1, ...groups.map(group => group.length));
@@ -75,7 +92,7 @@ export function CalendarPreviewCard() {
             </div>
             <div className="flex min-h-0 flex-1 flex-col gap-2 p-2">
                 {loading ? <div className="flex flex-1 items-center justify-center gap-2 py-8 text-xs text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />{ui('Cargando eventos...')}</div>
-                    : error ? <p role="status" className="p-5 text-center text-xs text-muted-foreground">{ui('No se pudo cargar el calendario. Volvé a intentarlo.')}</p>
+                    : error && !events.length ? <p role="status" className="p-5 text-center text-xs text-muted-foreground">{ui('No se pudo cargar el calendario. Volvé a intentarlo.')}</p>
                     : TYPES.map((type, index) => {
                         const group = groups[index], event = group.length ? group[page % group.length] : null;
                         return <Link key={type} data-event-type={type} data-event-id={event?.id || ''} to="/calendario" className="calendar-preview-event flex min-h-0 flex-1 items-center gap-2.5 rounded-xl border border-border/40 bg-secondary/20 p-2.5 transition-colors hover:bg-secondary/60">

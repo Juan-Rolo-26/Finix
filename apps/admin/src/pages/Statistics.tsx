@@ -7,7 +7,9 @@ interface StatsData {
 }
 interface VisitsData {
     days: number; visitors: number; newVisitors: number; returningVisitors: number; sessions: number; pageViews: number;
-    averageSessionSeconds: number; pagesPerSession: number;
+    averageSessionSeconds: number; medianSessionSeconds: number; pagesPerSession: number;
+    engagedSessions: number; engagementRate: number; bounceSessions: number; bounceRate: number;
+    averageVisibleSecondsPerPage: number;
     topPages: Array<{ page: string; views: number; visibleSeconds: number }>;
     series: Array<{ date: string; visitors: number; sessions: number; pageViews: number }>;
 }
@@ -95,13 +97,15 @@ export default function Statistics() {
                     </div>
                 </div>
                 {visitsError ? <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-600">No se pudieron cargar las visitas. Actualizá el panel o volvé a iniciar sesión.</div> : <>
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                         {[
                             { label: 'Visitantes únicos', value: visits?.visitors ?? 0, icon: Users, hint: 'personas anónimas' },
                             { label: 'Nuevos', value: visits?.newVisitors ?? 0, icon: Users, hint: 'primera visita en el período' },
                             { label: 'Recurrentes', value: visits?.returningVisitors ?? 0, icon: RotateCcw, hint: returningRate + '% del total' },
                             { label: 'Sesiones', value: visits?.sessions ?? 0, icon: Activity, hint: 'se reinician tras 30 min' },
                             { label: 'Páginas vistas', value: visits?.pageViews ?? 0, icon: Eye, hint: (visits?.pagesPerSession ?? 0) + ' por sesión' },
+                            { label: 'Sesiones con interacción', value: visits?.engagedSessions ?? 0, icon: Activity, hint: (visits?.engagementRate ?? 0) + '% con 2+ páginas o 10+ s visibles' },
+                            { label: 'Rebotes', value: (visits?.bounceRate ?? 0) + '%', icon: RotateCcw, hint: (visits?.bounceSessions ?? 0).toLocaleString('es-AR') + ' sesiones de una página y menos de 10 s' },
                         ].map(item => <div key={item.label} className="min-w-0 rounded-xl border border-border bg-card p-4">
                             <div className="flex items-center gap-2 text-muted-foreground"><item.icon className="h-4 w-4 shrink-0 text-primary" /><span className="truncate text-xs font-medium">{item.label}</span></div>
                             <p className="mt-3 text-2xl font-bold text-foreground">{visitsLoading ? '—' : item.value.toLocaleString('es-AR')}</p>
@@ -132,7 +136,11 @@ export default function Statistics() {
                             <p className="mt-5 text-3xl font-bold text-foreground">{duration(visits?.averageSessionSeconds ?? 0)}</p>
                             <p className="mt-1 text-sm text-muted-foreground">promedio visible por sesión</p>
                             <div className="mt-5 rounded-lg bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground">Solo se cuenta el tiempo con la pestaña de Finix visible. Las sesiones nuevas comienzan después de 30 minutos de inactividad.</div>
-                            <div className="mt-4 flex items-center justify-between border-t border-border pt-4 text-sm"><span className="text-muted-foreground">Visitantes recurrentes</span><span className="font-semibold text-foreground">{returningRate}%</span></div>
+                            <div className="mt-4 space-y-3 border-t border-border pt-4 text-sm">
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Mediana por sesión</span><span className="font-semibold text-foreground">{duration(visits?.medianSessionSeconds ?? 0)}</span></div>
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Tiempo visible por página</span><span className="font-semibold text-foreground">{duration(visits?.averageVisibleSecondsPerPage ?? 0)}</span></div>
+                                <div className="flex items-center justify-between"><span className="text-muted-foreground">Visitantes recurrentes</span><span className="font-semibold text-foreground">{returningRate}%</span></div>
+                            </div>
                         </div>
                     </div>
                     <div className="rounded-xl border border-border bg-card p-5">
