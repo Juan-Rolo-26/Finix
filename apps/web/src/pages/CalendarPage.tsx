@@ -207,6 +207,24 @@ function EarningsMetric({ label, actual, estimate, surprise, amount = false }: {
     );
 }
 
+const argentinaCalendarTime = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+});
+
+// Switch to the upcoming week after the U.S. market closes on Friday in ART,
+// and keep that week selected throughout Saturday and Sunday.
+function getDefaultWeekOffset(now = new Date()): number {
+    const parts = Object.fromEntries(argentinaCalendarTime.formatToParts(now).map(part => [part.type, part.value]));
+    const weekday = parts.weekday;
+    const hour = Number(parts.hour);
+    const minute = Number(parts.minute);
+    return weekday === 'Sat' || weekday === 'Sun' || (weekday === 'Fri' && (hour > 17 || (hour === 17 && minute >= 0))) ? 1 : 0;
+}
+
 // Helper: Get monday of a week offset from today
 function getWeekStartForOffset(offsetWeeks: number): string {
     const parts = calendarDateFormatter.formatToParts(new Date());
@@ -414,8 +432,21 @@ export default function CalendarPage() {
     const [earningsSort, setEarningsSort] = useState<EarningsSort>('RELEVANCIA');
     // Filtros de categoría para la sección General
     const [activeCategory, setActiveCategory] = useState<string>('ALL');
-    // Week navigation offset (0 = current week, 1 = next, -1 = previous)
-    const [weekOffset, setWeekOffset] = useState<number>(0);
+    // Week navigation offset. From Friday 17:00 ART through Sunday, default to next week.
+    const [weekOffset, setWeekOffset] = useState<number>(() => getDefaultWeekOffset());
+    const lastAutomaticWeekOffset = useRef(getDefaultWeekOffset());
+    const hasManualWeekSelection = useRef(false);
+
+    useEffect(() => {
+        const syncWeek = () => {
+            const nextOffset = getDefaultWeekOffset();
+            if (nextOffset === lastAutomaticWeekOffset.current) return;
+            lastAutomaticWeekOffset.current = nextOffset;
+            if (!hasManualWeekSelection.current) setWeekOffset(nextOffset);
+        };
+        const timer = window.setInterval(syncWeek, 30_000);
+        return () => window.clearInterval(timer);
+    }, []);
 
     const [calendarData, setCalendarData] = useState<CalendarWeekData | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -653,8 +684,8 @@ export default function CalendarPage() {
                         <div className="calendar-week-controls">
                             <div className="calendar-week-label">
                                 <span>
-                                    {weekOffset === 0
-                                        ? 'Semana actual'
+                                    {weekOffset === getDefaultWeekOffset()
+                                        ? weekOffset === 0 ? 'Semana actual' : 'Próxima semana'
                                         : weekOffset > 0
                                           ? '+' + weekOffset + ' sem.'
                                           : weekOffset + ' sem.'}
@@ -670,7 +701,7 @@ export default function CalendarPage() {
                                 <button
                                     type="button"
                                     className="calendar-icon-button"
-                                    onClick={() => setWeekOffset((w) => Math.max(-4, w - 1))}
+                                    onClick={() => { hasManualWeekSelection.current = true; setWeekOffset((w) => Math.max(-4, w - 1)); }}
                                     disabled={weekOffset <= -4}
                                     title={finixUi("Semana anterior")}
                                     aria-label={finixUi("Semana anterior")}
@@ -680,7 +711,7 @@ export default function CalendarPage() {
                                 <button
                                     type="button"
                                     className="calendar-icon-button"
-                                    onClick={() => setWeekOffset((w) => Math.min(4, w + 1))}
+                                    onClick={() => { hasManualWeekSelection.current = true; setWeekOffset((w) => Math.min(4, w + 1)); }}
                                     disabled={weekOffset >= 4}
                                     title={finixUi("Semana siguiente")}
                                     aria-label={finixUi("Semana siguiente")}
