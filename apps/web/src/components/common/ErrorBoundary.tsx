@@ -27,12 +27,37 @@ export class ErrorBoundary extends Component<Props, State> {
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error('[ErrorBoundary caught error]:', error, errorInfo);
+
+        // Tabs kept open across a deployment can request hashed JS chunks that
+        // no longer exist. Refresh once to fetch the current HTML and assets.
+        const message = `${error.name} ${error.message}`;
+        const isStaleChunk = /failed to fetch dynamically imported module|importing a module script failed|error loading dynamically imported module|loading chunk [\w-]+ failed|chunkloaderror/i.test(message);
+        if (isStaleChunk && typeof window !== 'undefined') {
+            const key = `finix:stale-chunk-reload:${window.location.pathname}`;
+            try {
+                const previousReload = Number(window.sessionStorage.getItem(key) || 0);
+                if (!previousReload || Date.now() - previousReload > 30_000) {
+                    window.sessionStorage.setItem(key, String(Date.now()));
+                    window.location.reload();
+                }
+            } catch {
+                // Storage can be disabled; leave the retry button available.
+            }
+        }
     }
 
     private handleReset = () => {
-        this.setState({ hasError: false, error: null });
         if (this.props.onReset) {
             this.props.onReset();
+            this.setState({ hasError: false, error: null });
+            return;
+        }
+
+        // Remounting a rejected lazy module does not fetch its new URL.
+        if (typeof window !== 'undefined') {
+            window.location.reload();
+        } else {
+            this.setState({ hasError: false, error: null });
         }
     };
 
