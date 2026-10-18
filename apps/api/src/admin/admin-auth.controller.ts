@@ -54,22 +54,6 @@ export class AdminAuthController {
         return result;
     }
 
-    @Post('verify-2fa')
-    @HttpCode(HttpStatus.OK)
-    async verifyTwoFactor(
-        @Body() dto: AdminVerifyTwoFactorDto,
-        @Req() req: Request,
-        @Res({ passthrough: true }) res: Response,
-    ) {
-        const session = await this.adminAuthService.verifyTwoFactor(dto, this.getRequestMeta(req));
-        this.attachSessionCookies(res, session.accessToken, session.refreshToken);
-
-        return {
-            user: session.user,
-            expiresInMs: session.accessTokenTtlMs,
-        };
-    }
-
     @Post('resend-code')
     @HttpCode(HttpStatus.OK)
     async resendCode(
@@ -77,15 +61,6 @@ export class AdminAuthController {
         @Req() req: Request
     ) {
         return this.adminAuthService.resendCode(dto.token, this.getRequestMeta(req));
-    }
-
-    @Post('setup-totp')
-    @HttpCode(HttpStatus.OK)
-    async setupTotp(
-        @Body() dto: AdminResendCodeDto,
-        @Req() req: Request
-    ) {
-        return this.adminAuthService.setupNewTotp(dto.token, this.getRequestMeta(req));
     }
 
     @Post('refresh')

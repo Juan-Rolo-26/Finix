@@ -11,7 +11,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma.service';
 import { User } from '@prisma/client';
-import * as speakeasy from 'speakeasy';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 import {
@@ -278,102 +277,20 @@ export class AdminAuthService {
             throw new UnauthorizedException('Código de verificación incorrecto');
         }
 
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: { adminTotpTempSecret: null, adminTotpTempExpires: null },
-        });
-
-        if (user.adminTwoFactorEnabled && user.adminTotpSecret) {
-            const token = await this.jwtService.signAsync(
-                { sub: user.id, type: 'admin_pre_auth', purpose: 'verify_totp' },
-                { expiresIn: this.preAuthTokenTtl },
-            );
-            return { step: 'VERIFY_2FA' as const, token };
-        } else {
-            // Primera vez: configuración de la app Authenticator en el celular
-            const secret = speakeasy.generateSecret({
-                name: `Finix Admin (${user.email})`,
-                issuer: 'Finix Admin',
-            });
-            const encryptedTotp = this.encryptSecret(secret.base32);
-            await this.prisma.user.update({
-                where: { id: user.id },
-                data: { adminTotpSecret: encryptedTotp },
-            });
-            const token = await this.jwtService.signAsync(
-                { sub: user.id, type: 'admin_pre_auth', purpose: 'verify_totp' },
-                { expiresIn: this.preAuthTokenTtl },
-            );
-            return {
-                step: 'SETUP_2FA' as const,
-                token,
-                secret: secret.base32,
-                otpauth_url: secret.otpauth_url || `otpauth://totp/Finix%20Admin:${encodeURIComponent(user.email)}?secret=${secret.base32}&issuer=Finix%20Admin`,
-            };
-        }
-    }
-
-    async verifyTwoFactor(dto: AdminVerifyTwoFactorDto, meta: RequestMeta) {
-        const code = dto.code.trim();
-        if (!/^\d{6}$/.test(code)) {
-            throw new BadRequestException('Código 2FA inválido (debe tener 6 dígitos)');
-        }
-
-        let preAuthPayload: any;
-        try {
-            preAuthPayload = await this.jwtService.verifyAsync(dto.token);
-        } catch {
-            throw new UnauthorizedException('Token de verificación inválido o expirado');
-        }
-
-        if (preAuthPayload?.type !== 'admin_pre_auth' || preAuthPayload?.purpose !== 'verify_totp' || !preAuthPayload?.sub) {
-            throw new UnauthorizedException('Token de verificación inválido');
-        }
-
-        const user = await this.prisma.user.findUnique({ where: { id: preAuthPayload.sub } });
-        if (!user) {
-            throw new UnauthorizedException('Usuario admin no encontrado');
-        }
-
-        this.assertRoleAndOwner(user);
-        this.assertNotLocked(user);
-
-        let verified = false;
-
-        // 1. Validar contra el Authenticator del celular (TOTP)
-        if (user.adminTotpSecret) {
-            try {
-                const decryptedTotpSecret = this.decryptSecret(user.adminTotpSecret);
-                verified = speakeasy.totp.verify({
-                    secret: decryptedTotpSecret,
-                    encoding: 'base32',
-                    token: code,
-                    window: 2,
-                });
-            } catch (err) {
-                // fallthrough
-            }
-        }
-
-        if (!verified) {
-            await this.registerFailedUserAttempt(user.id);
-            this.recordFailedIpAttempt(meta.ip, user.email);
-            throw new UnauthorizedException('Código de Google Authenticator incorrecto.');
-        }
-
-        await this.prisma.user.update({
+        const updatedUser = await this.prisma.user.update({
             where: { id: user.id },
             data: {
                 lastLogin: new Date(),
                 adminFailedLoginAttempts: 0,
                 adminLockedUntil: null,
-                adminTwoFactorEnabled: true,
+                adminTwoFactorEnabled: false,
+                adminTotpSecret: null,
                 adminTotpTempSecret: null,
                 adminTotpTempExpires: null,
             },
         });
 
-        const tokens = await this.createSessionTokens(user, meta);
+        const tokens = await this.createSessionTokens(updatedUser, meta);
 
         await this.adminAuditService.logDirect({
             actorId: user.id,
@@ -387,10 +304,10 @@ export class AdminAuthService {
         return {
             ...tokens,
             user: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                role: user.role,
+                id: updatedUser.id,
+                email: updatedUser.email,
+                username: updatedUser.username,
+                role: updatedUser.role,
             },
         };
     }
@@ -438,44 +355,6 @@ export class AdminAuthService {
         return {
             success: true,
             message: 'Código reenviado a tu correo electrónico.',
-        };
-    }
-
-    async setupNewTotp(token: string, meta: RequestMeta) {
-        let payload: any;
-        try {
-            payload = await this.jwtService.verifyAsync(token);
-        } catch {
-            throw new UnauthorizedException('Token de verificación expirado');
-        }
-
-        if (payload?.type !== 'admin_pre_auth' || payload?.purpose !== 'verify_totp' || !payload?.sub) {
-            throw new UnauthorizedException('Token inválido');
-        }
-
-        const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
-        if (!user) throw new UnauthorizedException('Usuario no encontrado');
-        this.assertRoleAndOwner(user);
-        this.assertNotLocked(user);
-        if (user.adminTwoFactorEnabled) {
-            throw new ForbiddenException('El Authenticator ya está configurado. No se puede reemplazar desde el login.');
-        }
-
-        const secret = speakeasy.generateSecret({
-            name: `Finix Admin (${user.email})`,
-            issuer: 'Finix Admin',
-        });
-        const encryptedTotp = this.encryptSecret(secret.base32);
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: { adminTotpSecret: encryptedTotp },
-        });
-
-        return {
-            step: 'SETUP_2FA' as const,
-            token,
-            secret: secret.base32,
-            otpauth_url: secret.otpauth_url || `otpauth://totp/Finix%20Admin:${encodeURIComponent(user.email)}?secret=${secret.base32}&issuer=Finix%20Admin`,
         };
     }
 

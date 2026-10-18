@@ -27,7 +27,7 @@ const withApiPrefix = (path: string) => {
     return `${baseUrl.replace(/\/+$/, '')}/${normalizedPath.replace(/^\/+/, '')}`;
 };
 
-const authEndpoints = ['/admin/auth/login', '/admin/auth/verify-error', '/admin/auth/verify-email', '/admin/auth/verify-2fa', '/admin/auth/refresh'];
+const authEndpoints = ['/admin/auth/login', '/admin/auth/verify-error', '/admin/auth/verify-email', '/admin/auth/refresh'];
 
 const isAuthEndpoint = (path: string) => authEndpoints.some((route) => path.includes(route));
 
