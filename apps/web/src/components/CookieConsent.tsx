@@ -177,7 +177,7 @@ export default function CookieConsent() {
                                     <Cookie className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <p className="text-lg font-bold text-white sm:text-xl">{""}<FinixUiText text={"Configuración de cookies"} />{""}</p>
+                                    <p className="text-lg font-bold !text-white sm:text-xl">{""}<FinixUiText text={"Configuración de cookies"} />{""}</p>
                                     <p className="text-xs text-emerald-50/75">{""}<FinixUiText text={"Finix ·"} />{" "}{new Date().getFullYear()}</p>
                                 </div>
                             </div>
@@ -185,7 +185,7 @@ export default function CookieConsent() {
 
                         <p className="mb-1 text-base leading-relaxed text-emerald-50/90">
                             {" "}<FinixUiText text={"Usamos almacenamiento local necesario para el funcionamiento de Finix. La analítica anónima es opcional y solo se activa si la aceptás."} />{""}{' '}
-                            <Link to="/cookies" className="font-semibold text-white underline decoration-white/50 underline-offset-4 hover:decoration-white" tabIndex={0}>
+                            <Link to="/cookies" className="font-semibold !text-white underline decoration-white/50 underline-offset-4 hover:decoration-white" tabIndex={0}>
                                 {" "}<FinixUiText text={"Política de Cookies"} />{" "}</Link>
                         </p>
                     </div>

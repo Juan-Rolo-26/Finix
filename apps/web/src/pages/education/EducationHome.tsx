@@ -186,7 +186,7 @@ export default function EducationHome() {
                         <GraduationCap className="w-4 h-4" />
                         {" "}<FinixUiText text={"Finix · Biblioteca de Consulta Financiera"} />{" "}</div>
 
-                    <h1 className="text-4xl font-black tracking-tight text-white sm:text-6xl">
+                    <h1 className="text-4xl font-black tracking-tight !text-white sm:text-6xl">
                         {" "}<FinixUiText text={"Biblioteca Educativa"} />{" "}</h1>
 
                     <p className="mx-auto max-w-4xl text-base font-normal leading-relaxed text-emerald-50/90 sm:text-lg lg:text-xl">
@@ -239,8 +239,8 @@ export default function EducationHome() {
                                 onClick={() => handleSearchChange(item.term)}
                                 className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
                                     search.toLowerCase() === item.term.toLowerCase()
-                                        ? 'bg-white text-emerald-800 border-white shadow-sm'
-                                        : 'bg-white/10 border-white/20 hover:bg-white/20 text-white hover:text-white'
+                                        ? 'bg-white !text-emerald-800 border-white shadow-sm'
+                                        : 'bg-white/10 border-white/20 hover:bg-white/20 !text-white hover:!text-white'
                                 }`}
                             >
                                 {item.label}
