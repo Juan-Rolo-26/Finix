@@ -491,7 +491,6 @@ export default function Dashboard() {
                     {/* Calendario Finix */}
                     <CalendarPreviewCard
                         rotationIndex={dashboardRotationIndex}
-                        onRotate={() => setDashboardRotationIndex(index => index + 1)}
                         onRotationPauseChange={setDashboardRotationPaused}
                     />
                 </aside>
