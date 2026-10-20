@@ -118,6 +118,7 @@ model User {
   followedBy   Follow[]      @relation("following")
   following    Follow[]      @relation("follower")
 
+  analysisRequests AnalysisRequest[]
   portfolios Portfolio[]
   watchlists Watchlist[]
   followedIdeas WatchlistFollowedIdea[]
@@ -2552,4 +2553,21 @@ model EducationUserProgress {
   @@unique([userId, articleId])
   @@index([userId])
   @@index([articleId])
+}
+
+
+model AnalysisRequest {
+  id              String @id @default(uuid())
+  userId          String
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query           String @db.VarChar(80)
+  normalizedQuery String @db.VarChar(80)
+  status          String @default("PENDING")
+  searchCount     Int @default(0)
+  requestCount    Int @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, normalizedQuery])
+  @@index([status, updatedAt])
 }

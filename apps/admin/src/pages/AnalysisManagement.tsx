@@ -1,3 +1,4 @@
+import AnalysisRequestsPanel from './AnalysisRequestsPanel';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -613,7 +614,7 @@ function AnalysisLivePreview({ analysis, onClose }: { analysis: any; onClose: ()
                 )}
 
                 {/* 8. Análisis Técnico & Gráfico de TradingView */}
-                {visibility.showTechnical !== false && (
+                {false && visibility.showTechnical !== false && (
                     <div className="bg-card border border-border rounded-3xl p-6 sm:p-8 space-y-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 text-primary">
@@ -800,7 +801,7 @@ export default function AnalysisManagement() {
             showFairValue: true,
             showOwnership: true,
             showCompetitors: true,
-            showTechnical: true,
+            showTechnical: false,
             showRisks: true,
             showCatalysts: true,
             showScenarios: true,
@@ -1187,7 +1188,7 @@ export default function AnalysisManagement() {
                                     showFairValue: true,
                                     showOwnership: true,
                                     showCompetitors: true,
-                                    showTechnical: true,
+                                    showTechnical: false,
                                     showRisks: true,
                                     showCatalysts: true,
                                     showScenarios: true,
@@ -1216,6 +1217,11 @@ export default function AnalysisManagement() {
                     </div>
                 )}
             </div>
+
+            {!isFormOpen && <AnalysisRequestsPanel onCreate={query => {
+                setFormData({symbol:query,ticker:query.toUpperCase(),companyName:'',status:'DRAFT',sectionVisibility:{showTechnical:false}});
+                setAutoTickerInput(query);setTvMessage(null);setIsFormOpen(true);setActiveTab('overview');
+            }} />}
 
             {/* Vista Previa Modal */}
             {previewItem && (
@@ -1525,7 +1531,6 @@ export default function AnalysisManagement() {
                             <TabsTrigger value="valuation">9. Valuación & Fair Value</TabsTrigger>
                             <TabsTrigger value="ownership">10. Accionistas</TabsTrigger>
                             <TabsTrigger value="competitors">11. Competidores</TabsTrigger>
-                            <TabsTrigger value="technical">12. Técnico & Gráfico TV</TabsTrigger>
                             <TabsTrigger value="risks">13. Riesgos & Cat.</TabsTrigger>
                             <TabsTrigger value="scenarios">14. Escenarios & DAFO</TabsTrigger>
                         </TabsList>

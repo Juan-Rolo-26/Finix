@@ -40,6 +40,7 @@ import { AdminPermission, hasAdminPermission } from './admin-permissions';
 import { AdminAuditService } from './admin-audit.service';
 import { AdminManagementService } from './admin-management.service';
 import { NewsService } from '../news/news.service';
+import { AnalysisRequestsService } from '../analysis/analysis-requests.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
 import { ValueCreationService } from '../market/value-creation.service';
@@ -85,6 +86,7 @@ export class AdminController {
         private readonly adminManagementService: AdminManagementService,
         private readonly newsService: NewsService,
         private readonly analysisService: AnalysisService,
+        private readonly analysisRequests: AnalysisRequestsService,
         private readonly proEmailCampaignService: ProEmailCampaignService,
         private readonly valueCreationService: ValueCreationService,
         private readonly emailMarketingService: EmailMarketingService,
@@ -241,6 +243,14 @@ export class AdminController {
     // ============================================
     // ASSET ANALYSIS MANAGEMENT (FINIX PRO CMS)
     // ============================================
+
+    @Get('analysis-requests')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    listAnalysisRequests() { return this.analysisRequests.list(); }
+
+    @Patch('analysis-requests/:id')
+    @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)
+    updateAnalysisRequest(@Param('id') id: string, @Body() body: unknown) { return this.analysisRequests.update(id, body); }
 
     @Get('analysis')
     @RequireAdminPermissions(AdminPermission.DASHBOARD_READ)

@@ -17,7 +17,7 @@ function fixture() {
     const market = { getDashboard: async () => ({ dollars: [{ id: 'mep', label: 'MEP', sell: 1536 }], sections: { argentina: [sample], global: [sample], commodities: [sample], crypto: [sample] } }),
         getQuotes: async symbols => symbols.map(inputSymbol => ({ inputSymbol, price: 1234.56, change: -1.23 })),
         getFinvizHeatmap: async () => ({ sectors: [{ name: 'Tecnología', perf: 1.25 }] }) };
-    const engine = new NewsletterScheduler(prisma, {}, { sendEmail: async params => { sent.push(params); return { id: 'isolated' }; } }, market);
+    const engine = new NewsletterScheduler(prisma, {}, { sendEmail: async params => { sent.push(params); return { id: 'isolated' }; } }, market, {getHighlights:async()=>({argentina:articles.slice(0,4),unitedStates:articles.slice(4,8)})});
     return { engine, sent };
 }
 

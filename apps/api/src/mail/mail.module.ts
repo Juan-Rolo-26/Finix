@@ -1,9 +1,10 @@
 import { Global, Module } from '@nestjs/common';
+import { ResendQuotaService } from './resend-quota.service';
 import { MailService } from './mail.service';
 
 @Global()
 @Module({
-    providers: [MailService],
-    exports: [MailService],
+    providers: [MailService, ResendQuotaService],
+    exports: [MailService, ResendQuotaService],
 })
 export class MailModule { }

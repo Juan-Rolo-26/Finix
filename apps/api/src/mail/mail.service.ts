@@ -1,8 +1,11 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
+import { ResendQuotaService } from './resend-quota.service';
 import { isLocalMode } from '../config/local-mode';
 
 @Injectable()
 export class MailService {
+    constructor(@Optional() private readonly quota?: ResendQuotaService) {}
+
     private readonly logger = new Logger(MailService.name);
 
     private escapeHtml(value: string) {
@@ -153,6 +156,7 @@ export class MailService {
                 }
                 const body = await response.json().catch(() => ({} as { id?: string }));
                 this.logger.log('Correo enviado mediante Resend.');
+                this.quota?.recordSuccessfulSend();
                 return { id: typeof body.id === 'string' ? body.id : undefined };
             } catch (error: unknown) {
                 if (error instanceof BadRequestException) throw error;

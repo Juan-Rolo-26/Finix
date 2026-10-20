@@ -1,3 +1,4 @@
+import AnalysisRequestBox from '@/components/analysis/AnalysisRequestBox';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -104,7 +105,7 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
                         Desbloqueá el Análisis Completo de <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400">{analysis?.companyName || 'esta acción'}</span>
                     </h2>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                        Accedé a 22 módulos de research institucional: modelos de valuación (DCF), gráficos históricos de márgenes y Cash Flow, comparativa con competidores y análisis técnico cuantitativo.
+                        Accedé a 22 módulos de research institucional: modelos de valuación (DCF), gráficos históricos de márgenes y Cash Flow, comparativa con competidores.
                     </p>
                 </div>
 
@@ -119,7 +120,7 @@ function ProPaywallGate({ analysis }: { analysis: any }) {
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Ratios frente a Competidores
                     </div>
                     <div className="flex items-center gap-2 text-xs font-medium text-foreground/90 bg-muted/30 p-2.5 rounded-xl border border-border/40">
-                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Soportes, Resistencias y RSI
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> Balance, márgenes y flujo de caja
                     </div>
                 </div>
 
@@ -970,6 +971,7 @@ export default function Analysis() {
     };
 
     const [catalog, setCatalog] = useState<any[]>([]);
+    const [catalogReady, setCatalogReady] = useState(false);
     const [analysisData, setAnalysisData] = useState<any>(null);
     const [isProRestricted, setIsProRestricted] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -994,6 +996,16 @@ export default function Analysis() {
         setShowLiveTechnicalChart(false);
     }, [analysisData?.id, slug]);
 
+    useEffect(() => {
+        const query = search.trim();
+        if (!user?.id || slug || loading || !catalogReady || query.length < 2 || query.length > 80) return;
+        const found = catalog.some(item => [item.companyName,item.ticker,item.sector].some(value => String(value || '').toLowerCase().includes(query.toLowerCase())));
+        if (found) return;
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => { void apiFetch('/analysis/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,intent:'SEARCH'}),signal:controller.signal}).catch(()=>undefined); },900);
+        return () => { window.clearTimeout(timer);controller.abort(); };
+    },[search,catalog,catalogReady,loading,slug,user?.id]);
+
     const fetchCatalog = async () => {
         try {
             setLoading(true);
@@ -1001,6 +1013,7 @@ export default function Analysis() {
             if (res.ok) {
                 const data = await res.json();
                 setCatalog(data || []);
+                setCatalogReady(true);
             }
         } catch (e) {
             console.error(e);
@@ -1019,6 +1032,7 @@ export default function Analysis() {
                 setIsProRestricted(Boolean(json.isProRestricted));
             } else if (res.status === 404) {
                 setAnalysisData(null);
+                if (user?.id) void apiFetch('/analysis/requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:targetSlug,intent:'SEARCH'})}).catch(()=>undefined);
             }
         } catch (e) {
             console.error(e);
@@ -1044,6 +1058,7 @@ export default function Analysis() {
                     buttonText="Activar Finix PRO"
                     onUpgrade={() => navigate('/pro')}
                 />
+                <div className="mx-auto w-full max-w-3xl px-4 pb-8"><AnalysisRequestBox /></div>
             </div>
         );
     }
@@ -1172,6 +1187,8 @@ export default function Analysis() {
                     </div>
                 )}
 
+                <AnalysisRequestBox query={search} />
+
                 {/* Investor Wisdom Quote */}
                 <InvestorQuote investorId="benjamin-graham" showBackToTop />
             </div>
@@ -1185,6 +1202,7 @@ export default function Analysis() {
                 <Target className="w-12 h-12 text-muted-foreground/40 mx-auto" />
                 <h2 className="text-2xl font-bold text-foreground">Análisis no disponible</h2>
                 <p className="text-sm text-muted-foreground">No encontramos un reporte para "{slug}".</p>
+                <AnalysisRequestBox query={slug} />
                 <Button onClick={() => navigate('/analysis')} variant="outline">
                     ← Ver todos los análisis
                 </Button>
@@ -1861,7 +1879,7 @@ export default function Analysis() {
                     )}
 
                     {/* 9. ANÁLISIS TÉCNICO CUANTITATIVO Y GRÁFICO INTERACTIVO */}
-                    {visibility.showTechnical !== false && (
+                    {false && visibility.showTechnical !== false && (
                         <section className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm space-y-9">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-3.5 text-primary">
@@ -2225,7 +2243,7 @@ export default function Analysis() {
 
                     {/* 13. FUENTES Y AVISO LEGAL */}
                     <div className="p-7 sm:p-10 rounded-3xl bg-muted/20 border border-border/40 text-center space-y-3 text-base sm:text-lg text-muted-foreground">
-                        {a.sources && <p className="font-bold text-foreground">Fuentes de Información: {a.sources}</p>}
+                        {a.sources && <p className="font-bold text-foreground">Fuentes de Información: {String(a.sources).split(/(https:\/\/[^\s"<>]+)/g).map((part,index) => /^https:\/\//.test(part) ? <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="break-all text-primary underline">Abrir fuente</a> : <span key={index}>{part}</span>)}</p>}
                         <p className="leading-relaxed font-medium">{a.legalDisclaimer || 'Este contenido tiene fines informativos y educativos y no constituye asesoramiento financiero ni recomendación de inversión.'}</p>
                     </div>
 

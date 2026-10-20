@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { createHmac, timingSafeEqual, randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
@@ -6,6 +6,7 @@ import { join } from 'path';
 import sharp = require('sharp');
 import { z } from 'zod';
 import { PrismaService } from '../prisma.service';
+import { ResendQuotaService } from '../mail/resend-quota.service';
 import { MailService } from '../mail/mail.service';
 import { escapeEmail, renderCampaign } from './email-content';
 
@@ -16,7 +17,7 @@ const schema = z.object({ subject: z.string().trim().min(1).max(160), title: z.s
 export class EmailMarketingService {
     private busy = false;
     private readonly logger = new Logger(EmailMarketingService.name);
-    constructor(private readonly prisma: PrismaService, private readonly mail: MailService) {}
+    constructor(private readonly prisma: PrismaService, private readonly mail: MailService, @Optional() private readonly quota?: ResendQuotaService) {}
     private recipientWhere(audience = 'PRO') {
         const notTest = { NOT: { email: { endsWith: '@example.test' } } };
         if (audience === 'OFFICIAL') return {
@@ -199,9 +200,14 @@ export class EmailMarketingService {
             });
             return { preparing: true };
         }
+        const allowance = this.quota ? await this.quota.bulkAllowance(5) : { count: 5, retryAt: null };
+        if (!allowance.count) {
+            await this.prisma.proEmailCampaign.update({ where: { id }, data: { status: 'SCHEDULED', scheduledAt: allowance.retryAt } });
+            return { waitingForQuota: true };
+        }
         const now = new Date();
         const eligible = { campaignId: id, nextAttemptAt: { lte: now }, OR: [{ status: 'QUEUED' }, { status: 'PROCESSING', lockedUntil: { lt: now } }] };
-        const rows = await this.prisma.emailCampaignRecipient.findMany({ where: eligible, take: 5, orderBy: { queuedAt: 'asc' } });
+        const rows = await this.prisma.emailCampaignRecipient.findMany({ where: eligible, take: allowance.count, orderBy: { queuedAt: 'asc' } });
         for (const row of rows) {
             // Resend retains idempotency keys for 24h. Never retry an uncertain delivery outside that window.
             if (row.firstAttemptAt && Date.now() - row.firstAttemptAt.getTime() > 23 * 3600000) {

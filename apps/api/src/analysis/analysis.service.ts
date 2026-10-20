@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { queuePublishedAnalysis } from '../admin/email-content';
+import { normalizeAnalysisQuery } from './analysis-requests.service';
+import { fundamentalOnly } from './fundamental-visibility';
 import { hasEffectiveProAccess } from '../auth/pro-access';
 import {
     KNOWN_PROFILES,
@@ -112,8 +114,7 @@ export class AnalysisService {
                 status: true,
                 estimatedFairValue: true,
                 peRatio: true,
-                rsi: true,
-                trend: true,
+
             },
             orderBy: {
                 updatedAt: 'desc',
@@ -626,7 +627,7 @@ export class AnalysisService {
         const computed = this.calculateDerivedMetrics(analysis);
 
         // Parsear campos JSON estructurados
-        const parsed = {
+        const parsed = fundamentalOnly({
             ...computed,
             sectionVisibility: computed.sectionVisibility ? JSON.parse(computed.sectionVisibility) : {},
             executiveSummary: computed.executiveSummary ? JSON.parse(computed.executiveSummary) : null,
@@ -640,7 +641,7 @@ export class AnalysisService {
             scenariosData: computed.scenariosData ? JSON.parse(computed.scenariosData) : null,
             valuationMethodology: computed.valuationMethodology ? JSON.parse(computed.valuationMethodology) : null,
             swotData: computed.swotData ? JSON.parse(computed.swotData) : null,
-        };
+        });
 
         if (isPro) {
             return {
@@ -781,6 +782,9 @@ export class AnalysisService {
                 },
             });
             await queuePublishedAnalysis(tx, analysis, userId);
+            if (analysis.status === 'PUBLISHED' && analysis.isActive && tx.analysisRequest) {
+                await tx.analysisRequest.updateMany({ where: { normalizedQuery: { in: [analysis.ticker,analysis.symbol,analysis.companyName].filter(Boolean).map(normalizeAnalysisQuery) }, status: { in: ['PENDING','IN_REVIEW'] } }, data: { status: 'PUBLISHED' } });
+            }
             return analysis;
             });
 
@@ -822,6 +826,9 @@ export class AnalysisService {
                 data: sanitized,
             });
             await queuePublishedAnalysis(tx, analysis, userId);
+            if (analysis.status === 'PUBLISHED' && analysis.isActive && tx.analysisRequest) {
+                await tx.analysisRequest.updateMany({ where: { normalizedQuery: { in: [analysis.ticker,analysis.symbol,analysis.companyName].filter(Boolean).map(normalizeAnalysisQuery) }, status: { in: ['PENDING','IN_REVIEW'] } }, data: { status: 'PUBLISHED' } });
+            }
             return analysis;
             });
 

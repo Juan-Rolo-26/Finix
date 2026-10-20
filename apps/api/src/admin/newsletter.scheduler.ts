@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma.service';
 import { EmailMarketingService } from './email-marketing.service';
 import { MailService } from '../mail/mail.service';
 import { MarketService } from '../market/market.service';
+import { NewsletterNewsService } from './newsletter-news.service';
+import { NewsTranslationService } from '../news/news-translation.service';
 import { getCedearDefinition } from '../market/cedear.data';
 import { newsletterLayout as layout, newsletterPanel as panel, newsletterCompanyHeading } from './newsletter-layout';
 
@@ -12,15 +14,13 @@ const href = (v?: string | null) => { try { const u = new URL(v || ''); return u
 const app = (process.env.FRONTEND_URL || 'https://finixarg.com').replace(/\/$/, '');
 const dateKey = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: 'long', year: 'numeric' }).format(d);
 const shortDate = (d?: Date | null) => d ? new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: 'short' }).format(d) : '';
-const companies = /apple|microsoft|nvidia|amazon|alphabet|google|meta platforms|tesla|broadcom|netflix|jpmorgan|citigroup|wells fargo|goldman sachs|bank of america|morgan stanley|blackrock|eli lilly|exxon|chevron|walmart|costco|oracle|adobe|amd|qualcomm|micron|intel|visa|mastercard/i;
-const earnings = /quarter|earnings|results|balance|revenue|ingresos|trimestre|resultado|ganancias|cash flow|margins/i;
 const trusted = /(^|\.)sec\.gov$|(^|\.)nasdaq\.com$|(^|\.)nyse\.com$|(^|\.)reuters\.com$|(^|\.)apnews\.com$|(^|\.)bloomberg\.com$|(^|\.)tradingview\.com$/i;
 const testRecipient = 'juanpablorolo2007@gmail.com';
 
 @Injectable()
 export class NewsletterScheduler {
     private readonly logger = new Logger(NewsletterScheduler.name);
-    constructor(private readonly prisma: PrismaService, private readonly campaigns: EmailMarketingService, private readonly mail: MailService, private readonly market: MarketService) {}
+    constructor(private readonly prisma: PrismaService, private readonly campaigns: EmailMarketingService, private readonly mail: MailService, private readonly market: MarketService, private readonly news: NewsletterNewsService = new NewsletterNewsService(prisma, new NewsTranslationService())) {}
 
     private async ownerId() {
         const email = process.env.ADMIN_OWNER_EMAIL?.trim();
@@ -36,13 +36,8 @@ export class NewsletterScheduler {
     }
 
     private async dailyBrief(now: Date) {
-        const since = new Date(now.getTime() - 72 * 3600000);
-        const [articles, marketData, macroEvents, earnings, technologyQuotes, semiconductorQuotes, sectorMap] = await Promise.all([
-            this.prisma.newsArticle.findMany({
-                where: { isActive: true, isPublished: true, status: 'PUBLISHED', publishedAt: { gte: since } },
-                select: { title: true, titleEs: true, description: true, descriptionEs: true, sourceName: true, sourceUrl: true, url: true, publishedAt: true, category: { select: { name: true, slug: true } } },
-                orderBy: [{ relevanceScore: 'desc' }, { publishedAt: 'desc' }], take: 30,
-            }),
+        const [highlights, marketData, macroEvents, earnings, technologyQuotes, semiconductorQuotes, sectorMap] = await Promise.all([
+            this.news.getHighlights(now),
             this.market.getDashboard().catch(() => null),
             this.prisma.marketCalendarEvent.findMany({
                 where: { isPublished: true, status: 'PUBLISHED', timestampUtc: { gte: now, lte: new Date(now.getTime() + 7 * 86400000) } },
@@ -58,26 +53,14 @@ export class NewsletterScheduler {
             this.market.getQuotes(['NVDA','AVGO','AMD','QCOM','INTC','MU','TSM']).catch(() => []),
             this.market.getFinvizHeatmap('d1').catch(() => null),
         ]);
-        if (!articles.length && !marketData) return null;
-
-        const content = (a: typeof articles[number]) => (a.titleEs || a.title) + ' ' + (a.descriptionEs || a.description || '') + ' ' + (a.category?.name || '') + ' ' + (a.category?.slug || '');
-        const macroRx = /macroeconom[ií]a|econom[ií]a|inflaci[oó]n|ipc|indec|bcra|pib|reservas|d[oó]lar|fiscal|actividad|construcci[oó]n|comercio/i;
-        const argentinaMacroRx = /argentina|argentin[oa]|bcra|indec|merval|ipc|peso(s)? argentino(s)?|buenos aires|econom[ií]a local/i;
-        const localRx = /mercado local|argentina|merval|byma|acciones argentinas|renta variable|ypf|galicia|ggal|pampa|cresud|tgs|alua|txar|bono|obligaci[oó]n negociable|lecap/i;
-        const worldRx = /wall street|s&p|nasdaq|federal reserve|fed\b|treasury|global|internacional|china|europe|petr[oó]leo|gold|oro|bitcoin|mercados/i;
-        const recent = [...articles].sort((a,b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0));
-        const knownNewsSource = /reuters|associated press|ap news|bloomberg|cnbc|wall street journal|\bwsj\b|financial times|yahoo finance|la nación|la nacion|clarín|clarin|ámbito|ambito|el cronista|infobae|perfil|iprofesional|bcra|indec/i;
-        const macro = recent.filter(a => macroRx.test(content(a)) && argentinaMacroRx.test(content(a)) && knownNewsSource.test(a.sourceName || '')).slice(0,4);
-        const argentina = recent.filter(a => localRx.test(content(a)) && knownNewsSource.test(a.sourceName || '') && !macro.includes(a)).slice(0,Math.max(0,4-macro.length));
-        const local = [...macro,...argentina];
-        const usRx = /united states|\bu\.s\.\b|\bus\b|wall street|s&p|nasdaq|dow jones|federal reserve|\bfed\b|treasury|apple|microsoft|nvidia|amazon|alphabet|google|meta platforms|tesla|broadcom|netflix|jpmorgan|wells fargo|goldman sachs|bank of america|eli lilly|exxon|walmart|oracle|adobe|amd|qualcomm|micron|intel/i;
-        const global = recent.filter(a => usRx.test(content(a)) && knownNewsSource.test(a.sourceName || '') && !local.includes(a)).slice(0,4);
-        const used = new Set([...local,...global]);
-        const investment = recent.filter(a => /bono|obligaci[oó]n negociable|deuda|emisi[oó]n|dividendo|balance|resultados|earnings/i.test(content(a)) && !used.has(a)).slice(0,1);
+        const local = highlights.argentina;
+        const global = highlights.unitedStates;
+        const articles = [...local, ...global];
+        const investment = [];
 
         const storyRows = (items: typeof articles, empty: string) => items.length
             ? items.map(a => {
-                const title = a.titleEs || a.title, desc = (a.descriptionEs || a.description || '').trim(), link = href(a.url || a.sourceUrl);
+                const title = a.title, desc = (a.description || '').trim(), link = href(a.url);
                 return '<tr><td style="padding:9px 0;border-top:1px solid #e5eee8"><div style="font-size:13px;line-height:1.4;font-weight:bold;color:#203b30">' + (link ? '<a style="color:#203b30;text-decoration:none" href="' + link + '">' + esc(title) + '</a>' : esc(title)) + '</div><p style="margin:4px 0 0;color:#60766b;font-size:12px;line-height:1.45">' + esc(desc || 'Abrí la publicación para consultar los detalles.') + '</p><div style="margin-top:4px;font-size:11px;color:#84968d">' + esc(a.sourceName || 'Fuente') + (a.publishedAt ? ' · ' + esc(shortDate(a.publishedAt)) : '') + (link ? ' · <a style="color:#087747" href="' + link + '">Fuente original</a>' : '') + '</div></td></tr>';
             }).join('')
             : '<tr><td style="padding:8px 0;color:#71857a;font-size:12px">' + esc(empty) + '</td></tr>';
@@ -122,7 +105,7 @@ export class NewsletterScheduler {
             : panel('Idea para investigar','<p style="margin:0;color:#60766b;font-size:12px">Seguí resultados, valuaciones y eventos publicados antes de tomar decisiones.</p><a style="color:#087747" href="'+app+'/calendario">Abrir calendario de Finix</a>');
         const title = 'El cierre de mercado, en contexto', day = dateKey(now);
         const mood = marketData?.pulse ? '<p style="margin:0 0 8px;color:#415c4e;font-size:13px"><b>'+esc(marketData.pulse.label)+':</b> '+esc(marketData.pulse.summary)+'</p>' : '';
-        const message = articles.slice(0,12).map(a => (a.titleEs || a.title)+': '+(a.descriptionEs || a.description || '')+' ('+(a.url || a.sourceUrl)+')').join('\n\n') + '\n\nAgenda: ' + agendaItems.map(e=>e.title+' · '+e.date+' '+(e.url || '')).join('\n');
+        const message = articles.slice(0,12).map(a => a.title+': '+(a.description || '')+' ('+(a.url)+')').join('\n\n') + '\n\nAgenda: ' + agendaItems.map(e=>e.title+' · '+e.date+' '+(e.url || '')).join('\n');
         const html = layout('AFTER MARKET · CIERRE DE MERCADO',title,day+' · Resumen de la rueda argentina y global, después del cierre.',
             quotes + sectorHighlight +
             panel('El pulso de la rueda',mood+'<p style="margin:0;color:#60766b;font-size:12px">Cierre diario · noticias y variaciones observadas durante la rueda.</p>') +
@@ -207,29 +190,33 @@ export class NewsletterScheduler {
         const deepDive = chosen.map(e=>'<li style="padding:4px 0">'+esc(e.companyName)+' ('+esc(e.ticker)+') · '+esc(sectorFor(e.ticker,e.companyName))+'</li>').join('');
         const day = dateKey(now), title = 'Cuatro balances de la semana para analizar';
         const message = chosen.map(e=>e.companyName+' ('+e.ticker+'), '+e.date+': EPS '+(e.actualEps ?? 's/d')+', ingresos '+(e.actualRevenue ?? 's/d')+', capitalización '+(e.marketCap ?? 's/d')+' · '+e.sourceUrl).join('\n\n');
-        const html = layout('FINIX PRO · ANÁLISIS DE LOS VIERNES',title,day+' · Cuatro compañías de gran capitalización, de sectores distintos, que presentaron resultados esta semana.',
+        const html = layout('BALANCES · INFORME DE LOS VIERNES',title,day+' · Cuatro compañías de gran capitalización, de sectores distintos, que presentaron resultados esta semana.',
             cards+panel('Empresas para profundizar','<p style="margin:0 0 7px;color:#59627a;font-size:14px">Selección semanal priorizada por capitalización y diversificada por sector:</p><ul style="margin:0;padding-left:20px;color:#17332a;font-size:13px">'+deepDive+'</ul>')+
             '<p style="margin:18px 0 0;color:#777f96;font-size:12px">Los datos no publicados por la empresa o el proveedor se indican como no informados. Revisá cada fuente antes de sacar conclusiones. Este informe es informativo y no constituye una recomendación.</p><p style="margin:18px 0 0"><a style="display:inline-block;padding:12px 18px;background:#087747;border-radius:9px;color:white;text-decoration:none;font-weight:bold;font-size:14px" href="'+app+'/noticias">Seguir resultados en Finix →</a></p>');
         return {day,title,message,html,weekStart,weekEnd};
     }
 
-    @Cron('0 17 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
+    @Cron('*/10 17-21 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
     async daily() {
         if (process.env.FINIX_APPROVED_EMAILS_ENABLED !== 'true') return;
         try {
+            const key = 'finix-approved:daily:' + dateKey(new Date());
+            if (await this.prisma.proEmailCampaign.findUnique({ where: { sourceKey: key }, select: { id: true } })) return;
             const brief = await this.dailyBrief(new Date());
             if (!brief) { this.logger.warn('Boletín diario omitido: faltan noticias recientes.'); return; }
             await this.queue('finix-approved:daily:' + brief.day, 'DAILY', 'Finix | Cierre del mercado · ' + brief.day, brief.title, brief.message, brief.html);
         } catch { this.logger.error('No se pudo preparar el boletín diario.'); }
     }
 
-    @Cron('0 17 * * 5', { timeZone: 'America/Argentina/Buenos_Aires' })
+    @Cron('*/10 17-21 * * 5', { timeZone: 'America/Argentina/Buenos_Aires' })
     async friday() {
         if (process.env.FINIX_APPROVED_EMAILS_ENABLED !== 'true') return;
         try {
+            const key = 'finix-approved:weekly:' + dateKey(new Date());
+            if (await this.prisma.proEmailCampaign.findUnique({ where: { sourceKey: key }, select: { id: true } })) return;
             const brief = await this.weeklyBrief(new Date());
             if (!brief) { this.logger.warn('Informe semanal omitido: no hay cuatro resultados recientes con fuente verificable.'); return; }
-            await this.queue('finix-approved:weekly:' + brief.day, 'WEEKLY', 'Finix Pro | 4 resultados · ' + brief.day, brief.title, brief.message, brief.html);
+            await this.queue('finix-approved:weekly:' + brief.day, 'WEEKLY', 'Finix | 4 resultados · ' + brief.day, brief.title, brief.message, brief.html);
         } catch { this.logger.error('No se pudo preparar el boletín semanal.'); }
     }
 
@@ -259,7 +246,7 @@ export class NewsletterScheduler {
             .replace(' · cierre del ', ' · muestra del ');
         const results = await Promise.all([
             this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | After Market · ' + daily.day, text: daily.message, html: dailyHtml.replace('{{unsubscribe_url}}', app + '/settings') }),
-            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix Pro | Balances · semana ' + weekly.weekStart + ' al ' + weekly.weekEnd, text: weekly.message, html: weekly.html.replace('{{unsubscribe_url}}', app + '/settings') }),
+            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | Balances · semana ' + weekly.weekStart + ' al ' + weekly.weekEnd, text: weekly.message, html: weekly.html.replace('{{unsubscribe_url}}', app + '/settings') }),
         ]);
         return { sent: results.length === 2, recipient: normalized };
     }

@@ -1,3 +1,4 @@
+import { fundamentalOnly } from '../analysis/fundamental-visibility';
 import { AssetAnalysis, Prisma } from '@prisma/client';
 
 export const escapeEmail = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -8,6 +9,8 @@ export function emailUrl(value?: string | null) {
     return escapeEmail(url.href);
 }
 export function renderAnalysis(analysis: AssetAnalysis) {
+    const publicAnalysis = fundamentalOnly(analysis);
+    analysis = { ...publicAnalysis, executiveSummary: JSON.stringify(publicAnalysis.executiveSummary) } as AssetAnalysis;
     const labels: Record<string, string> = { executiveSummary: 'Resumen ejecutivo', businessDescription: 'Empresa', businessModel: 'Modelo de negocio', revenue: 'Ingresos', revenueGrowthYoY: 'Crecimiento interanual', eps: 'EPS', grossMargin: 'Margen bruto', operatingMargin: 'Margen operativo', netMargin: 'Margen neto', roe: 'ROE', roic: 'ROIC', freeCashFlow: 'Flujo de caja libre', peRatio: 'P/E', forwardPe: 'P/E futuro', evToEbitda: 'EV/EBITDA', estimatedFairValue: 'Valor razonable', cash: 'Efectivo', totalDebt: 'Deuda total', netDebt: 'Deuda neta', currentPrice: 'Precio', sma50: 'SMA 50', sma200: 'SMA 200', rsi: 'RSI', supports: 'Soportes', resistances: 'Resistencias', trend: 'Tendencia', competitorsData: 'Competidores', risksData: 'Riesgos', catalystsData: 'Catalizadores', scenariosData: 'Escenarios', valuationMethodology: 'Metodologia de valuacion', swotData: 'FODA', sources: 'Fuentes', legalDisclaimer: 'Aviso legal' };
     const renderValue = (value: unknown, depth = 0): string => {
         if (depth > 5 || value == null) return '';
@@ -36,7 +39,7 @@ export function renderAnalysis(analysis: AssetAnalysis) {
     ];
     let visibility: Record<string, boolean> = {};
     try { visibility = JSON.parse(analysis.sectionVisibility || '{}'); } catch { /* Legacy records have no visibility settings. */ }
-    return `<h2>${escapeEmail(analysis.companyName || analysis.symbol)}</h2>` + sections.filter(([, flag]) => visibility[flag] !== false).map(([title,, fields]) => {
+    return `<h2>${escapeEmail(analysis.companyName || analysis.symbol)}</h2>` + sections.filter(([, flag]) => flag !== 'showTechnical' && visibility[flag] !== false).map(([title,, fields]) => {
         const values = fields.split(' ').filter(key => analysis[key] != null && analysis[key] !== '');
         if (!values.length) return '';
         return `<h2 style="border-bottom:1px solid #d8e1dc;padding-bottom:8px">${title}</h2>` + values.map(key => `<h3>${labels[key] || escapeEmail(key.replace(/([A-Z])/g, ' $1'))}</h3><div>${renderValue(analysis[key])}</div>`).join('');

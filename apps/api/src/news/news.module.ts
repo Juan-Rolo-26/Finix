@@ -26,6 +26,6 @@ import { AuthModule } from '../auth/auth.module';
         NewsSlotsService,
         NewsSyncService,
     ],
-    exports: [NewsService, NewsSlotsService, NewsSyncService],
+    exports: [NewsService, NewsSlotsService, NewsSyncService, NewsTranslationService],
 })
 export class NewsModule { }
