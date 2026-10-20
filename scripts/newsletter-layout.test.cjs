@@ -101,3 +101,11 @@ test('legacy TradingView earnings missing URLs get their company source and dist
     assert.match(weekly.html, /Resultados en TradingView/);
     assert.match(weekly.html, /Comunicaciones/);
 });
+
+
+test('daily bulletin uses a labeled ETF reference when Finviz is unavailable',async()=>{
+ const {engine}=fixture();engine.market.getFinvizHeatmap=async()=>{throw Error('provider unavailable');};
+ engine.market.getQuotes=async symbols=>symbols.map((symbol,i)=>({inputSymbol:symbol,symbol,price:100,change:i/10,unavailable:false}));
+ let daily=await engine.dailyBrief(now);assert.match(daily.html,/Servicios públicos/);assert.match(daily.html,/11 ETF sectoriales/);assert.match(daily.html,/mainfund\/XLU/);assert.doesNotMatch(daily.html,/Fuente: Finviz/);
+ engine.market.getQuotes=async()=>[];daily=await engine.dailyBrief(now);assert.match(daily.html,/no informó una variación sectorial confiable/);
+});

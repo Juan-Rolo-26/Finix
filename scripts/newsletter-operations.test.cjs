@@ -50,3 +50,16 @@ test('bulk sends wait before exhaustion while preserving room for owner warnings
 }));
 test('unlimited quotas do not create false warnings',()=>quotaFixture({daily:{used:900,limit:null,resets_at:'2026-10-21T00:00:00Z'},monthly:{used:900,limit:null,resets_at:'2026-11-01T00:00:00Z'}},async(service,sent)=>{assert.equal((await service.bulkAllowance(5)).count,5);assert.equal(sent.length,0);}));
 test('quota sample is visibly a test rather than a false low-balance alarm',()=>quotaFixture(usage(40),async(service,sent)=>{await service.sendTestAlert();assert.match(sent[0].subject,/PRUEBA/);assert.match(sent[0].text,/No significa que la cuota esté por agotarse/);}));
+
+const {leadingSectorEtf,NEWSLETTER_SECTOR_ETFS}=require('../apps/api/dist/admin/newsletter-sector');
+const sectorQuotes=()=>Object.keys(NEWSLETTER_SECTOR_ETFS).map((ticker,i)=>({inputSymbol:'AMEX:'+ticker,symbol:'AMEX:'+ticker,price:100,change:i/10,updatedAt:now.toISOString(),unavailable:false}));
+test('sector fallback compares all eleven real ETF quotes and labels the fund reference',()=>{
+ const quotes=sectorQuotes(),leader=leadingSectorEtf(quotes);
+ assert.equal(leader.proxySymbol,'XLU');assert.equal(leader.name,'Servicios públicos');assert.equal(leader.perf,1);
+ assert.equal(leadingSectorEtf(quotes.slice(1)),null);
+ for(const patch of [{price:null},{price:0},{change:NaN},{unavailable:true},{symbol:'NASDAQ:FAKE'}])assert.equal(leadingSectorEtf(quotes.map((q,i)=>i===0?{...q,...patch}:q)),null);
+});
+test('sector fallback preserves negative and zero changes instead of inventing a rising sector',()=>{
+ const quotes=sectorQuotes().map(q=>({...q,change:-2}));quotes[0].change=-0.2;
+ assert.equal(leadingSectorEtf(quotes).perf,-0.2);quotes[0].change=0;assert.equal(leadingSectorEtf(quotes).perf,0);
+});
