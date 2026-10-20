@@ -42,11 +42,11 @@ export class NewsletterScheduler {
         });
         if (!articles.length) return null;
         const stories = articles.map((a, i) => {
-            const title = a.titleEs || a.title, description = (a.descriptionEs || a.description || '').trim(), link = href(a.sourceUrl || a.url);
+            const title = a.titleEs || a.title, description = (a.descriptionEs || a.description || '').trim(), link = href(a.url || a.sourceUrl);
             return '<tr><td style="padding:15px 0;border-top:1px solid #ececf3"><div style="font-size:11px;color:#7557f6;font-weight:bold;letter-spacing:1px">CLAVE ' + (i + 1) + '</div><h2 style="font-size:17px;line-height:1.35;margin:5px 0 7px;color:#18213b">' + (link ? '<a style="color:#18213b;text-decoration:none" href="' + link + '">' + esc(title) + '</a>' : esc(title)) + '</h2><p style="margin:0;color:#59627a;font-size:14px;line-height:1.55">' + esc(description || 'Abrí la fuente para consultar el detalle publicado.') + '</p><div style="margin-top:8px;font-size:12px;color:#858ba0">' + esc(a.sourceName || 'Fuente') + (link ? ' · <a style="color:#6847f5" href="' + link + '">Leer fuente →</a>' : '') + '</div></td></tr>';
         }).join('');
         const day = dateKey(now), title = 'Lo que mueve al mercado hoy';
-        const message = articles.map(a => (a.titleEs || a.title) + ': ' + (a.descriptionEs || a.description || '') + ' (' + (a.sourceUrl || a.url) + ')').join('\n\n');
+        const message = articles.map(a => (a.titleEs || a.title) + ': ' + (a.descriptionEs || a.description || '') + ' (' + (a.url || a.sourceUrl) + ')').join('\n\n');
         const html = layout('MERCADO DE HOY', title, day + ' · Una lectura breve para empezar el día con contexto.',
             panel('El mapa de hoy', '<p style="margin:0;color:#59627a;font-size:14px">Cinco claves recientes seleccionadas por relevancia, con enlace a cada fuente.</p>') +
             '<table role="presentation" width="100%" cellspacing="0" cellpadding="0">' + stories + '</table><p style="margin:20px 0 0"><a style="display:inline-block;padding:12px 18px;background:#5d35e8;border-radius:9px;color:white;text-decoration:none;font-weight:bold;font-size:14px" href="' + app + '/noticias">Ver mercado en Finix&nbsp; →</a></p>');
@@ -60,7 +60,7 @@ export class NewsletterScheduler {
             orderBy: [{ publishedAt: 'desc' }, { relevanceScore: 'desc' }], take: 1000,
         });
         const eligible = articles.filter(a => {
-            let host = ''; try { host = new URL(a.sourceUrl || a.url).hostname; } catch { return false; }
+            let host = ''; try { host = new URL(a.url || a.sourceUrl).hostname; } catch { return false; }
             const title = a.titleEs || a.title;
             const summary = title + ' ' + (a.descriptionEs || a.description || '');
             const trustedSource = trusted.test(host) || /investor|ir\./i.test(host);
@@ -72,12 +72,12 @@ export class NewsletterScheduler {
         const reports = [...companyReports, ...eligible.filter(a => !companyReports.includes(a))].slice(0, 4);
         if (reports.length !== 4) return null;
         const cards = reports.map((a, index) => {
-            const title = a.titleEs || a.title, description = (a.descriptionEs || a.description || '').trim(), link = href(a.sourceUrl || a.url);
+            const title = a.titleEs || a.title, description = (a.descriptionEs || a.description || '').trim(), link = href(a.url || a.sourceUrl);
             return panel('INFORME ' + String(index + 1).padStart(2, '0') + ' · ' + esc(shortDate(a.publishedAt)) + ' · ' + esc(a.sourceName || 'Fuente'),
                 '<h2 style="margin:0 0 8px;font-size:18px;line-height:1.35;color:#18213b">' + (link ? '<a style="color:#18213b;text-decoration:none" href="' + link + '">' + esc(title) + '</a>' : esc(title)) + '</h2><p style="margin:0 0 12px;color:#59627a;font-size:14px;line-height:1.6">' + esc(description || 'La publicación original contiene el detalle del trimestre.') + '</p><div style="padding:11px 13px;border-radius:9px;background:#f6f4ff;color:#4f4b69;font-size:13px"><b style="color:#5437cb">Para el análisis:</b> contrastar ingresos y márgenes, generación de caja, valuación y perspectivas; tomar como dato solo lo informado por la compañía o la fuente.</div>' + (link ? '<p style="margin:12px 0 0"><a style="color:#6847f5;font-size:13px;font-weight:bold" href="' + link + '">Abrir fuente original&nbsp; →</a></p>' : ''));
         }).join('');
         const day = dateKey(now), title = 'Cuatro balances y resultados para mirar';
-        const message = reports.map(a => (a.titleEs || a.title) + ': ' + (a.descriptionEs || a.description || '') + ' (' + (a.sourceUrl || a.url) + ')').join('\n\n');
+        const message = reports.map(a => (a.titleEs || a.title) + ': ' + (a.descriptionEs || a.description || '') + ' (' + (a.url || a.sourceUrl) + ')').join('\n\n');
         const deepDive = reports.map(a => '<li style="padding:4px 0">' + esc(a.titleEs || a.title) + '</li>').join('');
         const html = layout('FINIX PRO · INFORME DE LOS VIERNES', title, day + ' · Resultados recientes de empresas grandes, con fuentes para seguir leyendo.',
             cards + panel('Empresas para profundizar', '<p style="margin:0 0 7px;color:#59627a;font-size:14px">Ideas para una revisión fundamental más completa:</p><ul style="margin:0;padding-left:20px;color:#18213b;font-size:13px">' + deepDive + '</ul>') +
