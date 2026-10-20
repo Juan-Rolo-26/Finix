@@ -51,6 +51,10 @@ const RANGE_DAYS: Record<string, number> = {
     'ALL': 0,    // From first transaction
 };
 
+const portfolioMonthKey = (date: Date | string) => new Date(new Date(date).getTime() - 3 * 3600000).toISOString().slice(0, 7);
+
+const portfolioMonthEnd = (year: number, monthIndex: number) => Date.UTC(year, monthIndex + 1, 1, 3) - 1;
+
 const MONTH_LABELS_ES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
 
 @Injectable()
@@ -515,15 +519,15 @@ export class PortfolioPerformanceService {
     // ── 2. Performance series ───────────────────────────────────────────────────
 
     private readonly performanceRequests = new TtlCache<any>(50);
-    async getPerformance(portfolioId: string, userId: string, range = '1M', currency = 'USD') {
+    async getPerformance(portfolioId: string, userId: string, range = '1M', currency = 'USD', monthly = false) {
         await this.assertOwner(portfolioId, userId);
         // Share simultaneous metrics/benchmark work only. Authorization is checked
         // for every caller and no completed private valuation is kept after a write.
-        return this.performanceRequests.getOrLoad(JSON.stringify([portfolioId, userId, range, currency]), 0,
-            () => this.loadPerformance(portfolioId, range, currency));
+        return this.performanceRequests.getOrLoad(JSON.stringify([portfolioId, userId, range, currency, monthly]), 0,
+            () => this.loadPerformance(portfolioId, range, currency, monthly));
     }
 
-    private async loadPerformance(portfolioId: string, range: string, currency: string) {
+    private async loadPerformance(portfolioId: string, range: string, currency: string, monthly = false) {
         const portfolio = await this.prisma.portfolio.findUnique({
             relationLoadStrategy: 'join',
             where: { id: portfolioId },
@@ -562,16 +566,31 @@ export class PortfolioPerformanceService {
         }
 
         const firstTxDate = new Date(txs[0].date);
-        const { start: requestedStart } = this.resolveRange(range, firstTxDate);
+        const monthParts = portfolioMonthKey(now).split('-').map(Number);
+        // Monthly reporting needs the previous close and only the last twelve
+        // calendar months. A missing older quote must not block this month's return.
+        const requestedStart = monthly
+            ? new Date(portfolioMonthEnd(monthParts[0], monthParts[1] - 13))
+            : this.resolveRange(range, firstTxDate).start;
         const start = new Date(Math.max(requestedStart.getTime(), firstTxDate.getTime()));
         const historicalPriceMaps = await this.getHistoricalPriceMaps(
-            txs.map((tx) => this.assetTicker(tx.asset)), range, now,
+            txs.filter(tx => tx.asset).map((tx) => this.assetTicker(tx.asset)), monthly ? '1Y' : range, now,
         );
 
         // Daily (hourly for 1D) valuations and every operation share exact
         // timestamps with SPY. Never substitute today's price for a past day.
         const stepMs = range === '1D' ? 3600000 : 86400000;
         const timestamps = new Set<number>([start.getTime(), now.getTime()]);
+        // End-of-month valuations isolate each calendar month's market change.
+        // Buenos Aires is UTC-3; a UTC month boundary would include the wrong evening.
+        if (monthly) {
+            for (let year = start.getUTCFullYear(); year <= now.getUTCFullYear(); year++) {
+                for (let month = 0; month < 12; month++) {
+                    const close = portfolioMonthEnd(year, month);
+                    if (close > start.getTime() && close < now.getTime()) timestamps.add(close);
+                }
+            }
+        }
         for (let time = start.getTime() + stepMs; time < now.getTime(); time += stepMs) timestamps.add(time);
         for (const tx of txs) {
             const time = new Date(tx.date).getTime();
@@ -594,6 +613,19 @@ export class PortfolioPerformanceService {
         const series: PerformancePoint[] = [];
         let cumulativeReturnFactor = 1;
         let previousValue = 0;
+        let previousValuationValid = true;
+        let previousTimestamp = start.getTime();
+        const unavailableMonths = new Set<string>();
+        const markMissingPeriod = (timestamp: number) => {
+            // The missing interval can cross a calendar boundary. Invalidate
+            // every affected month instead of reporting only its observed gains.
+            for (let time = previousTimestamp + 1; time < timestamp; time += 86400000) {
+                unavailableMonths.add(portfolioMonthKey(new Date(time)));
+            }
+            unavailableMonths.add(portfolioMonthKey(new Date(timestamp)));
+            previousTimestamp = timestamp;
+            previousValuationValid = false;
+        };
 
         for (const timestamp of [...timestamps].sort((a, b) => a - b)) {
             const pointDate = new Date(timestamp);
@@ -623,6 +655,7 @@ export class PortfolioPerformanceService {
                 executionPrices,
             );
             if (!Number.isFinite(assetsValue)) {
+                if (monthly) { markMissingPeriod(timestamp); continue; }
                 return { range, currency, startDate: start.toISOString(), series: [], markers: [], insufficientData: true,
                     message: 'No hay precios históricos suficientes para calcular un rendimiento fiable en este período.' };
             }
@@ -639,13 +672,14 @@ export class PortfolioPerformanceService {
             const prevPoint = series[series.length - 1];
             let returnPct = 0;
             let dailyReturn: number | undefined;
-            if (prevPoint) {
+            if (prevPoint && previousValuationValid) {
                 const beforeTx = pastTx.filter(tx => new Date(tx.date) < pointDate);
                 const beforeAssetsValue = this.computeValueFromHoldings(
                     this.computeHoldingsAtDate(beforeTx, pointDate), quoteMap, historicalPriceMaps,
                     pointDate, currency, cclRate, true, timestamp === now.getTime(), executionPrices,
                 );
                 if (!Number.isFinite(beforeAssetsValue)) {
+                    if (monthly) { markMissingPeriod(timestamp); continue; }
                     return { range, currency, startDate: start.toISOString(), series: [], markers: [], insufficientData: true,
                         message: 'No hay precios históricos suficientes para calcular un rendimiento fiable en este período.' };
                 }
@@ -663,6 +697,10 @@ export class PortfolioPerformanceService {
                 dailyReturn = (periodFactor - 1) * 100;
             }
 
+            if (!previousValuationValid) {
+                markMissingPeriod(timestamp);
+                cumulativeReturnFactor = 1;
+            }
             series.push({
                 date: dateStr,
                 value: Number(value.toFixed(2)),
@@ -672,6 +710,8 @@ export class PortfolioPerformanceService {
                 dailyReturn: dailyReturn !== undefined ? Number(dailyReturn.toFixed(4)) : undefined,
             });
             previousValue = value;
+            previousValuationValid = true;
+            previousTimestamp = timestamp;
         }
 
         // Build markers for significant operations
@@ -695,11 +735,12 @@ export class PortfolioPerformanceService {
                 series,
                 markers,
                 insufficientData: true,
+                unavailableMonths: [...unavailableMonths],
                 message: 'Datos insuficientes para el rango seleccionado.',
             };
         }
 
-        return { range, currency, startDate: start.toISOString(), valuationMessage, series, markers, insufficientData: false };
+        return { range, currency, startDate: start.toISOString(), valuationMessage, series, markers, insufficientData: false, unavailableMonths: [...unavailableMonths] };
     }
 
     // ── 3. Allocation ───────────────────────────────────────────────────────────
@@ -818,33 +859,34 @@ export class PortfolioPerformanceService {
     // ── 5. Monthly returns ──────────────────────────────────────────────────────
 
     async getReturns(portfolioId: string, userId: string, currency = 'USD') {
-        // Use the same historical closes and flow-adjusted returns as the
-        // portfolio/benchmark curves, never today's quote for a past month.
-        const performance = await this.getPerformance(portfolioId, userId, 'ALL', currency);
-        // Keep usable daily valuations even if another point in the requested
-        // range is missing. This lets the current month show its partial return
-        // instead of hiding it until the entire historical range is complete.
+        // Same flow-adjusted engine as the benchmark curve, with independent
+        // calendar-month coverage. A historical gap invalidates its own months,
+        // never turns unavailable data into zero, and cannot hide later months.
+        const performance = await this.getPerformance(portfolioId, userId, 'ALL', currency, true);
         if (!performance.series.length) return [];
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const months = new Map<string, { factor: number; observations: number; hasBalance: boolean; hasOpeningCapital: boolean }>();
-        const movementMonths = new Set((performance.markers ?? []).map(marker => marker.date.slice(0, 7)));
+        const unavailable = new Set('unavailableMonths' in performance ? performance.unavailableMonths : []);
+        const currentMonth = portfolioMonthKey(new Date());
+        const months = new Map<string, { factor: number; observations: number; hasBalance: boolean; start: string; end: string }>();
+        let previousPoint: PerformancePoint | undefined;
         for (const point of performance.series) {
-            const key = point.date.slice(0, 7);
-            const month = months.get(key) ?? { factor: 1, observations: 0, hasBalance: false, hasOpeningCapital: false };
-            month.hasBalance ||= point.value > 1e-6;
-            month.hasOpeningCapital ||= point.value > 1e-6 && point.invested > 1e-6;
-            if ('dailyReturn' in point && typeof point.dailyReturn === 'number' && Number.isFinite(point.dailyReturn)) {
+            const key = portfolioMonthKey(point.date);
+            const month = months.get(key) ?? { factor: 1, observations: 0, hasBalance: false, start: previousPoint?.date ?? point.date, end: point.date };
+            month.hasBalance ||= point.value > 1e-6 || (previousPoint?.value ?? 0) > 1e-6;
+            month.end = point.date;
+            if (typeof point.dailyReturn === 'number' && Number.isFinite(point.dailyReturn)) {
                 month.factor *= Math.max(0, 1 + point.dailyReturn / 100);
                 month.observations += 1;
             }
             months.set(key, month);
+            previousPoint = point;
         }
         return [...months.entries()]
-            .filter(([key, month]) => (month.observations > 0 && (month.hasBalance || movementMonths.has(key) || Math.abs(month.factor - 1) > 1e-8))
-                || (key === currentMonth && month.hasOpeningCapital))
+            .filter(([key, month]) => !unavailable.has(key) && month.observations > 0 && month.hasBalance)
+            .slice(-12)
             .map(([monthKey, month]) => {
                 const [year, monthNumber] = monthKey.split('-').map(Number);
                 return { monthKey, label: MONTH_LABELS_ES[monthNumber - 1], year, month: monthNumber, isPartial: monthKey === currentMonth,
+                    periodStart: month.start, periodEnd: month.end,
                     value: Number(((month.factor - 1) * 100).toFixed(4)) };
             });
     }
