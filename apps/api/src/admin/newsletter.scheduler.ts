@@ -57,13 +57,19 @@ export class NewsletterScheduler {
         const articles = await this.prisma.newsArticle.findMany({
             where: { isActive: true, isPublished: true, status: 'PUBLISHED', publishedAt: { gte: new Date(now.getTime() - 8 * 86400000) } },
             select: { title: true, titleEs: true, description: true, descriptionEs: true, sourceName: true, sourceUrl: true, url: true, publishedAt: true },
-            orderBy: [{ relevanceScore: 'desc' }, { publishedAt: 'desc' }], take: 200,
+            orderBy: [{ publishedAt: 'desc' }, { relevanceScore: 'desc' }], take: 1000,
         });
-        const reports = articles.filter(a => {
+        const eligible = articles.filter(a => {
             let host = ''; try { host = new URL(a.sourceUrl || a.url).hostname; } catch { return false; }
-            const text = (a.titleEs || a.title) + ' ' + (a.descriptionEs || a.description || '');
-            return companies.test(a.titleEs || a.title) && earnings.test(text) && (trusted.test(host) || /investor|ir\./i.test(host));
-        }).slice(0, 4);
+            const title = a.titleEs || a.title;
+            const summary = title + ' ' + (a.descriptionEs || a.description || '');
+            const trustedSource = trusted.test(host) || /investor|ir\./i.test(host);
+            const companyReport = companies.test(title) && earnings.test(summary);
+            const marketEarningsAnalysis = /\b(stocks?|shares?)\b/i.test(title) && earnings.test(title);
+            return trustedSource && (companyReport || marketEarningsAnalysis);
+        });
+        const companyReports = eligible.filter(a => companies.test(a.titleEs || a.title) && earnings.test((a.titleEs || a.title) + ' ' + (a.descriptionEs || a.description || '')));
+        const reports = [...companyReports, ...eligible.filter(a => !companyReports.includes(a))].slice(0, 4);
         if (reports.length !== 4) return null;
         const cards = reports.map((a, index) => {
             const title = a.titleEs || a.title, description = (a.descriptionEs || a.description || '').trim(), link = href(a.sourceUrl || a.url);
