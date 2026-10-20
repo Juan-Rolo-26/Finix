@@ -23,6 +23,13 @@ export class EmailMarketingService {
             status: 'ACTIVE', emailVerified: true, ...notTest,
             OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { marketing: true, product: true } } }],
         };
+        if (audience === 'DAILY' || audience === 'WEEKLY') {
+            const preference = audience === 'DAILY' ? { daily: true } : { weekly: true };
+            return {
+                status: 'ACTIVE', emailVerified: true, ...notTest,
+                OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { ...preference, marketing: true } } }],
+            };
+        }
         const base = {
             status: 'ACTIVE',
             emailVerified: true,
@@ -60,7 +67,7 @@ export class EmailMarketingService {
         message: string;
         contentHtml: string;
         createdById: string;
-        audience?: 'OFFICIAL';
+        audience?: 'OFFICIAL' | 'DAILY' | 'WEEKLY';
     }) {
         const audience = input.audience || 'OFFICIAL';
         const recipientCount = await this.prisma.user.count({ where: this.recipientWhere(audience) });
