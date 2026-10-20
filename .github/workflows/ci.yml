@@ -189,6 +189,8 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: /api
+      - name: Remove Windows zone metadata from build output
+        run: find apps/web/dist -type f -name '*:Zone.Identifier' -delete
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist
