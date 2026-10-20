@@ -8,6 +8,7 @@ import { NewsletterNewsService } from './newsletter-news.service';
 import { NewsTranslationService } from '../news/news-translation.service';
 import { getCedearDefinition } from '../market/cedear.data';
 import { NEWSLETTER_SECTOR_ETFS, leadingSectorEtf } from './newsletter-sector';
+import { PREMARKET_EMAIL_GROUPS, newsletterPremarket } from './newsletter-premarket';
 import { newsletterLayout as layout, newsletterPanel as panel, newsletterCompanyHeading } from './newsletter-layout';
 
 const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -37,7 +38,7 @@ export class NewsletterScheduler {
     }
 
     private async dailyBrief(now: Date) {
-        const [highlights, marketData, macroEvents, earnings, technologyQuotes, semiconductorQuotes, sectorMap] = await Promise.all([
+        const [highlights, marketData, macroEvents, earnings, technologyQuotes, semiconductorQuotes, sectorMap, premarketData] = await Promise.all([
             this.news.getHighlights(now),
             this.market.getDashboard().catch(() => null),
             this.prisma.marketCalendarEvent.findMany({
@@ -53,7 +54,11 @@ export class NewsletterScheduler {
             this.market.getQuotes(['AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA']).catch(() => []),
             this.market.getQuotes(['NVDA','AVGO','AMD','QCOM','INTC','MU','TSM']).catch(() => []),
             this.market.getFinvizHeatmap('d1').catch(() => null),
+            this.market.getPremarket(),
         ]);
+        const premarketSymbols = PREMARKET_EMAIL_GROUPS.flatMap(([key]) => (premarketData[key] || []).map((asset: {symbol:string}) => asset.symbol));
+        const regularQuotes = premarketSymbols.length ? await this.market.getQuotes([...new Set<string>(premarketSymbols)]).catch(() => []) : [];
+        const premarket = newsletterPremarket(premarketData, regularQuotes, app);
         const local = highlights.argentina;
         const global = highlights.unitedStates;
         const articles = [...local, ...global];
@@ -110,13 +115,13 @@ export class NewsletterScheduler {
             : panel('Idea para investigar','<p style="margin:0;color:#60766b;font-size:12px">Seguí resultados, valuaciones y eventos publicados antes de tomar decisiones.</p><a style="color:#087747" href="'+app+'/calendario">Abrir calendario de Finix</a>');
         const title = 'El cierre de mercado, en contexto', day = dateKey(now);
         const mood = marketData?.pulse ? '<p style="margin:0 0 8px;color:#415c4e;font-size:13px"><b>'+esc(marketData.pulse.label)+':</b> '+esc(marketData.pulse.summary)+'</p>' : '';
-        const message = articles.slice(0,12).map(a => a.title+': '+(a.description || '')+' ('+(a.url)+')').join('\n\n') + '\n\nAgenda: ' + agendaItems.map(e=>e.title+' · '+e.date+' '+(e.url || '')).join('\n');
+        const message = articles.slice(0,12).map(a => a.title+': '+(a.description || '')+' ('+(a.url)+')').join('\n\n') + '\n\nAgenda: ' + agendaItems.map(e=>e.title+' · '+e.date+' '+(e.url || '')).join('\n') + '\n\n' + premarket.text;
         const html = layout('AFTER MARKET · CIERRE DE MERCADO',title,day+' · Resumen de la rueda argentina y global, después del cierre.',
             quotes + sectorHighlight +
             panel('El pulso de la rueda',mood+'<p style="margin:0;color:#60766b;font-size:12px">Cierre diario · noticias y variaciones observadas durante la rueda.</p>') +
             storyPanel('Noticias destacadas · Argentina',local,'No se encontraron cuatro noticias argentinas recientes con fuente verificable.') +
             movers + storyPanel('Noticias destacadas · Estados Unidos',global,'No se encontraron cuatro noticias recientes de EE. UU. con fuente verificable.') +
-            agenda + investmentPanel +
+            agenda + investmentPanel + premarket.html +
             '<p style="margin:16px 0 0"><a style="display:inline-block;padding:11px 16px;background:#087747;border-radius:8px;color:white;text-decoration:none;font-weight:bold;font-size:13px" href="'+app+'/market">Ver mercados en Finix</a></p>');
         return { day, title, message, html };
     }

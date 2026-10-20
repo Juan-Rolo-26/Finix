@@ -10,6 +10,7 @@ import {
 import { renderEducationText as renderMarkdownText, EducationTextBlock, EducationTable } from '@/components/education/EducationText';
 import { apiFetch } from '@/lib/api';
 import { EducationalWidgetContainer } from '@/components/education/InteractiveWidgets';
+import { removeIllustratedLessonCharts } from '@/lib/educationCharts';
 
 interface TocItem {
     id: string;
@@ -24,11 +25,12 @@ export default function EducationArticlePage() {
     const [article, setArticle] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeHeadingId, setActiveHeadingId] = useState<string>('');
+    const lessonContent = useMemo(() => removeIllustratedLessonCharts(article?.content || ''), [article?.content]);
 
     // Extract table of contents headings
     const tocItems: TocItem[] = useMemo(() => {
         if (!article?.content) return [];
-        const lines = article.content.split('\n');
+        const lines = lessonContent.split('\n');
         const items: TocItem[] = [];
         lines.forEach((line: string, index: number) => {
             if (line.startsWith('### ')) {
@@ -38,7 +40,7 @@ export default function EducationArticlePage() {
             }
         });
         return items;
-    }, [article?.content]);
+    }, [lessonContent]);
 
     // Dynamic SEO Metadata and JSON-LD Structured Data
     useEffect(() => {
@@ -330,7 +332,7 @@ export default function EducationArticlePage() {
                                 <div className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-1">
                                     <Sparkles className="w-3.5 h-3.5" />
                                     {" "}<FinixUiText text={"Laboratorio Interactivo Finix"} />{" "}</div>
-                                <EducationalWidgetContainer widgetKey={article.interactiveWidget} />
+                                <EducationalWidgetContainer widgetKey={article.interactiveWidget} articleSlug={article.slug} />
                             </section>
                         )}
 
@@ -347,7 +349,7 @@ export default function EducationArticlePage() {
 
                         {/* BODY CONTENT (MARKDOWN) */}
                         <div className="prose prose-zinc max-w-none space-y-5 text-base leading-[1.8] text-foreground/90 dark:prose-invert sm:text-lg">
-                            {article.content.split('\n\n').map((block: string, idx: number, blocks: string[]) => {
+                            {lessonContent.split('\n\n').map((block: string, idx: number, blocks: string[]) => {
                                 const previousCaption = blocks[idx - 1]?.match(/^!\[([^\]]*)\]\(/)?.[1];
                                 if (previousCaption && block.trim() === previousCaption) return null;
                                 if (block.startsWith('### ')) {

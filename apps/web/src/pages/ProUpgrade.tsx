@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 
 const FEATURES = [
-    'Datos de mercado y Pre-Market organizados.',
+    'Datos de mercado organizados.',
     'Mapas de calor y filtros por sector.',
     'Portafolios y métricas de seguimiento.',
     'Balances, múltiplos y herramientas de análisis.',

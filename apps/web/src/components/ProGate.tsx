@@ -36,14 +36,14 @@ interface SectionInfo {
 
 const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
     market: {
-        badge: 'MERCADOS Y PRE-MARKET',
+        badge: 'MERCADOS',
         icon: LineChart,
         defaultTitle: 'Mercados en vivo para seguir mejor la rueda',
-        defaultDesc: 'Consultá cotizaciones, Pre-Market, mapa de calor y filtros técnicos en un mismo espacio.',
+        defaultDesc: 'Consultá cotizaciones, mapa de calor y filtros técnicos en un mismo espacio.',
         features: [
             {
-                title: 'Pre-Market y cotizaciones',
-                desc: 'Revisá precios de mercado y datos de Pre-Market según la disponibilidad de cada fuente.',
+                title: 'Cotizaciones de mercado',
+                desc: 'Revisá precios y variaciones de mercado según la disponibilidad de cada fuente.',
             },
             {
                 title: 'Mapa de calor del S&P 500',
@@ -198,7 +198,7 @@ const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
         defaultDesc: 'Accedé a más datos, filtros y herramientas para analizar mercados y empresas por tu cuenta.',
         features: [
             {
-                title: 'Mercados y Pre-Market',
+                title: 'Mercados',
                 desc: 'Cotizaciones, mapa de calor y filtros para explorar la rueda.',
             },
             {
@@ -218,7 +218,7 @@ const SECTION_DATA: Record<ProSectionType, SectionInfo> = {
 };
 
 const ALL_SECTIONS_OVERVIEW = [
-    { name: 'Mercados', icon: LineChart, desc: 'Cotizaciones, Pre-Market, mapa de calor y filtros técnicos.' },
+    { name: 'Mercados', icon: LineChart, desc: 'Cotizaciones, mapa de calor y filtros técnicos.' },
     { name: 'Portafolios', icon: Briefcase, desc: 'Posiciones, métricas de rendimiento y comparación con el SPY.' },
     { name: 'Análisis', icon: Layers, desc: 'Balances, múltiplos y modelos DCF para revisar empresas.' },
     { name: 'Noticias', icon: Newspaper, desc: 'Noticias ordenadas por categoría, empresa y activo.' },

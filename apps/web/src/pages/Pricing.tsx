@@ -56,7 +56,7 @@ const PLANS: PlanItem[] = [
             { text: 'Seguir a otros inversores', included: true },
             { text: 'Unite a comunidades gratuitas', included: true },
             { text: 'Ver portafolios públicos', included: true },
-            { text: 'Cotizaciones en tiempo real y Pre-Market', included: false },
+            { text: 'Cotizaciones de mercado', included: false },
             { text: 'Modelos de Valuación DCF & ROIC vs WACC', included: false },
             { text: 'Métricas TWR/XIRR y Benchmark SPY', included: false },
             { text: 'Alertas de mercado 24/7 multicanal', included: false },
@@ -73,7 +73,7 @@ const PLANS: PlanItem[] = [
         priceNote: 'Precio mensual informado antes del checkout',
         features: [
             { text: 'Todo lo del plan Gratis', included: true },
-            { text: 'Mercados y Pre-Market: fuente y sesión de referencia visibles; corte a las 09:30 de Nueva York', included: true },
+            { text: 'Mercados: cotizaciones, mapa de calor y filtros con fuente y sesión de referencia visibles', included: true },
             { text: 'Mapa de Calor Institucional S&P 500 y CEDEARs con filtros sectoriales GICS', included: true },
             { text: 'Lentes Técnicas Semanales Multimétricas (MACD impulso, RSI Semanal 45/55, ADX)', included: true },
             { text: 'Portafolios múltiples ilimitados con retornos TWR y XIRR, Sharpe Ratio y Benchmark SPY', included: true },

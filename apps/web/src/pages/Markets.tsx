@@ -20,7 +20,6 @@ import {
     Flame,
     Building2,
     Sparkles,
-    Clock,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InvestorQuote } from '@/components/common/InvestorQuote';
@@ -40,7 +39,6 @@ import { MarketChartHeader } from '@/components/markets/MarketChartHeader';
 import MarketDashboard, {
     type MarketDashboardData,
 } from '@/components/markets/MarketDashboard';
-const PreMarketSection = lazy(() => import('@/components/markets/PreMarketSection'));
 const MarketHeatmap = lazy(() => import('@/components/markets/MarketHeatmap'));
 const ValueCreationHeatmap = lazy(() => import('@/components/markets/ValueCreationHeatmap'));
 const OpportunityScreener = lazy(() => import('@/components/markets/OpportunityScreener'));
@@ -358,12 +356,6 @@ export default function Markets() {
                             </span>
                             <span>{t.markets.tabs.overview}</span>
                         </TabsTrigger>
-                        <TabsTrigger value="premarket" className="market-tab">
-                            <span className="market-tab-icon">
-                                <Clock className="h-3.5 w-3.5" />
-                            </span>
-                            <span>{""}<FinixUiText text={"Pre-Market"} />{""}</span>
-                        </TabsTrigger>
                         <TabsTrigger value="heatmap" className="market-tab">
                             <span className="market-tab-icon">
                                 <Flame className="h-3.5 w-3.5" />
@@ -402,15 +394,6 @@ export default function Markets() {
                             loading={isDashboardLoading}
                             onSelectSymbol={handleOpenMarketSymbol}
                             onRefresh={() => fetchDashboardRef.current?.(true)}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="premarket" className="space-y-4">
-                        <PreMarketSection
-                            onSelectSymbol={(sym) => {
-                                handleOpenMarketSymbol(sym);
-                                setActiveTab('chart');
-                            }}
                         />
                     </TabsContent>
 
