@@ -27,7 +27,12 @@ export class MailService {
     }
 
     private getEmailFrom() {
-        return process.env.EMAIL_FROM || 'Finix <onboarding@resend.dev>';
+        const configured = process.env.EMAIL_FROM?.trim() || 'onboarding@resend.dev';
+        const address = (configured.match(/<([^>]+)>/)?.[1] || configured).trim();
+        if (/[\r\n]/.test(configured) || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(address)) {
+            throw new BadRequestException('La identidad de correo de Finix no está configurada correctamente.');
+        }
+        return `Finix <${address}>`;
     }
 
     private getContactEmailTo() {

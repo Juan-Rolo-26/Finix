@@ -408,6 +408,8 @@ export class CalendarProviderService implements ICalendarProvider, IEarningsProv
                             ticker, marketCap, isSP500: this.isSP500Constituent(ticker),
                         }),
                         source: 'TradingView Official Scanner (NASDAQ/NYSE/AMEX)',
+                        sourceUrl: /^((NASDAQ|NYSE|AMEX):)[A-Z0-9.-]+$/i.test(row.s || '')
+                            ? `https://www.tradingview.com/symbols/${row.s.replace(':', '-')}/financials-earnings/` : undefined,
                         sourceType: 'AUTOMATIC' as const, isPublished: true,
                     };
                     if (nextDate) {

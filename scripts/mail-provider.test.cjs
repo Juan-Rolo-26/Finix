@@ -83,3 +83,13 @@ test('local fallback cannot run with a remote database or production', async () 
         await fixture(env, async ({ service, logs, smtp, requests }) => { await assert.rejects(service.sendEmail(email), /local database|non-production/); assert.equal(smtp.length + requests.length, 0); assert.equal(logs.length, 0); });
     }
 });
+
+
+test('sender display name is always Finix without changing the configured sender address', () => fixture({ MAIL_PROVIDER: 'smtp', SMTP_HOST: 'smtp.example.invalid', EMAIL_FROM: 'Old Name <news@finixarg.com>' }, async ({ service, smtp }) => {
+    await service.sendEmail(email);
+    assert.equal(smtp[0].submitted.from, 'Finix <news@finixarg.com>');
+}));
+test('bare sender address receives the Finix display name for Resend', () => fixture({ MAIL_PROVIDER: 'resend', RESEND_API_KEY: 'fake-api-token', EMAIL_FROM: 'news@finixarg.com' }, async ({ service, requests }) => {
+    await service.sendEmail(email);
+    assert.equal(JSON.parse(requests[0][1].body).from, 'Finix <news@finixarg.com>');
+}));

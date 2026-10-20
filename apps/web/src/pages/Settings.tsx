@@ -1377,6 +1377,9 @@ export default function Settings() {
                                     className="gap-2"
                                 >
                                     {isSavingPrivacy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}{ui("Guardar Privacidad")} </Button>
+                                <Button variant="outline" onClick={() => window.dispatchEvent(new Event('finix-open-cookie-preferences'))}>
+                                    {ui("Preferencias de cookies")}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>

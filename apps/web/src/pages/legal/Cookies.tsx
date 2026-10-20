@@ -283,7 +283,7 @@ export default function Cookies() {
                                                 <td className="py-3 pr-4 font-mono text-foreground font-medium">{""}<FinixUiText text={"finix_cookie_consent"} />{""}</td>
                                                 <td className="py-3 pr-4">{""}<FinixUiText text={"localStorage"} />{""}</td>
                                                 <td className="py-3 pr-4">{""}<FinixUiText text={"Registro de preferencias de cookies del usuario"} />{""}</td>
-                                                <td className="py-3">{""}<FinixUiText text={"1 año"} />{""}</td>
+                                                <td className="py-3">{""}<FinixUiText text={"Hasta cambiar tus preferencias o borrar el almacenamiento del navegador"} />{""}</td>
                                             </tr>
                                             <tr>
                                                 <td className="py-3 pr-4 font-mono text-foreground font-medium">{""}<FinixUiText text={"finix_token / finix_refresh_token"} />{""}</td>
@@ -303,6 +303,9 @@ export default function Cookies() {
                             </Section>
 
                             <Section id="como-gestionar" title="10. Cómo gestionar tus preferencias">
+                                <button type="button" onClick={() => window.dispatchEvent(new Event('finix-open-cookie-preferences'))} className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground">
+                                    <FinixUiText text="Abrir preferencias de cookies" />
+                                </button>
                                 <p>
                                     {" "}<FinixUiText text={"Podés gestionar las preferencias de almacenamiento directamente desde la Plataforma. Si aparece el banner de cookies cuando ingresás por primera vez, podés:"} />{" "}</p>
                                 <ul className="list-disc pl-5 space-y-1.5">

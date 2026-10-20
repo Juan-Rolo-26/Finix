@@ -892,6 +892,7 @@ export class CalendarService {
                         earningsImpactScore: item.earningsImpactScore,
                         marketReaction: item.marketReaction ?? null,
                         source: 'TradingView Official Scanner',
+                        sourceUrl: item.sourceUrl,
                         isPublished: true,
                     };
                     const existingId = existingByKey.get(`${item.ticker.toUpperCase()}|${item.date}`);

@@ -22,8 +22,8 @@ function loadSavedConsent(): { decided: boolean; prefs: CookiePreferences } | nu
         const parsed = JSON.parse(raw);
         if (parsed.version !== CONSENT_VERSION) return null;
         const savedAt = Date.parse(parsed.timestamp || '');
-        if (!Number.isFinite(savedAt) || Date.now() - savedAt > 365 * 24 * 60 * 60 * 1000) return null;
-        return { decided: true, prefs: parsed.prefs };
+        if (!Number.isFinite(savedAt) || !parsed.prefs) return null;
+        return { decided: true, prefs: { necessary: true, preferences: parsed.prefs.preferences === true, analytics: parsed.prefs.analytics === true } };
     } catch {
         return null;
     }
@@ -103,15 +103,33 @@ export default function CookieConsent() {
     );
 
     useEffect(() => {
-        // Delay slightly so it doesn't flash on first paint
-        const t = setTimeout(() => {
+        const sync = () => {
             const saved = loadSavedConsent();
-            if (!saved) {
-                setVisible(true);
-            }
-        }, 800);
-        return () => clearTimeout(t);
+            if (saved) { setPrefs(saved.prefs); setVisible(false); setShowConfig(false); }
+        };
+        const openPreferences = () => {
+            const saved = loadSavedConsent();
+            if (saved) setPrefs(saved.prefs);
+            setShowConfig(true);
+            setVisible(true);
+        };
+        const onStorage = (event: StorageEvent) => { if (event.key === STORAGE_KEY) sync(); };
+        const timer = window.setTimeout(() => { if (!loadSavedConsent()) setVisible(true); }, 800);
+        window.addEventListener('storage', onStorage);
+        window.addEventListener('finix-consent-updated', sync);
+        window.addEventListener('finix-open-cookie-preferences', openPreferences);
+        return () => {
+            window.clearTimeout(timer);
+            window.removeEventListener('storage', onStorage);
+            window.removeEventListener('finix-consent-updated', sync);
+            window.removeEventListener('finix-open-cookie-preferences', openPreferences);
+        };
     }, []);
+
+    const closeConfig = () => {
+        setShowConfig(false);
+        if (loadSavedConsent()) setVisible(false);
+    };
 
     const handleAcceptAll = () => {
         const all: CookiePreferences = { necessary: true, preferences: true, analytics: true };
@@ -134,17 +152,7 @@ export default function CookieConsent() {
         setVisible(false);
     };
 
-    if (!visible) return (
-        <button
-            type="button"
-            onClick={() => { setShowConfig(true); setVisible(true); }}
-            className="fixed bottom-20 left-3 z-[998] sm:bottom-3 flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-2 text-[11px] font-medium text-muted-foreground shadow-lg backdrop-blur hover:text-foreground"
-            aria-label={finixUi("Abrir preferencias de cookies")}
-        >
-            <Cookie className="h-3.5 w-3.5" />
-            <FinixUiText text={"Cookies"} />
-        </button>
-    );
+    if (!visible) return null;
 
     return (
         <>
@@ -152,7 +160,7 @@ export default function CookieConsent() {
             {showConfig && (
                 <div
                     className="fixed inset-0 z-[998] bg-black/40 backdrop-blur-sm"
-                    onClick={() => setShowConfig(false)}
+                    onClick={closeConfig}
                     aria-hidden="true"
                 />
             )}
@@ -258,7 +266,7 @@ export default function CookieConsent() {
                                 >
                                     {" "}<FinixUiText text={"Aceptar todas"} />{" "}</button>
                                 <button
-                                    onClick={() => setShowConfig(false)}
+                                    onClick={closeConfig}
                                     aria-label={finixUi("Cerrar configuración")}
                                     className="sm:flex-none px-4 py-3 rounded-xl border border-border/60 text-muted-foreground text-sm hover:text-foreground transition-all flex items-center gap-1"
                                 >

@@ -4,17 +4,17 @@ import { PrismaService } from '../prisma.service';
 import { EmailMarketingService } from './email-marketing.service';
 import { MailService } from '../mail/mail.service';
 import { MarketService } from '../market/market.service';
+import { getCedearDefinition } from '../market/cedear.data';
+import { newsletterLayout as layout, newsletterPanel as panel, newsletterCompanyHeading } from './newsletter-layout';
 
 const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const href = (v?: string | null) => { try { const u = new URL(v || ''); return u.protocol === 'https:' ? esc(u.toString()) : ''; } catch { return ''; } };
 const app = (process.env.FRONTEND_URL || 'https://finixarg.com').replace(/\/$/, '');
 const dateKey = (d: Date) => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: 'long', year: 'numeric' }).format(d);
 const shortDate = (d?: Date | null) => d ? new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: 'short' }).format(d) : '';
-const layout = (tag: string, title: string, subtitle: string, body: string) => '<!doctype html><html lang="es"><body style="margin:0;background:#f2f7f4;font-family:Arial,Helvetica,sans-serif;color:#17332a"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f2f7f4"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="760" cellspacing="0" cellpadding="0" style="width:100%;max-width:760px;background:#fff;border:1px solid #e5e8f1;border-radius:18px;overflow:hidden"><tr><td style="background:#087747;padding:22px 28px;color:#fff"><div style="font-size:13px;letter-spacing:2px;font-weight:bold;color:#d3f5e2">FINIX <span style="color:#54e0a5">●</span> ' + esc(tag) + '</div><h1 style="font-size:28px;line-height:1.2;margin:20px 0 7px;color:#fff">' + esc(title) + '</h1><p style="margin:0;color:#e1f4e9;font-size:14px;line-height:1.5">' + esc(subtitle) + '</p></td></tr><tr><td style="padding:22px 28px 28px;line-height:1.6">' + body + '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e9eaf1;color:#788098;font-size:11px;line-height:1.6">Finix · Información de mercado para acompañar tu análisis. No constituye una recomendación personalizada.<br><a style="color:#087747" href="' + app + '/settings">Preferencias de correo</a> · <a style="color:#087747" href="{{unsubscribe_url}}">Cancelar suscripción</a></div></td></tr></table></td></tr></table></body></html>';
-const panel = (label: string, body: string) => '<section style="margin:0 0 16px;padding:18px 20px;border:1px solid #e8eaf2;border-radius:14px;background:#fff"><div style="font-size:12px;letter-spacing:1.3px;text-transform:uppercase;color:#087747;font-weight:bold;margin-bottom:10px">' + esc(label) + '</div>' + body + '</section>';
 const companies = /apple|microsoft|nvidia|amazon|alphabet|google|meta platforms|tesla|broadcom|netflix|jpmorgan|citigroup|wells fargo|goldman sachs|bank of america|morgan stanley|blackrock|eli lilly|exxon|chevron|walmart|costco|oracle|adobe|amd|qualcomm|micron|intel|visa|mastercard/i;
 const earnings = /quarter|earnings|results|balance|revenue|ingresos|trimestre|resultado|ganancias|cash flow|margins/i;
-const trusted = /(^|\.)sec\.gov$|(^|\.)nasdaq\.com$|(^|\.)nyse\.com$|(^|\.)reuters\.com$|(^|\.)apnews\.com$|(^|\.)bloomberg\.com$/i;
+const trusted = /(^|\.)sec\.gov$|(^|\.)nasdaq\.com$|(^|\.)nyse\.com$|(^|\.)reuters\.com$|(^|\.)apnews\.com$|(^|\.)bloomberg\.com$|(^|\.)tradingview\.com$/i;
 const testRecipient = 'juanpablorolo2007@gmail.com';
 
 @Injectable()
@@ -66,10 +66,10 @@ export class NewsletterScheduler {
         const localRx = /mercado local|argentina|merval|byma|acciones argentinas|renta variable|ypf|galicia|ggal|pampa|cresud|tgs|alua|txar|bono|obligaci[oó]n negociable|lecap/i;
         const worldRx = /wall street|s&p|nasdaq|federal reserve|fed\b|treasury|global|internacional|china|europe|petr[oó]leo|gold|oro|bitcoin|mercados/i;
         const recent = [...articles].sort((a,b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0));
+        const knownNewsSource = /reuters|associated press|ap news|bloomberg|cnbc|wall street journal|\bwsj\b|financial times|yahoo finance|la nación|la nacion|clarín|clarin|ámbito|ambito|el cronista|infobae|perfil|iprofesional|bcra|indec/i;
         const macro = recent.filter(a => macroRx.test(content(a)) && argentinaMacroRx.test(content(a)) && knownNewsSource.test(a.sourceName || '')).slice(0,4);
         const argentina = recent.filter(a => localRx.test(content(a)) && knownNewsSource.test(a.sourceName || '') && !macro.includes(a)).slice(0,Math.max(0,4-macro.length));
         const local = [...macro,...argentina];
-        const knownNewsSource = /reuters|associated press|ap news|bloomberg|cnbc|wall street journal|\bwsj\b|financial times|yahoo finance|la nación|la nacion|clarín|clarin|ámbito|ambito|el cronista|infobae|perfil|iprofesional|bcra|indec/i;
         const usRx = /united states|\bu\.s\.\b|\bus\b|wall street|s&p|nasdaq|dow jones|federal reserve|\bfed\b|treasury|apple|microsoft|nvidia|amazon|alphabet|google|meta platforms|tesla|broadcom|netflix|jpmorgan|wells fargo|goldman sachs|bank of america|eli lilly|exxon|walmart|oracle|adobe|amd|qualcomm|micron|intel/i;
         const global = recent.filter(a => usRx.test(content(a)) && knownNewsSource.test(a.sourceName || '') && !local.includes(a)).slice(0,4);
         const used = new Set([...local,...global]);
@@ -88,11 +88,11 @@ export class NewsletterScheduler {
             currency ? new Intl.NumberFormat('es-AR', { style:'currency', currency, maximumFractionDigits: currency === 'ARS' ? 0 : 2 }).format(value) :
             new Intl.NumberFormat('es-AR', { maximumFractionDigits:2 }).format(value);
         const quoteRows = (items: any[], limit: number) => (Array.isArray(items) ? items : []).filter(a => typeof a.price === 'number' && Number.isFinite(a.price)).slice(0,limit).map(a =>
-            '<tr><td style="padding:6px 0;border-top:1px solid #e5eee8;color:#344c41;font-size:11px">' + esc(a.label || a.symbol || 'Activo') + '</td><td align="right" style="padding:6px 0;border-top:1px solid #e5eee8;color:#344c41;font-size:11px;font-weight:bold">' + esc(fmt(a.price,a.currency)) + '</td><td align="right" style="padding:6px 0 6px 7px;border-top:1px solid #e5eee8;color:' + (typeof a.change === 'number' && a.change < 0 ? '#bd4545' : '#087747') + ';font-size:11px;font-weight:bold">' + (typeof a.change === 'number' ? (a.change > 0 ? '+' : '') + fmt(a.change) + '%' : '—') + '</td></tr>'
+            '<tr><td style="width:46%;padding:9px 6px 9px 0;border-top:1px solid #e5eee8;color:#344c41;font-size:12px;line-height:1.5;overflow-wrap:anywhere">' + esc(a.label || a.symbol || 'Activo') + '</td><td align="right" style="width:32%;padding:9px 2px;border-top:1px solid #e5eee8;color:#344c41;font-size:12px;font-weight:bold;white-space:nowrap">' + esc(fmt(a.price,a.currency)) + '</td><td align="right" style="width:22%;white-space:nowrap;padding:9px 0 9px 7px;border-top:1px solid #e5eee8;color:' + (typeof a.change === 'number' && a.change < 0 ? '#bd4545' : '#087747') + ';font-size:11px;font-weight:bold">' + (typeof a.change === 'number' ? (a.change > 0 ? '+' : '') + fmt(a.change) + '%' : '—') + '</td></tr>'
         ).join('');
         const quoteBox = (title: string, items: any[], limit: number) => {
             const rows = quoteRows(items,limit); if (!rows) return '';
-            return '<td style="width:50%;vertical-align:top;padding:5px"><div style="padding:10px 12px;border:1px solid #e0ece5;border-radius:10px;background:#fbfdfb"><div style="font-size:12px;color:#087747;font-weight:bold;margin-bottom:5px">' + esc(title) + '</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0">' + rows + '</table></div></td>';
+            return '<td class="quote-column" width="50%" style="width:50%;box-sizing:border-box;vertical-align:top;padding:7px"><div style="padding:16px;border:1px solid #e0ece5;border-radius:12px;background:#fbfdfb"><div style="font-size:12px;color:#087747;font-weight:bold;margin-bottom:5px">' + esc(title) + '</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;table-layout:fixed">' + rows + '</table></div></td>';
         };
         const quoteAssets = (items: any[], labels: Record<string,string>) => (Array.isArray(items) ? items : []).map(q => ({ label: labels[q.inputSymbol || q.symbol] || q.inputSymbol || q.symbol, symbol: q.symbol, price: q.price, change: q.change, currency: 'USD' }));
         const techLabels: Record<string,string> = { AAPL:'Apple · AAPL', MSFT:'Microsoft · MSFT', NVDA:'NVIDIA · NVDA', AMZN:'Amazon · AMZN', GOOGL:'Alphabet · GOOGL', META:'Meta · META', TSLA:'Tesla · TSLA' };
@@ -102,8 +102,8 @@ export class NewsletterScheduler {
         const leadingSector = dailySectors[0];
         const sectorHighlight = leadingSector ? panel(leadingSector.perf > 0 ? 'Sector destacado del día · EE. UU.' : 'Mejor desempeño relativo · EE. UU.', '<div style="font-size:19px;font-weight:bold;color:#17332a">' + esc(leadingSector.name) + ' <span style="color:' + (leadingSector.perf >= 0 ? '#087747' : '#bd4545') + '">' + (leadingSector.perf > 0 ? '+' : '') + esc(fmt(leadingSector.perf)) + '%</span></div><p style="margin:5px 0 0;color:#71857a;font-size:11px">' + (leadingSector.perf > 0 ? 'Sector con mayor suba diaria ponderada por capitalización' : 'No hubo sectores con suba; este fue el que menos cayó') + ' · cierre del ' + esc(dateKey(now)) + ' · Fuente: Finviz</p>') : panel('Sector destacado del día · EE. UU.','<p style="margin:0;color:#71857a;font-size:12px">El proveedor no informó una variación sectorial confiable para esta rueda.</p>');
         const dollarTiles = (marketData?.dollars || []).filter((d:any) => ['oficial','mep','ccl','blue'].includes(String(d.id).toLowerCase())).slice(0,4);
-        const fx = dollarTiles.length ? '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px"><tr>' + dollarTiles.map((d:any) => '<td style="width:25%;padding:5px"><div style="padding:11px 8px;border:1px solid #e8eaf2;border-radius:10px;text-align:center;background:#fbfdfb"><div style="font-size:10px;color:#74867c;text-transform:uppercase;font-weight:bold">Dólar ' + esc(d.label || d.id) + '</div><div style="font-size:17px;color:#17332a;font-weight:bold">' + esc(fmt(d.sell,'ARS')) + '</div></div></td>').join('') + '</tr></table>' : '';
-        const quotes = marketData?.sections ? '<div style="margin:0 0 15px"><div style="font-size:12px;color:#087747;font-weight:bold;margin:0 5px 5px">Cotizaciones al cierre · ' + esc(dateKey(now)) + '</div>' + fx + '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>' + quoteBox('7 Tecnológicas',quoteAssets(technologyQuotes,techLabels),7) + quoteBox('Semiconductores',quoteAssets(semiconductorQuotes,semiLabels),7) + '</tr><tr>' + quoteBox('Argentina · S&P Merval y acciones',marketData.sections.argentina,6) + quoteBox('Índices de EE. UU. y mundo',marketData.sections.global,5) + '</tr><tr>' + quoteBox('Materias primas',marketData.sections.commodities,4) + quoteBox('Cripto',marketData.sections.crypto,3) + '</tr></table><p style="font-size:10px;color:#7b8d83;margin:6px 5px 0">Variaciones de la rueda según disponibilidad de cada fuente. <a style="color:#087747" href="' + app + '/market">Ver mercados en Finix</a></p></div>' : '';
+        const fx = dollarTiles.length ? '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px"><tr>' + dollarTiles.map((d:any) => '<td class="fx-tile" style="width:25%;padding:5px"><div style="padding:11px 8px;border:1px solid #e8eaf2;border-radius:10px;text-align:center;background:#fbfdfb"><div style="font-size:10px;color:#74867c;text-transform:uppercase;font-weight:bold">Dólar ' + esc(d.label || d.id) + '</div><div style="font-size:17px;color:#17332a;font-weight:bold">' + esc(fmt(d.sell,'ARS')) + '</div></div></td>').join('') + '</tr></table>' : '';
+        const quotes = marketData?.sections ? '<div style="margin:0 0 15px"><div style="font-size:12px;color:#087747;font-weight:bold;margin:0 5px 5px">Cotizaciones al cierre · ' + esc(dateKey(now)) + '</div>' + fx + '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;table-layout:fixed"><tr>' + quoteBox('7 Tecnológicas',quoteAssets(technologyQuotes,techLabels),7) + quoteBox('Semiconductores',quoteAssets(semiconductorQuotes,semiLabels),7) + '</tr><tr>' + quoteBox('Argentina · S&P Merval y acciones',marketData.sections.argentina,6) + quoteBox('Índices de EE. UU. y mundo',marketData.sections.global,5) + '</tr><tr>' + quoteBox('Materias primas',marketData.sections.commodities,4) + quoteBox('Cripto',marketData.sections.crypto,3) + '</tr></table><p style="font-size:10px;color:#7b8d83;margin:6px 5px 0">Variaciones de la rueda según disponibilidad de cada fuente. <a style="color:#087747" href="' + app + '/market">Ver mercados en Finix</a></p></div>' : '';
 
         const equities = (marketData?.sections?.argentina || []).filter((a:any) => a.id !== 'merval' && typeof a.change === 'number');
         const gainers = equities.filter((a:any) => a.change > 0).sort((a:any,b:any) => b.change-a.change).slice(0,3);
@@ -148,26 +148,40 @@ export class NewsletterScheduler {
         const weekEnd = isoDate(weekEndDate);
         const events = await this.prisma.marketEarningsEvent.findMany({
             where: { isPublished:true, marketCap:{not:null}, date:{gte:weekStart,lte:weekEnd}, OR:[{actualEps:{not:null}},{actualRevenue:{not:null}}] },
-            select:{ticker:true,companyName:true,date:true,sourceUrl:true,actualEps:true,epsEstimate:true,epsSurprise:true,actualRevenue:true,revenueEstimate:true,revenueSurprise:true,marketReaction:true,marketCap:true},
+            select:{ticker:true,companyName:true,logoUrl:true,date:true,sourceUrl:true,source:true,actualEps:true,epsEstimate:true,epsSurprise:true,actualRevenue:true,revenueEstimate:true,revenueSurprise:true,marketReaction:true,marketCap:true},
             orderBy:[{marketCap:'desc'},{date:'desc'}],take:100,
         }).catch(()=>[]);
         const sectorFor = (ticker: string, name: string) => {
-            const text = (ticker+' '+name).toLowerCase();
-            if (/bank|financial|jpm|goldman|wells fargo|citigroup|morgan stanley|visa|mastercard/.test(text)) return 'Finanzas';
+            const text = (ticker+' '+name+' '+(getCedearDefinition(ticker)?.sector || '')).toLowerCase();
+            if (/bank|bancorp|bancos|finanza|financial|jpm|goldman|wells fargo|citigroup|morgan stanley|visa|mastercard/.test(text)) return 'Finanzas';
             if (/semiconductor|nvidia|amd|intel|broadcom|micron|qualcomm|chip/.test(text)) return 'Semiconductores';
-            if (/energy|exxon|chevron|oil|gas|petroleum/.test(text)) return 'Energía';
+            if (/energy|energ[ií]a|petr[oó]leo|halliburton|exxon|chevron|oil|gas|petroleum/.test(text)) return 'Energía';
             if (/health|pharma|eli lilly|johnson|pfizer|merck|unitedhealth/.test(text)) return 'Salud';
-            if (/retail|walmart|costco|consumer|home depot|mcdonald/.test(text)) return 'Consumo';
-            if (/industrial|boeing|caterpillar|honeywell|union pacific/.test(text)) return 'Industria';
-            if (/tech|software|microsoft|apple|amazon|alphabet|google|meta|oracle|adobe|tesla/.test(text)) return 'Tecnología';
+            if (/retail|consumo|comercio electr|automotriz|domino|general motors|walmart|costco|consumer|home depot|mcdonald/.test(text)) return 'Consumo';
+            if (/industrial|industria|aerospace|fastenal|northrop|railroad|boeing|caterpillar|honeywell|union pacific/.test(text)) return 'Industria';
+            if (/prologis|real estate|\breit\b|inmobili|bienes ra/i.test(text)) return 'Bienes raíces';
+            if (/steel|materials|mining|miner[ií]a/.test(text)) return 'Materiales';
+            if (/entertainment|entretenimiento|comunicaci|telecom|netflix|streaming|media/.test(text)) return 'Comunicaciones';
+            if (/tech|tecnolog|software|microsoft|apple|amazon|alphabet|google|meta|oracle|adobe|tesla/.test(text)) return 'Tecnología';
             return '';
         };
         const chosen:any[] = [], usedSectors = new Set<string>(), usedTickers = new Set<string>();
-        for (const event of events) {
+        const unresolved = events.filter(event => !event.sourceUrl && /TradingView/i.test(event.source || '') && !getCedearDefinition(event.ticker));
+        const resolvedQuotes = unresolved.length ? await this.market.getQuotes(unresolved.map(event => event.ticker)).catch(() => []) : [];
+        const resolvedSymbols = new Map(resolvedQuotes.filter(quote => !quote.unavailable && typeof quote.price === 'number' && quote.price > 0)
+            .map(quote => [quote.inputSymbol, quote.symbol]));
+        const sourcedEvents = events.map(event => {
+            if (event.sourceUrl || !/TradingView/i.test(event.source || '')) return event;
+            const company = getCedearDefinition(event.ticker);
+            const symbol = company?.underlyingTicker === event.ticker ? `${company.underlyingExchange}:${company.underlyingTicker}` : resolvedSymbols.get(event.ticker);
+            if (!symbol || !/^(NASDAQ|NYSE|AMEX):[A-Z0-9.-]+$/i.test(symbol)) return event;
+            return { ...event, sourceUrl: `https://www.tradingview.com/symbols/${symbol.replace(':', '-')}/financials-earnings/` };
+        });
+        for (const event of sourcedEvents) {
             const sector = sectorFor(event.ticker,event.companyName);
             const ticker = event.ticker.toUpperCase();
             let host = '';
-            try { host = new URL(event.sourceUrl || '').hostname; } catch { continue; }
+            try { const url = new URL(event.sourceUrl || ''); if (url.protocol !== 'https:') continue; host = url.hostname; } catch { continue; }
             if (!sector || usedSectors.has(sector) || usedTickers.has(ticker) || !(trusted.test(host) || /investor|ir\./i.test(host))) continue;
             chosen.push(event); usedSectors.add(sector); usedTickers.add(ticker);
             if (chosen.length === 4) break;
@@ -188,7 +202,7 @@ export class NewsletterScheduler {
                 'Capitalización: '+(e.marketCap == null ? 'No informada' : number(e.marketCap,'USD')),
             ];
             return panel('INFORME '+String(index+1).padStart(2,'0')+' · '+esc(e.date)+' · '+esc(sector),
-                '<h2 style="margin:0 0 8px;font-size:18px;color:#17332a">'+esc(e.companyName)+' ('+esc(e.ticker)+')</h2><p style="margin:0 0 9px;color:#60766b;font-size:13px">Resultados trimestrales publicados durante la semana · compañías priorizadas por capitalización y diversificadas por sector.</p><ul style="margin:0;padding-left:18px;color:#344c41;font-size:13px">'+metrics.map(m=>'<li style="padding:3px 0">'+esc(m)+'</li>').join('')+'</ul><div style="margin-top:10px;padding:11px 13px;border-radius:9px;background:#eff8f2;color:#4f4b69;font-size:13px"><b style="color:#087747">Para el análisis:</b> contrastar ingresos, márgenes y generación de caja con el trimestre anterior; revisar valuación y perspectivas en la fuente original.</div>'+(link?'<p style="margin:12px 0 0"><a style="color:#087747;font-size:13px;font-weight:bold" href="'+link+'">Abrir fuente original →</a></p>':''));
+                newsletterCompanyHeading(e)+'<p style="margin:0 0 9px;color:#60766b;font-size:13px">Resultados trimestrales publicados durante la semana · compañías priorizadas por capitalización y diversificadas por sector.</p><ul style="margin:0;padding-left:18px;color:#344c41;font-size:13px">'+metrics.map(m=>'<li style="padding:3px 0">'+esc(m)+'</li>').join('')+'</ul><div style="margin-top:10px;padding:11px 13px;border-radius:9px;background:#eff8f2;color:#4f4b69;font-size:13px"><b style="color:#087747">Para el análisis:</b> contrastar ingresos, márgenes y generación de caja con el trimestre anterior; revisar valuación y perspectivas en la fuente original.</div>'+(link?'<p style="margin:12px 0 0"><a style="color:#087747;font-size:13px;font-weight:bold" href="'+link+'">'+(link.includes('tradingview.com')?'Resultados en TradingView':'Abrir fuente original')+' →</a></p>':''));
         }).join('');
         const deepDive = chosen.map(e=>'<li style="padding:4px 0">'+esc(e.companyName)+' ('+esc(e.ticker)+') · '+esc(sectorFor(e.ticker,e.companyName))+'</li>').join('');
         const day = dateKey(now), title = 'Cuatro balances de la semana para analizar';
@@ -196,7 +210,7 @@ export class NewsletterScheduler {
         const html = layout('FINIX PRO · ANÁLISIS DE LOS VIERNES',title,day+' · Cuatro compañías de gran capitalización, de sectores distintos, que presentaron resultados esta semana.',
             cards+panel('Empresas para profundizar','<p style="margin:0 0 7px;color:#59627a;font-size:14px">Selección semanal priorizada por capitalización y diversificada por sector:</p><ul style="margin:0;padding-left:20px;color:#17332a;font-size:13px">'+deepDive+'</ul>')+
             '<p style="margin:18px 0 0;color:#777f96;font-size:12px">Los datos no publicados por la empresa o el proveedor se indican como no informados. Revisá cada fuente antes de sacar conclusiones. Este informe es informativo y no constituye una recomendación.</p><p style="margin:18px 0 0"><a style="display:inline-block;padding:12px 18px;background:#087747;border-radius:9px;color:white;text-decoration:none;font-weight:bold;font-size:14px" href="'+app+'/noticias">Seguir resultados en Finix →</a></p>');
-        return {day,title,message,html};
+        return {day,title,message,html,weekStart,weekEnd};
     }
 
     @Cron('0 17 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
@@ -223,11 +237,29 @@ export class NewsletterScheduler {
     async sendTestBriefings(email: string) {
         const normalized = String(email || '').trim().toLowerCase();
         if (normalized !== testRecipient) throw new BadRequestException('Las pruebas solo se pueden enviar al correo de administración autorizado.');
-        const [daily, weekly] = await Promise.all([this.dailyBrief(new Date()), this.weeklyBrief(new Date())]);
+        const now = new Date();
+        const daily = await this.dailyBrief(now);
+        let weekly = await this.weeklyBrief(now);
+        if (!weekly) {
+            // A Tuesday preview can show the last complete reporting week.
+            // Scheduled Friday delivery continues to use its own current week.
+            const localDay = new Date(now.getTime() - 3 * 3600000);
+            const daysSinceFriday = (localDay.getUTCDay() + 2) % 7 || 7;
+            const lastFriday = new Date(now.getTime() - daysSinceFriday * 86400000);
+            weekly = await this.weeklyBrief(lastFriday);
+        }
         if (!daily || !weekly) throw new BadRequestException('No hay suficientes noticias recientes y resultados verificables para generar las dos pruebas.');
+        const previewNotice = '<p style="margin:0 0 20px;padding:12px 16px;border:1px solid #bce4ce;border-radius:10px;background:#eff8f2;color:#087747;font-size:13px;line-height:1.6"><b>VISTA PREVIA DE DISEÑO</b> · Datos disponibles al momento de preparar esta prueba. El boletín diario definitivo se genera a las 17:00, hora argentina.</p>';
+        const dailyHtml = daily.html.replace(/(<td class="newsletter-content"[^>]*>)/, '$1' + previewNotice)
+            .replace('AFTER MARKET · CIERRE DE MERCADO', 'AFTER MARKET · VISTA PREVIA')
+            .replace('El cierre de mercado, en contexto', 'Vista previa de After Market')
+            .replace('Resumen de la rueda argentina y global, después del cierre.', 'Muestra de diseño con los datos disponibles durante la rueda.')
+            .replace('Cotizaciones al cierre', 'Cotizaciones disponibles')
+            .replace('Cierre diario ·', 'Vista previa ·')
+            .replace(' · cierre del ', ' · muestra del ');
         const results = await Promise.all([
-            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | Mercado de hoy · ' + daily.day, text: daily.message, html: daily.html.replace('{{unsubscribe_url}}', app + '/settings') }),
-            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix Pro | 4 resultados · ' + weekly.day, text: weekly.message, html: weekly.html.replace('{{unsubscribe_url}}', app + '/settings') }),
+            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | After Market · ' + daily.day, text: daily.message, html: dailyHtml.replace('{{unsubscribe_url}}', app + '/settings') }),
+            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix Pro | Balances · semana ' + weekly.weekStart + ' al ' + weekly.weekEnd, text: weekly.message, html: weekly.html.replace('{{unsubscribe_url}}', app + '/settings') }),
         ]);
         return { sent: results.length === 2, recipient: normalized };
     }
