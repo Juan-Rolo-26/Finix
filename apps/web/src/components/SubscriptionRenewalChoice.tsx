@@ -1,6 +1,6 @@
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { AlertCircle, Check, Loader2, RefreshCw, X } from 'lucide-react';
 
 interface SubscriptionRenewalChoiceProps {
@@ -63,7 +63,7 @@ export function SubscriptionRenewalChoice({ open, planName, monthlyPrice, busy =
 
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                     <button type="button" disabled={busy} onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50">{""}<FinixUiText text={"Volver"} />{""}</button>
-                    <button type="button" disabled={busy || !mercadoPagoAvailable} onClick={() => onConfirm(true)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
+                    <button type="button" disabled={busy || !mercadoPagoAvailable} onClick={onConfirm} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50">
                         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                         {busy ? 'Conectando…' : mercadoPagoAvailable ? 'Continuar a Mercado Pago' : 'Mercado Pago no disponible'}
                     </button>
