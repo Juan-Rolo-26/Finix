@@ -243,7 +243,7 @@ export class BillingService {
     async expireEndedPlans() {
         const now = new Date();
         const expired = await this.prisma.subscription.findMany({
-            where: { status: 'ACTIVE', endDate: { lte: now } },
+            where: { status: { in: ['ACTIVE', 'CANCELED', 'PAST_DUE'] }, endDate: { lte: now } },
             select: { id: true, userId: true },
         });
         if (!expired.length) return;
