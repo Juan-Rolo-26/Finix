@@ -29,6 +29,7 @@ import { MarketHeader, MarketChange } from '@/components/markets/MarketPrimitive
 import { isEducationEnabled } from '@/lib/featureFlags';
 import { TV_SYMBOL_SLUGS } from '@/lib/tv-slugs.const';
 import './calendar.css';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface CalendarEvent {
     id: string;
@@ -81,6 +82,8 @@ interface EarningsEvent {
     marketReaction?: number;
     marketCap?: number;
     earningsImpactScore: number;
+    sourceUrl?: string;
+    source?: string;
 }
 
 interface DividendEvent {
@@ -420,6 +423,236 @@ function formatDateLabel(dateStr: string): string {
     return new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: 'short' }).format(dt);
 }
 
+
+function CalendarEconomicDetails({event,formatTime,impact}:{event:CalendarEvent;formatTime:(date:string,time?:string,timestamp?:string)=>string;impact:{className:string;label:string;isCritical:boolean}}) {
+    const {ui:finixUi}=useFinixUiTranslation();
+    return <div className="calendar-detail-body space-y-5">                                                <div className="calendar-card-meta">
+                                                    <span
+                                                        className={
+                                                            'calendar-badge ' + impact.className
+                                                        }
+                                                    >
+                                                        {impact.isCritical && <Flame size={14} />}
+                                                        {" "}<FinixUiText text={"Impacto"} />{" "}{impact.label}
+                                                    </span>
+                                                    <span className="calendar-time">
+                                                        <Clock size={14} />
+                                                        {formatTime(
+                                                            event.date,
+                                                            event.time,
+                                                            event.timestampUtc,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="calendar-event-title">
+                                                    <span className="calendar-country">
+                                                        {event.country === 'AR'
+                                                            ? 'Argentina'
+                                                            : event.country === 'US'
+                                                              ? 'Estados Unidos'
+                                                              : event.country}
+                                                    </span>
+                                                    <h3>{formatEconomicEventTitle(event.title, event.country)}</h3>
+                                                    <p className="calendar-event-description">
+                                                        {formatEconomicEventDescription(event.title, event.description, event.country)}
+                                                    </p>
+                                                </div>
+                                                {(event.actualValue != null ||
+                                                    (event.consensusValue ?? event.forecastValue) !=
+                                                        null ||
+                                                    event.previousValue != null) && (
+                                                    <dl className="calendar-metrics">
+                                                        {event.actualValue != null && (
+                                                            <div>
+                                                                <dt>{""}<FinixUiText text={"Actual"} />{""}</dt>
+                                                                <dd className="calendar-metric-primary">
+                                                                    {event.actualValue}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ' (unidad no informada)'}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                        {(event.consensusValue ??
+                                                            event.forecastValue) != null && (
+                                                            <div>
+                                                                <dt>{""}<FinixUiText text={"Estimado"} />{""}</dt>
+                                                                <dd>
+                                                                    {event.consensusValue ??
+                                                                        event.forecastValue}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ' (unidad no informada)'}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                        {event.previousValue != null && (
+                                                            <div>
+                                                                <dt>{""}<FinixUiText text={"Previo"} />{""}</dt>
+                                                                <dd>
+                                                                    {event.previousValue}
+                                                                    {event.unit
+                                                                        ? ' ' + event.unit
+                                                                        : ' (unidad no informada)'}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                        {event.surprise != null && (
+                                                            <div>
+                                                                <dt title={finixUi("Actual menos estimado, en la unidad del evento; una diferencia de porcentajes se expresa en puntos porcentuales.")}>{""}<FinixUiText text={"Sorpresa (actual − estimado)"} />{""}</dt>
+                                                                <dd
+                                                                    className={
+                                                                        event.surprise > 0
+                                                                            ? 'calendar-positive'
+                                                                            : 'calendar-negative'
+                                                                    }
+                                                                >
+                                                                    {event.surprise > 0 ? '+' : ''}
+                                                                    {event.surprise}
+                                                                    {event.unit
+                                                                        ? event.unit === '%' ? ' pp' : ' ' + event.unit
+                                                                        : ' (unidad no informada)'}
+                                                                </dd>
+                                                            </div>
+                                                        )}
+                                                    </dl>
+                                                )}
+                                                {event.affectedAssets &&
+                                                    event.affectedAssets.length > 0 && (
+                                                        <div className="calendar-assets">
+                                                            <span>{""}<FinixUiText text={"Activos afectados"} />{""}</span>
+                                                            {event.affectedAssets.map((asset) => (
+                                                                <span
+                                                                    key={asset}
+                                                                    className="calendar-badge"
+                                                                >
+                                                                    {asset}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                {event.source && (
+                                                    <div className="calendar-card-footer">
+                                                        <span>{""}<FinixUiText text={"Fuente:"} />{" "}{formatEconomicEventSource(event.source)}</span>
+                                                    </div>
+                                                )}
+{safeCalendarSource(event.sourceUrl)&&<a className="calendar-detail-link" href={safeCalendarSource(event.sourceUrl)} target="_blank" rel="noopener noreferrer">Consultar fuente original</a>}</div>;
+}
+
+function CalendarEarningsDetails({earn,formatMarketCap}:{earn:EarningsEvent;formatMarketCap:(value?:number|string|null)=>string|null}) {
+    const {ui:finixUi}=useFinixUiTranslation();
+                                        const timing =
+                                            earn.reportTiming === 'AMC'
+                                                ? 'Después del cierre'
+                                                : earn.reportTiming === 'BMO'
+                                                  ? 'Antes de la apertura'
+                                                  : earn.reportTiming === 'DMH'
+                                                    ? 'Durante la rueda'
+                                                    : 'Horario pendiente';
+                                        const reported =
+                                            earn.actualEps != null || earn.actualRevenue != null;
+                                        const outcome = getEarningsOutcome(earn);
+                                        const tone =
+                                            outcome === 'VICTORIOSO'
+                                                ? 'positive'
+                                                : outcome === 'DESVICTORIOSO'
+                                                  ? 'negative'
+                                                  : outcome === 'MIXTO'
+                                                    ? 'amber'
+                                                    : 'blue';
+                                        const cleanTicker = earn.ticker.toUpperCase().replace(/\./g, '-').trim();
+                                        const isSP500 = Boolean(TV_SYMBOL_SLUGS[cleanTicker] || TV_SYMBOL_SLUGS[cleanTicker.replace('-', '.')]);
+    return <div className="calendar-detail-body space-y-5"><section className="calendar-brief-analysis"><h3>Análisis breve del balance</h3><p>{earningsBrief(earn)}</p></section>                                                <div className="calendar-card-meta">
+                                                    <span className="calendar-time">
+                                                        <Clock size={14} />
+                                                        {timing}
+                                                    </span>
+                                                    {isSP500 && (
+                                                        <span className="calendar-badge calendar-badge--blue" title={finixUi("Componente del S&P 500")}>
+                                                            {" "}<FinixUiText text={"S&amp;P 500"} />{" "}</span>
+                                                    )}
+                                                    {reported ? (
+                                                        <span
+                                                            className={
+                                                                'calendar-badge calendar-badge--' +
+                                                                tone
+                                                            }
+                                                        >
+                                                            {" "}<FinixUiText text={"Publicado"} />{" "}</span>
+                                                    ) : (
+                                                        earn.dateStatus === 'ESTIMATED' && (
+                                                            <span className="calendar-badge calendar-badge--amber">
+                                                                {" "}<FinixUiText text={"Fecha estimada"} />{" "}</span>
+                                                        )
+                                                    )}
+                                                </div>
+                                                <div className="calendar-company">
+                                                    <div className="calendar-company-logo">
+                                                        <AssetLogoImg
+                                                            ticker={earn.ticker}
+                                                            src={earn.logoUrl}
+                                                            name={earn.companyName}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <h3>{earn.ticker}</h3>
+                                                        <p>{earn.companyName}</p>
+                                                    </div>
+                                                </div>
+                                                {reported && (
+                                                    <div
+                                                        className={
+                                                            'calendar-outcome calendar-' + tone
+                                                        }
+                                                    >
+                                                        {outcome === 'VICTORIOSO' ? (
+                                                            <CheckCircle2 size={19} />
+                                                        ) : outcome === 'DESVICTORIOSO' ? (
+                                                            <XCircle size={19} />
+                                                        ) : (
+                                                            <BarChart3 size={19} />
+                                                        )}
+                                                        <span>
+                                                            {outcome === 'VICTORIOSO'
+                                                                ? 'Superó las estimaciones'
+                                                                : outcome === 'DESVICTORIOSO'
+                                                                  ? 'Debajo de las estimaciones'
+                                                                  : outcome === 'MIXTO'
+                                                                    ? 'Resultado mixto'
+                                                                    : 'Resultado informado'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <dl className="calendar-metrics calendar-earnings-metrics">
+                                                    <EarningsMetric label="EPS" actual={earn.actualEps}
+                                                        estimate={earn.epsEstimate} surprise={earn.epsSurprise} />
+                                                    <EarningsMetric label="Facturación" actual={earn.actualRevenue}
+                                                        estimate={earn.revenueEstimate} surprise={earn.revenueSurprise} amount />
+                                                </dl>
+                                                <div className="calendar-card-footer">
+                                                    {earn.marketCap ? (
+                                                        <span>
+                                                            {" "}<FinixUiText text={"Cap."} />{" "}{formatMarketCap(earn.marketCap)}
+                                                        </span>
+                                                    ) : (
+                                                        <span>{""}<FinixUiText text={"EE. UU."} />{""}</span>
+                                                    )}
+                                                    {earn.marketReaction != null && <span className="calendar-reaction">
+                                                        <span>{""}<FinixUiText text={"Reacción"} />{""}</span>
+                                                        <MarketChange value={earn.marketReaction} />
+                                                    </span>}
+                                                </div>
+{safeCalendarSource(earn.sourceUrl)&&<a className="calendar-detail-link" href={safeCalendarSource(earn.sourceUrl)} target="_blank" rel="noopener noreferrer">Abrir resultados publicados</a>}</div>;
+}
+function safeCalendarSource(raw?:string){try{const u=new URL(raw||'');return u.protocol==='https:'?u.href:undefined;}catch{return undefined;}}
+function earningsBrief(earn:EarningsEvent){
+    const outcome=getEarningsOutcome(earn);
+    if(outcome==='PENDIENTE')return 'El balance todavía no fue publicado. Los valores disponibles son estimaciones y no permiten evaluar el resultado de la compañía.';
+    const compare=(name:string,value?:number)=>value==null?name+': sin una estimación comparable.':name+(value>=0?' superó o igualó':' quedó por debajo de')+' lo esperado'+(value===0?'.':' en '+Math.abs(value).toLocaleString('es-AR',{maximumFractionDigits:1})+'%.');
+    const reading=outcome==='VICTORIOSO'?'El resultado supera las expectativas en ambos indicadores. Esto no garantiza una suba de la acción; la lectura se completa con las perspectivas publicadas por la empresa.':outcome==='DESVICTORIOSO'?'Los dos indicadores quedaron por debajo del consenso. Conviene revisar en el informe si la diferencia es transitoria o afecta las perspectivas del negocio.':outcome==='MIXTO'?'La señal es mixta: beneficio e ingresos no acompañaron al consenso en la misma dirección. Conviene revisar márgenes y partidas extraordinarias en el reporte.':'La información publicada es parcial; faltan estimaciones comparables para clasificar el resultado.';
+    return compare('El beneficio por acción',earn.epsSurprise)+' '+compare('La facturación',earn.revenueSurprise)+' '+reading;
+}
+
 export default function CalendarPage() {
     const { ui: finixUi } = useFinixUiTranslation();
 
@@ -428,6 +661,8 @@ export default function CalendarPage() {
     const isPro = isProUser(user);
 
     // 3 Subdivisiones Principales solicitadas: General, Balances, Dividendos
+    const detailTitleRef=useRef<HTMLHeadingElement>(null);
+    const [detail,setDetail]=useState<{kind:'economic';event:CalendarEvent}|{kind:'earnings';event:EarningsEvent}|null>(null);
     const [activeSection, setActiveSection] = useState<CalendarSection>('GENERAL');
     const [earningsSort, setEarningsSort] = useState<EarningsSort>('RELEVANCIA');
     // Filtros de categoría para la sección General
@@ -888,246 +1123,9 @@ export default function CalendarPage() {
                                     </span>
                                 </div>
                                 <div className="market-grid calendar-event-grid">
-                                    {day.economic.map(normalizeEconomicSurprise).map((event) => {
-                                        const impact = getImpactBadge(
-                                            event.impactScore ?? event.marketImpactScore,
-                                            event.importance,
-                                        );
-                                        return (
-                                            <article
-                                                key={event.id}
-                                                className="market-quote-card calendar-event-card"
-                                            >
-                                                <div className="calendar-card-meta">
-                                                    <span
-                                                        className={
-                                                            'calendar-badge ' + impact.className
-                                                        }
-                                                    >
-                                                        {impact.isCritical && <Flame size={14} />}
-                                                        {" "}<FinixUiText text={"Impacto"} />{" "}{impact.label}
-                                                    </span>
-                                                    <span className="calendar-time">
-                                                        <Clock size={14} />
-                                                        {formatLocalTime(
-                                                            event.date,
-                                                            event.time,
-                                                            event.timestampUtc,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="calendar-event-title">
-                                                    <span className="calendar-country">
-                                                        {event.country === 'AR'
-                                                            ? 'Argentina'
-                                                            : event.country === 'US'
-                                                              ? 'Estados Unidos'
-                                                              : event.country}
-                                                    </span>
-                                                    <h3>{formatEconomicEventTitle(event.title, event.country)}</h3>
-                                                    <p className="calendar-event-description">
-                                                        {formatEconomicEventDescription(event.title, event.description, event.country)}
-                                                    </p>
-                                                </div>
-                                                {(event.actualValue != null ||
-                                                    (event.consensusValue ?? event.forecastValue) !=
-                                                        null ||
-                                                    event.previousValue != null) && (
-                                                    <dl className="calendar-metrics">
-                                                        {event.actualValue != null && (
-                                                            <div>
-                                                                <dt>{""}<FinixUiText text={"Actual"} />{""}</dt>
-                                                                <dd className="calendar-metric-primary">
-                                                                    {event.actualValue}
-                                                                    {event.unit
-                                                                        ? ' ' + event.unit
-                                                                        : ' (unidad no informada)'}
-                                                                </dd>
-                                                            </div>
-                                                        )}
-                                                        {(event.consensusValue ??
-                                                            event.forecastValue) != null && (
-                                                            <div>
-                                                                <dt>{""}<FinixUiText text={"Estimado"} />{""}</dt>
-                                                                <dd>
-                                                                    {event.consensusValue ??
-                                                                        event.forecastValue}
-                                                                    {event.unit
-                                                                        ? ' ' + event.unit
-                                                                        : ' (unidad no informada)'}
-                                                                </dd>
-                                                            </div>
-                                                        )}
-                                                        {event.previousValue != null && (
-                                                            <div>
-                                                                <dt>{""}<FinixUiText text={"Previo"} />{""}</dt>
-                                                                <dd>
-                                                                    {event.previousValue}
-                                                                    {event.unit
-                                                                        ? ' ' + event.unit
-                                                                        : ' (unidad no informada)'}
-                                                                </dd>
-                                                            </div>
-                                                        )}
-                                                        {event.surprise != null && (
-                                                            <div>
-                                                                <dt title={finixUi("Actual menos estimado, en la unidad del evento; una diferencia de porcentajes se expresa en puntos porcentuales.")}>{""}<FinixUiText text={"Sorpresa (actual − estimado)"} />{""}</dt>
-                                                                <dd
-                                                                    className={
-                                                                        event.surprise > 0
-                                                                            ? 'calendar-positive'
-                                                                            : 'calendar-negative'
-                                                                    }
-                                                                >
-                                                                    {event.surprise > 0 ? '+' : ''}
-                                                                    {event.surprise}
-                                                                    {event.unit
-                                                                        ? event.unit === '%' ? ' pp' : ' ' + event.unit
-                                                                        : ' (unidad no informada)'}
-                                                                </dd>
-                                                            </div>
-                                                        )}
-                                                    </dl>
-                                                )}
-                                                {event.affectedAssets &&
-                                                    event.affectedAssets.length > 0 && (
-                                                        <div className="calendar-assets">
-                                                            <span>{""}<FinixUiText text={"Activos afectados"} />{""}</span>
-                                                            {event.affectedAssets.map((asset) => (
-                                                                <span
-                                                                    key={asset}
-                                                                    className="calendar-badge"
-                                                                >
-                                                                    {asset}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                {event.expectedMarketEffect && (
-                                                    <div className="calendar-context">
-                                                        <Info size={17} />
-                                                        <p>{event.expectedMarketEffect}</p>
-                                                    </div>
-                                                )}
-                                                {event.source && (
-                                                    <div className="calendar-card-footer">
-                                                        <span>{""}<FinixUiText text={"Fuente:"} />{" "}{formatEconomicEventSource(event.source)}</span>
-                                                    </div>
-                                                )}
-                                            </article>
-                                        );
-                                    })}
+                                    {day.economic.map(normalizeEconomicSurprise).map(event=><article key={event.id} className="calendar-compact-card"><h3>{formatEconomicEventTitle(event.title,event.country)}</h3><button type="button" onClick={()=>setDetail({kind:'economic',event})} aria-label={'Ver detalles de '+formatEconomicEventTitle(event.title,event.country)}>Ver detalles <ArrowUpRight size={14}/></button></article>)}
 
-                                    {day.earnings.map((earn) => {
-                                        const timing =
-                                            earn.reportTiming === 'AMC'
-                                                ? 'Después del cierre'
-                                                : earn.reportTiming === 'BMO'
-                                                  ? 'Antes de la apertura'
-                                                  : earn.reportTiming === 'DMH'
-                                                    ? 'Durante la rueda'
-                                                    : 'Horario pendiente';
-                                        const reported =
-                                            earn.actualEps != null || earn.actualRevenue != null;
-                                        const outcome = getEarningsOutcome(earn);
-                                        const tone =
-                                            outcome === 'VICTORIOSO'
-                                                ? 'positive'
-                                                : outcome === 'DESVICTORIOSO'
-                                                  ? 'negative'
-                                                  : outcome === 'MIXTO'
-                                                    ? 'amber'
-                                                    : 'blue';
-                                        const cleanTicker = earn.ticker.toUpperCase().replace(/\./g, '-').trim();
-                                        const isSP500 = Boolean(TV_SYMBOL_SLUGS[cleanTicker] || TV_SYMBOL_SLUGS[cleanTicker.replace('-', '.')]);
-                                        return (
-                                            <article
-                                                key={earn.id}
-                                                className="market-quote-card calendar-event-card"
-                                            >
-                                                <div className="calendar-card-meta">
-                                                    <span className="calendar-time">
-                                                        <Clock size={14} />
-                                                        {timing}
-                                                    </span>
-                                                    {isSP500 && (
-                                                        <span className="calendar-badge calendar-badge--blue" title={finixUi("Componente del S&P 500")}>
-                                                            {" "}<FinixUiText text={"S&amp;P 500"} />{" "}</span>
-                                                    )}
-                                                    {reported ? (
-                                                        <span
-                                                            className={
-                                                                'calendar-badge calendar-badge--' +
-                                                                tone
-                                                            }
-                                                        >
-                                                            {" "}<FinixUiText text={"Publicado"} />{" "}</span>
-                                                    ) : (
-                                                        earn.dateStatus === 'ESTIMATED' && (
-                                                            <span className="calendar-badge calendar-badge--amber">
-                                                                {" "}<FinixUiText text={"Fecha estimada"} />{" "}</span>
-                                                        )
-                                                    )}
-                                                </div>
-                                                <div className="calendar-company">
-                                                    <div className="calendar-company-logo">
-                                                        <AssetLogoImg
-                                                            ticker={earn.ticker}
-                                                            src={earn.logoUrl}
-                                                            name={earn.companyName}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <h3>{earn.ticker}</h3>
-                                                        <p>{earn.companyName}</p>
-                                                    </div>
-                                                </div>
-                                                {reported && (
-                                                    <div
-                                                        className={
-                                                            'calendar-outcome calendar-' + tone
-                                                        }
-                                                    >
-                                                        {outcome === 'VICTORIOSO' ? (
-                                                            <CheckCircle2 size={19} />
-                                                        ) : outcome === 'DESVICTORIOSO' ? (
-                                                            <XCircle size={19} />
-                                                        ) : (
-                                                            <BarChart3 size={19} />
-                                                        )}
-                                                        <span>
-                                                            {outcome === 'VICTORIOSO'
-                                                                ? 'Superó las estimaciones'
-                                                                : outcome === 'DESVICTORIOSO'
-                                                                  ? 'Debajo de las estimaciones'
-                                                                  : outcome === 'MIXTO'
-                                                                    ? 'Resultado mixto'
-                                                                    : 'Resultado informado'}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                <dl className="calendar-metrics calendar-earnings-metrics">
-                                                    <EarningsMetric label="EPS" actual={earn.actualEps}
-                                                        estimate={earn.epsEstimate} surprise={earn.epsSurprise} />
-                                                    <EarningsMetric label="Facturación" actual={earn.actualRevenue}
-                                                        estimate={earn.revenueEstimate} surprise={earn.revenueSurprise} amount />
-                                                </dl>
-                                                <div className="calendar-card-footer">
-                                                    {earn.marketCap ? (
-                                                        <span>
-                                                            {" "}<FinixUiText text={"Cap."} />{" "}{formatMarketCap(earn.marketCap)}
-                                                        </span>
-                                                    ) : (
-                                                        <span>{""}<FinixUiText text={"EE. UU."} />{""}</span>
-                                                    )}
-                                                    {earn.marketReaction != null && <span className="calendar-reaction">
-                                                        <span>{""}<FinixUiText text={"Reacción"} />{""}</span>
-                                                        <MarketChange value={earn.marketReaction} />
-                                                    </span>}
-                                                </div>
-                                            </article>
-                                        );
-                                    })}
+                                    {day.earnings.map(earn=>{const outcome=getEarningsOutcome(earn);const tone=outcome==='VICTORIOSO'?'positive':outcome==='DESVICTORIOSO'?'negative':outcome==='MIXTO'?'mixed':'neutral';return <article key={earn.id} className={'calendar-compact-card calendar-result--'+tone}><div className="calendar-compact-company"><span className="calendar-compact-logo"><AssetLogoImg ticker={earn.ticker} src={earn.logoUrl} name={earn.companyName}/></span><div><h3>{earn.ticker}</h3><p>{earn.companyName}</p></div><span className="sr-only">{outcome==='VICTORIOSO'?'Resultado positivo':outcome==='DESVICTORIOSO'?'Resultado negativo':outcome==='MIXTO'?'Resultado mixto':'Resultado pendiente o sin comparación'}</span></div><button type="button" onClick={()=>setDetail({kind:'earnings',event:earn})} aria-label={'Ver detalles del balance de '+earn.companyName}>Ver detalles <ArrowUpRight size={14}/></button></article>;})}
 
                                     {day.dividends.map((dividend) => (
                                         <article
@@ -1202,6 +1200,7 @@ export default function CalendarPage() {
                     </div>
                 )}
             </div>
+            <Dialog open={Boolean(detail)} onOpenChange={open=>{if(!open)setDetail(null);}}><DialogContent className="calendar-details-modal max-w-2xl rounded-2xl sm:p-7" onOpenAutoFocus={event=>{event.preventDefault();detailTitleRef.current?.focus({preventScroll:true});}} onCloseAutoFocus={event=>event.preventDefault()}><DialogTitle ref={detailTitleRef} tabIndex={-1}>{detail?.kind==='earnings'?'Balance de '+detail.event.companyName:detail?formatEconomicEventTitle(detail.event.title,detail.event.country):'Detalles del evento'}</DialogTitle><DialogDescription>{detail?formatDateLabel(detail.event.date):''} · Información publicada y fuente de referencia</DialogDescription>{detail?.kind==='economic'?<CalendarEconomicDetails event={detail.event} formatTime={formatLocalTime} impact={getImpactBadge(detail.event.impactScore??detail.event.marketImpactScore,detail.event.importance)}/>:detail?<CalendarEarningsDetails earn={detail.event} formatMarketCap={formatMarketCap}/>:null}</DialogContent></Dialog>
         </div>
     );
 }

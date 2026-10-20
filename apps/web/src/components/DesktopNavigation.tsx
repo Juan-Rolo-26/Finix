@@ -7,7 +7,6 @@ import {
     Bell,
     Bookmark,
     Briefcase,
-    Calendar,
     Check,
     ChevronDown,
     Flame,
@@ -22,7 +21,6 @@ import {
     Settings,
     Sparkles,
     Sun,
-    TrendingUp,
     User,
     Users
 } from 'lucide-react';
@@ -34,7 +32,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { hasCommunityAccess, isProUser, useAuthStore } from '@/stores/authStore';
+import { isProUser, useAuthStore } from '@/stores/authStore';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
@@ -68,13 +66,6 @@ export function DesktopSectionNav() {
 const TOOLS_LIST = [
     { title: 'Laboratorio Financiero', description: 'Calculadoras y simuladores de aportes, objetivos, tasas y costos.', path: '/laboratorio', icon: FlaskConical, accent: 'text-sky-500 bg-sky-500/10 border-sky-500/25 group-hover:bg-sky-500/20 group-hover:border-sky-500/40' },
     {
-        title: 'Mercado en Vivo',
-        description: 'Cotizaciones, índices globales y variaciones en tiempo real.',
-        path: '/market',
-        icon: TrendingUp,
-        accent: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/25 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/40',
-    },
-    {
         title: 'Seguimiento (Watchlists)',
         description: 'Monitorea tus listas de activos prioritarios y alertas.',
         path: '/market/seguimiento',
@@ -96,19 +87,13 @@ const TOOLS_LIST = [
         accent: 'text-amber-500 bg-amber-500/10 border-amber-500/25 group-hover:bg-amber-500/20 group-hover:border-amber-500/40',
     },
     {
-        title: 'Calendario Económico',
-        description: 'Resultados corporativos, dividendos y eventos macroeconómicos.',
-        path: '/calendario',
-        icon: Calendar,
-        accent: 'text-rose-500 bg-rose-500/10 border-rose-500/25 group-hover:bg-rose-500/20 group-hover:border-rose-500/40',
-    },
-    {
         title: 'Top Rendimientos',
         description: 'Empresas con mayor rendimiento, volatilidad y volumen.',
         path: '/mercado/mejores-rendimientos',
         icon: Flame,
         accent: 'text-orange-500 bg-orange-500/10 border-orange-500/25 group-hover:bg-orange-500/20 group-hover:border-orange-500/40',
     },
+    { title:'Comunidades', description:'Conversaciones, publicaciones y grupos de inversores.', path:'/comunidades', icon:Users, accent:'text-emerald-500 bg-emerald-500/10 border-emerald-500/25' },
     {
         title: 'Academia Educativa',
         description: 'Conceptos, indicadores y herramientas de análisis explicados.',
@@ -255,22 +240,8 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                             aria-current={path === '/news' ? 'page' : undefined}
                         >
                             {ui("Noticias")}</Link>
-                        {isEducationEnabled() && (
-                            <Link
-                                to="/educativa"
-                                className="hidden xl:inline-flex"
-                                aria-current={path.startsWith('/educativa') ? 'page' : undefined}
-                            >
-                                {ui("Educativa")}</Link>
-                        )}
-                        {(hasCommunityAccess(user) || freeAccess) && (
-                            <Link
-                                to="/comunidades"
-                                className="hidden xl:inline-flex"
-                                aria-current={path === '/comunidades' || path.startsWith('/comunidades/') ? 'page' : undefined}
-                            >
-                                {ui("Comunidades")}</Link>
-                        )}
+                        <Link to="/market" className="hidden xl:inline-flex" aria-current={path==='/market'?'page':undefined}>{ui("Mercado")}</Link>
+                        <Link to="/calendario" className="hidden xl:inline-flex" aria-current={path==='/calendario'||path==='/calendar'?'page':undefined}>{ui("Calendario")}</Link>
                     </nav>
                 </div>
 

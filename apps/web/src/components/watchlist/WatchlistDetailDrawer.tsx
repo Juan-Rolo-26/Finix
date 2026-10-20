@@ -1,6 +1,7 @@
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 import TradingViewChart from '@/components/TradingViewChart';
@@ -56,6 +57,8 @@ function WatchlistItemDetails({
     const { ui: finixUi } = useFinixUiTranslation();
 
     const navigate = useNavigate();
+    const closeRef = useRef<HTMLButtonElement>(null);
+    const originRef = useRef<HTMLElement | null>(document.activeElement as HTMLElement | null);
 
     // Estado editable del activo
     const [chartInterval, setChartInterval] = useState('D');
@@ -202,24 +205,22 @@ function WatchlistItemDetails({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
-            {/* Backdrop */}
-            <button type="button" aria-label={finixUi("Cerrar ficha")} className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-
-            {/* Slide-over panel */}
-            <div className="relative z-50 w-full sm:max-w-xl h-full bg-card border-l border-border/60 shadow-2xl overflow-y-auto flex flex-col">
+        <DialogPrimitive.Root open={isOpen} onOpenChange={open=>{if(!open)onClose();}}><DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="fixed inset-0 z-[90] bg-background/80 backdrop-blur-sm"/>
+            <DialogPrimitive.Content aria-describedby="watchlist-detail-description" className="fixed inset-y-0 right-0 z-[91] flex h-[100dvh] w-full flex-col overflow-hidden border-l border-border bg-card shadow-2xl outline-none sm:max-w-xl" onOpenAutoFocus={event=>{event.preventDefault();closeRef.current?.focus({preventScroll:true});}} onCloseAutoFocus={event=>{event.preventDefault();if(originRef.current?.isConnected)originRef.current.focus({preventScroll:true});}}>
+                <DialogPrimitive.Description id="watchlist-detail-description" className="sr-only">Ficha del activo, objetivo de precio, alertas y notas privadas.</DialogPrimitive.Description>
                 {/* Header fijo */}
-                <div className="sticky top-0 z-20 bg-card/90 backdrop-blur-md border-b border-border/40 p-6 pb-4">
+                <div className="relative shrink-0 z-20 bg-card/90 backdrop-blur-md border-b border-border/40 p-6 pb-4">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <SymbolLogo symbol={item.symbol} size={48} />
                             <div>
-                                <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+                                <DialogPrimitive.Title className="text-xl font-black text-foreground flex items-center gap-2">
                                     {item.symbol}
                                     <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-muted text-muted-foreground uppercase">
                                         {item.market} · {item.currency}
                                     </span>
-                                </h2>
+                                </DialogPrimitive.Title>
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                     {item.name} · {item.assetType}
                                 </p>
@@ -242,6 +243,7 @@ function WatchlistItemDetails({
                             <button
                                 type="button"
                                 onClick={onClose}
+                                ref={closeRef}
                                 aria-label={finixUi("Cerrar ficha del activo")}
                                 className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                             >
@@ -271,7 +273,7 @@ function WatchlistItemDetails({
                     )}
                 </div>
 
-                <div className="p-6 space-y-6 flex-1">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-6">
                     {/* Alerta de guardado */}
                     {savedSuccess && (
                         <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -443,6 +445,13 @@ function WatchlistItemDetails({
                             </div>
                         </div>
 
+                        {alertEnabled && alertChannel !== 'EMAIL' && (
+                            <p className="text-[11px] leading-relaxed text-muted-foreground">
+                                Para recibir avisos en este dispositivo, activá las notificaciones en{' '}
+                                <a href="/settings?tab=notificaciones" target="_blank" rel="noopener noreferrer" className="font-semibold text-emerald-700 dark:text-emerald-400 underline underline-offset-2">Configuración</a>.
+                            </p>
+                        )}
+
                         <p className="text-[11px] text-muted-foreground">
                             {item.assetType === 'CEDEAR'
                                 ? 'Este objetivo se mide en Pesos Argentinos (ARS) para el CEDEAR local en BYMA.'
@@ -610,7 +619,7 @@ function WatchlistItemDetails({
                         )}
                     </div>
                 </div>
-            </div>
-        </div>
+            </DialogPrimitive.Content>
+        </DialogPrimitive.Portal></DialogPrimitive.Root>
     );
 }

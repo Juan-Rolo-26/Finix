@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { PrismaService } from '../prisma.service';
-import { MarketService } from '../market/market.service';
+import { MarketService, type MarketQuote } from '../market/market.service';
 import { MailService } from '../mail/mail.service';
 
 export interface CreateAlertDto {
@@ -15,6 +15,8 @@ export interface CreateAlertDto {
 }
 
 export interface UpdateAlertDto {
+    ticker?: string;
+    name?: string;
     targetValue?: number;
     condition?: 'GREATER_THAN' | 'LESS_THAN' | 'CHANGE_PCT_UP' | 'CHANGE_PCT_DOWN';
     notificationChannel?: 'EMAIL' | 'PUSH' | 'ALL';
@@ -58,7 +60,7 @@ export class AlertsService {
 
     async createAlert(userId: string, dto: CreateAlertDto) {
         const ticker = (dto.ticker || '').trim().toUpperCase();
-        if (!ticker) throw new BadRequestException('El ticker es requerido.');
+        if (!/^[A-Z0-9:!._/-]{1,64}$/.test(ticker)) throw new BadRequestException('El ticker no es válido.');
         if (typeof dto.targetValue !== 'number' || !Number.isFinite(dto.targetValue)) {
             throw new BadRequestException('El valor objetivo debe ser un número válido.');
         }
@@ -142,7 +144,7 @@ export class AlertsService {
             where: { id },
             include: { asset: true, user: { select: { id: true, email: true, username: true } } },
         });
-        if (!alert || (alert.userId !== userId && alert.user?.username !== 'juan26')) {
+        if (!alert || alert.userId !== userId) {
             throw new NotFoundException('Alerta no encontrada.');
         }
         return alert;
@@ -150,9 +152,20 @@ export class AlertsService {
 
     async updateAlert(userId: string, id: string, dto: UpdateAlertDto) {
         const existing = await this.getAlert(userId, id);
+        let instrument: {ticker:string;assetId:string} | undefined;
+        if (dto.ticker !== undefined) {
+            const ticker=dto.ticker.trim().toUpperCase();
+            if (!/^[A-Z0-9:!._/-]{1,64}$/.test(ticker)) throw new BadRequestException('El ticker no es válido.');
+            const symbol=this.resolveCanonicalSymbol(ticker),local=symbol.startsWith('BCBA:');
+            const asset=await this.assetModel.upsert({where:{ticker},update:{},create:{ticker,name:dto.name||existing.name||ticker,symbol,tradingViewSymbol:symbol,exchange:symbol.split(':')[0],currency:local?'ARS':'USD',type:local?'CEDEAR':symbol.startsWith('BINANCE:')?'CRYPTO':'STOCK',active:true}});
+            instrument={ticker,assetId:asset.id};
+        }
+        if (dto.targetValue !== undefined && (!Number.isFinite(dto.targetValue) || dto.targetValue <= 0)) throw new BadRequestException('El objetivo debe ser mayor que cero.');
         return this.alertModel.update({
             where: { id: existing.id },
             data: {
+                ...instrument,
+                ...(dto.status === 'ACTIVE' ? {activatedAt:new Date(),triggeredAt:null,triggerPrice:null} : existing.status === 'ACTIVE' && (dto.targetValue !== undefined || dto.condition !== undefined || instrument) ? {triggeredAt:null,triggerPrice:null} : {}),
                 ...(typeof dto.targetValue === 'number' && Number.isFinite(dto.targetValue) ? { targetValue: dto.targetValue } : {}),
                 ...(dto.condition ? { condition: dto.condition } : {}),
                 ...(dto.notificationChannel ? { notificationChannel: dto.notificationChannel } : {}),
@@ -171,6 +184,7 @@ export class AlertsService {
             data: {
                 status: newStatus,
                 activatedAt: newStatus === 'ACTIVE' ? new Date() : existing.activatedAt,
+                ...(newStatus === 'ACTIVE' ? {triggeredAt:null,triggerPrice:null} : {}),
             },
             include: { asset: true },
         });
@@ -200,6 +214,7 @@ export class AlertsService {
             where: { status: 'ACTIVE' },
             include: { user: { select: { id: true, email: true, username: true } }, asset: true },
             take: 200,
+            orderBy: {lastCheckedAt:{sort:'asc',nulls:'first'}},
         });
 
         if (!activeAlerts.length) return { checked: 0, triggered: 0, errors: 0 };
@@ -212,7 +227,7 @@ export class AlertsService {
         }
 
         const uniqueSymbols = Array.from(new Set(symbolMap.values()));
-        const quotes = await this.marketService.getQuotes(uniqueSymbols);
+        const quotes: MarketQuote[] = await this.marketService.getQuotes(uniqueSymbols).catch(() => []);
         const quoteBySymbol = new Map(quotes.map((q) => [q.symbol.toUpperCase(), q]));
         const quoteByInput = new Map(quotes.map((q) => [q.inputSymbol.toUpperCase(), q]));
 
@@ -221,6 +236,18 @@ export class AlertsService {
 
         for (const alert of activeAlerts) {
             try {
+                // A recorded crossing remains pending until transport succeeds, even if price moves back.
+                if (alert.triggeredAt && typeof alert.triggerPrice === 'number' && Number.isFinite(alert.triggerPrice)) {
+                    const retryBefore=new Date(Date.now()-60000);
+                    if (alert.lastCheckedAt && alert.lastCheckedAt > retryBefore) continue;
+                    const lease=await this.alertModel.updateMany({where:{id:alert.id,status:'ACTIVE',triggeredAt:alert.triggeredAt,OR:[{lastCheckedAt:null},{lastCheckedAt:{lte:retryBefore}}]},data:{lastCheckedAt:new Date()}});
+                    if (lease.count) {
+                        await this.dispatchAlertNotification(alert,alert.triggerPrice,null);
+                        await this.alertModel.updateMany({where:{id:alert.id,status:'ACTIVE',triggeredAt:alert.triggeredAt},data:{status:'TRIGGERED'}});
+                        triggeredCount++;
+                    }
+                    continue;
+                }
                 const targetSym = symbolMap.get(alert.ticker)?.toUpperCase() || '';
                 const quote = quoteBySymbol.get(targetSym) || quoteByInput.get(targetSym) || quoteByInput.get(alert.ticker);
                 const currentPrice = quote?.price ?? null;
@@ -232,7 +259,7 @@ export class AlertsService {
                     data: { lastCheckedAt: new Date() },
                 });
 
-                if (currentPrice === null || !Number.isFinite(currentPrice)) {
+                if (quote?.unavailable || currentPrice === null || !Number.isFinite(currentPrice) || currentPrice <= 0) {
                     continue;
                 }
 
@@ -248,19 +275,21 @@ export class AlertsService {
                 }
 
                 if (isTriggered) {
-                    // Atomic transition to TRIGGERED
+                    // Atomically record the crossing before delivery; keep it active while a retry is pending.
+                    const triggeredAt = new Date();
                     const claim = await this.alertModel.updateMany({
-                        where: { id: alert.id, status: 'ACTIVE' },
+                        where: { id: alert.id, status: 'ACTIVE', triggeredAt:null },
                         data: {
-                            status: 'TRIGGERED',
+                            status: 'ACTIVE',
                             triggerPrice: currentPrice,
-                            triggeredAt: new Date(),
+                            triggeredAt,
                         },
                     });
 
                     if (claim.count > 0) {
+                        await this.dispatchAlertNotification({...alert,triggeredAt},currentPrice,currentChange);
+                        await this.alertModel.updateMany({where:{id:alert.id,status:'ACTIVE',triggeredAt},data:{status:'TRIGGERED'}});
                         triggeredCount++;
-                        await this.dispatchAlertNotification(alert, currentPrice, currentChange);
                     }
                 }
             } catch (err: any) {
@@ -274,6 +303,8 @@ export class AlertsService {
 
     private async dispatchAlertNotification(alert: any, currentPrice: number, currentChange: number | null) {
         const destEmail = alert.destinationEmail || alert.user?.email;
+        const currency = alert.asset?.currency || (String(alert.ticker).startsWith('BCBA:')?'ARS':'USD');
+        const safe=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
         const conditionLabel =
             alert.condition === 'GREATER_THAN' ? `superó el precio objetivo de $${alert.targetValue}` :
             alert.condition === 'LESS_THAN' ? `cayó por debajo de $${alert.targetValue}` :
@@ -294,13 +325,13 @@ export class AlertsService {
                         <span style="font-size:12px;background:#065f46;color:#a7f3d0;padding:4px 10px;border-radius:12px;font-weight:700">EN VIVO</span>
                     </div>
                     <div style="padding:28px">
-                        <h2 style="margin:0 0 8px 0;font-size:24px;font-weight:800;color:#ffffff">${alert.ticker} — ${alert.name}</h2>
+                        <h2 style="margin:0 0 8px 0;font-size:24px;font-weight:800;color:#ffffff">${safe(alert.ticker)} — ${safe(alert.name)}</h2>
                         <p style="margin:0 0 20px 0;color:#a1a1aa;font-size:14px">Tu condición de alerta fue alcanzada en el mercado.</p>
                         
                         <div style="background:#27272a;border-radius:14px;padding:18px 22px;margin:20px 0">
-                            <p style="margin:0 0 6px 0;font-size:12px;color:#a1a1aa;text-transform:uppercase;font-weight:700">Cotización actual</p>
-                            <div style="font-size:32px;font-weight:900;color:#10b981">$${currentPrice.toFixed(2)} <span style="font-size:18px;color:${(currentChange || 0) >= 0 ? '#10b981' : '#f43f5e'}">${changeStr}</span></div>
-                            <p style="margin:8px 0 0 0;font-size:13px;color:#e4e4e7">Condición: <strong>${conditionLabel}</strong></p>
+                            <p style="margin:0 0 6px 0;font-size:12px;color:#a1a1aa;text-transform:uppercase;font-weight:700">Precio que activó la alerta</p>
+                            <div style="font-size:32px;font-weight:900;color:#10b981">$${currentPrice.toFixed(2)} ${safe(currency)} <span style="font-size:18px;color:${(currentChange || 0) >= 0 ? '#10b981' : '#f43f5e'}">${changeStr}</span></div>
+                            <p style="margin:8px 0 0 0;font-size:13px;color:#e4e4e7">Condición: <strong>${safe(conditionLabel)}</strong></p>
                         </div>
 
                         <a href="https://finixarg.com/market" style="display:inline-block;padding:12px 24px;background:#10b981;color:#ffffff;text-decoration:none;border-radius:12px;font-weight:800;font-size:14px;margin-top:10px">Ver gráfico en tiempo real</a>
@@ -313,37 +344,42 @@ export class AlertsService {
             </html>
         `;
 
-        // 1. In-app notification
-        try {
-            await this.prisma.notification.create({
-                data: {
-                    userId: alert.userId,
-                    type: 'MARKET_ALERT',
-                    priority: 'HIGH',
-                    title: `Alerta de precio: ${alert.ticker}`,
-                    message: `${alert.name} (${alert.ticker}) ${conditionLabel}. Precio actual: $${currentPrice.toFixed(2)}.`,
-                    link: `/market?symbol=${encodeURIComponent(alert.ticker)}`,
-                    entityType: 'ASSET',
-                    entityId: alert.ticker,
-                },
-            });
-        } catch (e: any) {
-            this.logger.warn(`No se pudo crear notificación interna para alerta ${alert.id}: ${e.message}`);
-        }
-
         // 2. Email notification
         if (destEmail && (alert.notificationChannel === 'EMAIL' || alert.notificationChannel === 'ALL')) {
             try {
                 await this.mailService.sendEmail({
                     to: destEmail,
                     subject,
-                    text: `${alert.ticker}: ${conditionLabel}. Precio actual: $${currentPrice.toFixed(2)}.`,
+                    text: `${alert.ticker}: ${conditionLabel}. Precio al activarse: $${currentPrice.toFixed(2)} ${currency}.`,
                     html,
+                    idempotencyKey:'finix/price-alert/'+alert.id+'/'+new Date(alert.activatedAt || alert.createdAt || 0).getTime()+'/'+alert.condition+'/'+alert.targetValue,
                 });
             } catch (e: any) {
                 this.logger.warn(`No se pudo enviar email para alerta ${alert.id}: ${e.message}`);
+                throw e;
             }
         }
+
+        // 1. In-app notification
+        try {
+            const existing=await this.prisma.notification.findFirst({where:{userId:alert.userId,entityType:'MARKET_ALERT',entityId:alert.id,createdAt:{gte:new Date(alert.activatedAt || alert.createdAt || 0)}},select:{id:true}});
+            if (!existing) await this.prisma.notification.create({
+                data: {
+                    userId: alert.userId,
+                    type: 'MARKET_PRICE_ALERT',
+                    priority: 'HIGH',
+                    title: `Alerta de precio: ${alert.ticker}`,
+                    message: `${alert.name} (${alert.ticker}) ${conditionLabel}. Precio al activarse: $${currentPrice.toFixed(2)} ${currency}.`,
+                    link: `/market?symbol=${encodeURIComponent(alert.ticker)}`,
+                    entityType: 'MARKET_ALERT',
+                    entityId: alert.id,
+                },
+            });
+        } catch (e: any) {
+            this.logger.warn(`No se pudo crear notificación interna para alerta ${alert.id}: ${e.message}`);
+            throw e;
+        }
+
     }
 
     async getAdminOverview() {

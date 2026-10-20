@@ -102,8 +102,8 @@ export class SettingsController {
     // ─── Financial Verification ───────────────────────────────────────────────
 
     @Get('verification')
-    getVerification(@Request() req) {
-        return this.settingsService.getVerification(req.user.id);
+    async getVerification(@Request() req) {
+        return (await this.settingsService.getVerification(req.user.id)) ?? { status: 'not_requested' };
     }
 
     @Post('verification/documents')

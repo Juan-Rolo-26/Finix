@@ -641,7 +641,7 @@ export default function Settings() {
         : '';
 
     return (
-        <div className="p-4 md:p-6 lg:p-8 w-full space-y-6 pb-16">
+        <div className="settings-page mx-auto w-full max-w-[1080px] p-4 md:p-6 lg:p-8 space-y-5 pb-16">
             <FreeAccessNotice />
             {/* Header */}
             <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-6 sm:p-7 shadow-xs">
@@ -668,8 +668,8 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={tab => setSearchParams({ tab })} className="space-y-6">
-                <div className="w-full overflow-x-auto pb-2 scrollbar-none flex justify-start sm:justify-center">
-                    <TabsList className="is-centered justify-center mx-auto inline-flex flex-nowrap items-center gap-1.5 p-1.5 bg-secondary/40 border border-border/60 rounded-2xl min-w-max">
+                <div className="w-full pb-2 flex justify-center">
+                    <TabsList className="is-centered justify-center mx-auto inline-flex flex-wrap items-center gap-1.5 p-1.5 bg-secondary/40 border border-border/60 rounded-2xl min-w-0">
                         {[
                             { value: 'cuenta', label: ui("Cuenta"), icon: <User className="w-4 h-4 shrink-0" /> },
                             { value: 'suscripcion', label: ui("Planes PRO"), icon: <Crown className="w-4 h-4 text-amber-500 shrink-0" /> },

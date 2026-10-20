@@ -53,6 +53,19 @@ export class WatchlistService {
         return { clean, baseTicker, isCedear };
     }
 
+    private async alertInstrument(item: {symbol:string;market?:string|null}) {
+        const identity=resolveMarketIdentity(item.symbol,item.market || undefined);
+        if(identity.exchange)return identity.symbol;
+        if(identity.crypto&&identity.binancePair)return 'BINANCE:'+identity.binancePair;
+        const market=(item.market||'').toUpperCase();
+        if(['NASDAQ','NYSE','AMEX','NYSEARCA'].includes(market))return market+':'+identity.ticker;
+        const definition=getCedearDefinition(identity.ticker);
+        if(definition?.underlyingTicker===identity.ticker)return definition.underlyingExchange+':'+identity.ticker;
+        const [quote]=await this.marketService.getQuotes([identity.symbol]);
+        if(!quote?.unavailable&&/^(NASDAQ|NYSE|AMEX|NYSEARCA):/.test(quote?.symbol||''))return quote.symbol;
+        throw new BadRequestException('No se pudo identificar el mercado de la alerta. Reintentá antes de activarla.');
+    }
+
     // ── 1. LISTAS PERSONALES: Obtener listas del usuario ──
     async getWatchlists(userId: string) {
         const plan = await this.getUserPlan(userId);
@@ -172,7 +185,7 @@ export class WatchlistService {
         const alertsCount = await this.prisma.marketAlert.count({
             where: {
                 userId,
-                ticker: { in: symbols },
+                OR: [{ticker:{in:[...symbols,...watchlist.items.map(item=>resolveMarketIdentity(item.symbol,item.market).symbol)]}},{id:{in:watchlist.items.flatMap(item=>item.alertId?[item.alertId]:[])}}],
                 status: 'ACTIVE',
             },
         });
@@ -261,7 +274,7 @@ export class WatchlistService {
         const alerts = await this.prisma.marketAlert.findMany({
             where: {
                 userId,
-                ticker: { in: [...symbols, ...watchlist.items.map(item => item.symbol)] },
+                OR: [{ticker: { in: [...symbols, ...watchlist.items.map(item => item.symbol), ...watchlist.items.map(item => resolveMarketIdentity(item.symbol,item.market).symbol)] }}, {id:{in:watchlist.items.flatMap(item=>item.alertId?[item.alertId]:[])}}],
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -515,6 +528,8 @@ export class WatchlistService {
             if (item.alertId) {
                 const enabled = dto.alertEnabled !== false && target !== null;
                 await this.alertsService.updateAlert(userId, item.alertId, {
+                    ticker: dto.alertEnabled === false ? undefined : await this.alertInstrument(item),
+                    name: item.name || item.symbol,
                     ...(target !== null && { targetValue: target }),
                     condition: direction === 'BELOW' ? 'LESS_THAN' : 'GREATER_THAN',
                     ...(dto.alertChannel && { notificationChannel: dto.alertChannel }),
@@ -522,7 +537,7 @@ export class WatchlistService {
                 });
             } else if (dto.alertEnabled && target) {
                 const alert = await this.alertsService.createAlert(userId, {
-                    ticker: item.symbol, name: item.name || item.symbol, alertType: 'PRICE_TARGET', targetValue: target,
+                    ticker: await this.alertInstrument(item), name: item.name || item.symbol, alertType: 'PRICE_TARGET', targetValue: target,
                     condition: direction === 'BELOW' ? 'LESS_THAN' : 'GREATER_THAN', notificationChannel: dto.alertChannel || 'EMAIL',
                 });
                 await this.prisma.watchlistItem.update({ where: { id: itemId }, data: { alertId: alert.id } });

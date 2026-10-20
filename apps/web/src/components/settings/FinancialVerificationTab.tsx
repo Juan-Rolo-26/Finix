@@ -71,7 +71,8 @@ export default function FinancialVerificationTab() {
             const res = await apiFetch('/me/verification');
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             if (res.ok) {
-                const data = await res.json();
+                const body = await res.text();
+                const data = body.trim() ? JSON.parse(body) : null;
                 if (data && data.id) {
                     setRequest(data as VerificationRequest);
                 } else {

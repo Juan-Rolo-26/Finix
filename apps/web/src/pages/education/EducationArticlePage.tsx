@@ -1,3 +1,4 @@
+import './education.css';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useState, useEffect, useMemo, Fragment } from 'react';
@@ -199,7 +200,7 @@ export default function EducationArticlePage() {
     }
 
     return (
-        <div className="min-h-screen bg-background text-foreground pb-24">
+        <div className="education-lesson min-h-screen bg-background text-foreground pb-24">
             {/* TOP NAVIGATION BREADCRUMB */}
             <div className="border-b border-border/70 bg-card/40 sticky top-14 z-30 backdrop-blur-md px-4 py-3 relative overflow-hidden">
                 <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-4 px-2 text-sm pt-0.5">

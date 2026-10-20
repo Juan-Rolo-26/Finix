@@ -10,6 +10,7 @@ import {
 import { apiFetch } from '@/lib/api';
 import { EducationCover, type EducationCoverImage } from '@/components/education/EducationCover';
 import { searchEducationArticles } from '@/lib/educationSearch';
+import './education.css';
 
 interface Category {
     id: string;
@@ -186,9 +187,9 @@ export default function EducationHome() {
     const handleSearchChange = (val: string) => {
         setSearch(val);
         if (val.trim()) {
-            setSearchParams({ search: val });
+            setSearchParams({ search: val }, { replace:true });
         } else {
-            setSearchParams({});
+            setSearchParams({}, { replace:true });
         }
     };
 
@@ -217,84 +218,15 @@ export default function EducationHome() {
     }
 
     return (
-        <div className="min-h-screen bg-emerald-50/70 text-foreground pb-20 dark:bg-background">
-            {/* HERO & SEARCH BAR */}
-            <section className="relative left-1/2 flex min-h-[540px] w-screen max-w-none -translate-x-1/2 items-center justify-center overflow-hidden rounded-b-[2rem] border-b border-emerald-200/70 bg-gradient-to-b from-emerald-100 via-emerald-50 to-background px-4 py-14 text-foreground sm:px-8 sm:py-16 lg:min-h-[600px] lg:px-12 lg:py-20 dark:border-emerald-900/40 dark:from-emerald-950/50 dark:via-background dark:to-background">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_75%_at_50%_-20%,rgba(16,185,129,0.15),transparent)] dark:bg-[radial-gradient(ellipse_80%_75%_at_50%_-20%,rgba(16,185,129,0.12),transparent)]" />
-                <div className="pointer-events-none absolute -right-24 -top-40 h-96 w-96 rounded-full border border-emerald-900/5 dark:border-emerald-100/5" />
-                <div className="pointer-events-none absolute -right-10 -top-24 h-72 w-72 rounded-full border border-emerald-900/5 dark:border-emerald-100/5" />
-
-                <div className="relative z-10 mx-auto w-full max-w-6xl space-y-6 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-bold uppercase tracking-wider text-primary shadow-sm">
-                        <GraduationCap className="w-4 h-4" />
-                        {" "}<FinixUiText text={"Finix · Biblioteca de Consulta Financiera"} />{" "}</div>
-
-                    <h1 className="text-4xl font-black tracking-tight text-foreground sm:text-6xl">
-                        {" "}<FinixUiText text={"Biblioteca Educativa"} />{" "}</h1>
-
-                    <p className="mx-auto max-w-4xl text-base font-normal leading-relaxed text-muted-foreground sm:text-lg lg:text-xl">
-                        {" "}<FinixUiText text={"Consultá conceptos, fórmulas, indicadores y métricas de mercado con rigor técnico institucional. Libre acceso y sin registro requerido."} />{" "}</p>
-
-                    <Link to="/laboratorio" className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-primary/25 bg-card px-6 py-3 text-base font-bold text-primary shadow-sm transition hover:-translate-y-0.5 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{""}<FinixUiText text={"Probá los conceptos en el Laboratorio"} />{" "}<ArrowRight className="h-4 w-4 shrink-0" /></Link>
-                    {/* BUSCADOR INSTANTÁNEO */}
-                    <div className="relative mx-auto max-w-5xl pt-2">
-                        <div className="relative flex items-center rounded-2xl border border-border/80 bg-card shadow-md shadow-black/5 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40">
-                            <Search className="w-5 h-5 ml-4 text-muted-foreground shrink-0" />
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={e => handleSearchChange(e.target.value)}
-                                placeholder={finixUi("Buscar por métrica, sigla o fórmula (ej: PE, P-E, RSI, MACD, Media Móvil 20/200, CEDEAR, TIR)...")}
-                                className="w-full bg-transparent px-4 py-4 text-base sm:text-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
-                                aria-label={finixUi("Buscador instantáneo de conceptos financieros")}
-                            />
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleSearchChange('')}
-                                    className="mr-3 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md bg-muted/60"
-                                >
-                                    {" "}<FinixUiText text={"Limpiar"} />{" "}</button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* ACCESOS DIRECTOS POPULARES */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-sm">
-                        <span className="mr-1 font-medium text-muted-foreground">{""}<FinixUiText text={"Consultas rápidas:"} />{""}</span>
-                        {[
-                            { label: 'PER (P/E)', term: 'PER' },
-                            { label: 'RSI 14', term: 'RSI' },
-                            { label: 'MACD 12/26/9', term: 'MACD' },
-                            { label: 'Media Móvil 20/200', term: 'Media Móvil' },
-                            { label: 'ROIC & WACC', term: 'ROIC' },
-                            { label: 'DCF Fair Value', term: 'DCF' },
-                            { label: 'CEDEARs y Ratios', term: 'CEDEAR' },
-                            { label: 'Dólar MEP & CCL', term: 'MEP' },
-                            { label: 'Bonos & TIR', term: 'Bonos' },
-                            { label: 'Bollinger', term: 'Bollinger' },
-                            { label: 'ATR', term: 'ATR' },
-                            { label: 'VWAP', term: 'VWAP' },
-                        ].map(item => (
-                            <button
-                                key={item.label}
-                                type="button"
-                                onClick={() => handleSearchChange(item.term)}
-                                className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
-                                    search.toLowerCase() === item.term.toLowerCase()
-                                        ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                                        : 'bg-card border-border/80 hover:border-primary/50 text-foreground hover:text-primary'
-                                }`}
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </section>
+        <div className="education-home min-h-screen bg-background text-foreground pb-20">
+            <header className="education-hero">
+                <div className="education-hero-copy"><span className="education-brand"><GraduationCap size={20}/> Finix Educativa</span><h1>Aprendé a invertir<br/>con criterio.</h1><p>Entendé los conceptos, leé los datos y llevá cada idea a la práctica. Una biblioteca abierta para tomar decisiones con más contexto.</p><Link to="/laboratorio" className="education-practice">Llevarlo a la práctica <ArrowRight size={16}/></Link></div>
+                <aside className="education-topics"><h2>Elegí tu próximo tema</h2>{categories.slice(0,3).map(cat=>{const Icon=CATEGORY_ICONS[cat.icon]||BookOpen;return <Link key={cat.id} to={'/educativa/'+cat.slug}><span className="education-topic-icon"><Icon size={20}/></span><span><strong>{cat.name}</strong><small>{cat.description || 'Conceptos y herramientas para profundizar.'}</small></span><ArrowRight size={16}/></Link>;})}<p>{articles.length} artículos para consultar a tu ritmo</p></aside>
+            </header>
+            <section className="education-search" aria-label="Buscar en la biblioteca"><div className="education-search-field"><Search size={20}/><input value={search} onChange={e=>handleSearchChange(e.target.value)} placeholder="¿Qué querés entender hoy? Buscá RSI, CEDEARs, bonos, DCF…" aria-label={finixUi("Buscador instantáneo de conceptos financieros")}/>{search&&<button type="button" onClick={()=>handleSearchChange('')}>Limpiar</button>}</div><div className="education-quick-search"><span>Consultas frecuentes</span>{['RSI','MACD','ROIC','DCF','CEDEAR','Bonos'].map(term=><button key={term} type="button" onClick={()=>handleSearchChange(term)} aria-pressed={search===term}>{term}</button>)}</div></section>
 
             {/* MAIN CATALOG & FILTERS */}
-            <div className="mx-auto max-w-[1800px] space-y-8 px-4 py-8 sm:px-8 xl:px-12 2xl:px-16">
+            <div id="biblioteca" className="education-catalog mx-auto max-w-[1360px] space-y-6 px-4 py-8 sm:px-8">
                 {/* CATEGORY & LEVEL FILTER BAR */}
                 <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 border-b border-border/80 pb-5">
                     {/* Category tabs */}
@@ -393,14 +325,14 @@ export default function EducationHome() {
                             {" "}<FinixUiText text={"Ver todos los artículos"} />{" "}</button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                         {filteredArticles.map(art => {
                             const IconComp = CATEGORY_ICONS[art.category?.icon || 'BookOpen'] || BookOpen;
                             return (
                                 <Link
                                     key={art.id}
                                     to={`/educativa/${art.category?.slug || 'general'}/${art.slug}`}
-                                    className="group p-6 rounded-2xl border border-border/80 bg-card hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between"
+                                    className="education-article-card group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/50"
                                 >
                                     <div className="space-y-3">
                                         <EducationCover image={art.coverImage} />
@@ -422,7 +354,7 @@ export default function EducationHome() {
                                             {art.title}
                                         </h2>
 
-                                        <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed">
+                                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                                             {art.summary}
                                         </p>
 

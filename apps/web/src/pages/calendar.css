@@ -603,3 +603,10 @@
         margin-left: 29px;
     }
 }
+
+.calendar-compact-card{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0;min-height:122px;padding:17px 18px;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--card));box-shadow:0 1px 3px hsl(var(--foreground)/.025);}
+.calendar-compact-card h3{font-size:14px;line-height:1.45;font-weight:650;color:hsl(var(--foreground));margin:0;}.calendar-compact-card>button{display:inline-flex;align-items:center;gap:5px;align-self:flex-start;color:hsl(var(--primary));font-size:12px;font-weight:650;}.calendar-compact-card>button:focus-visible{outline:2px solid hsl(var(--primary));outline-offset:4px;border-radius:3px;}
+.calendar-compact-company{display:flex;align-items:center;gap:11px;min-width:0;}.calendar-compact-company>img{width:34px;height:34px;object-fit:contain;border-radius:50%;flex:none;}.calendar-compact-company p{font-size:12px;line-height:1.5;color:hsl(var(--muted-foreground));margin-top:2px;}.calendar-result--positive{border-left:4px solid #0b9564;}.calendar-result--negative{border-left:4px solid #dc4261;}.calendar-result--mixed{border-left:4px solid #d79823;}.calendar-result--neutral{border-left:4px solid hsl(var(--border));}
+.calendar-brief-analysis{border:1px solid hsl(var(--primary)/.16);border-radius:12px;background:hsl(var(--primary)/.04);padding:16px;}.calendar-brief-analysis h3{font-size:14px;font-weight:700;margin-bottom:8px;}.calendar-brief-analysis p{font-size:14px;line-height:1.75;color:hsl(var(--muted-foreground));}.calendar-detail-body .calendar-metrics{margin-top:12px;}.calendar-detail-link{display:inline-block;color:hsl(var(--primary));font-size:13px;font-weight:650;}.calendar-details-modal{overscroll-behavior:contain;}
+.calendar-compact-logo{display:block;width:36px;height:36px;flex:none;overflow:hidden;border-radius:50%;}.calendar-compact-logo img{width:100%;height:100%;object-fit:contain;}
+.calendar-details-modal{--pm-positive:#047857;--pm-negative:#be123c;--pm-amber:#a16207;--pm-blue:#2563eb;}.dark .calendar-details-modal{--pm-positive:#34d399;--pm-negative:#fb7185;--pm-amber:#fbbf24;--pm-blue:#60a5fa;}

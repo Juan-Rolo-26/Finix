@@ -501,3 +501,11 @@
         transition: none !important;
     }
 }
+
+/* Reading and account screens use a centered measure rather than stretching every row. */
+@media (min-width:1024px){
+ .finix-desktop-shell .desktop-page-frame[data-page='settings'] > .settings-page{max-width:1080px;margin-inline:auto;padding:24px clamp(20px,2.5vw,36px) 48px;}
+ .finix-desktop-shell .desktop-page-frame[data-page='profile'] > .profile-page{max-width:1160px;margin-inline:auto;padding:24px 20px 48px;}
+ .finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;}
+ .finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading h1,.finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading p{text-align:center!important;}
+}

@@ -1,3 +1,4 @@
+import './education.css';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { EducationCover } from '@/components/education/EducationCover';
 import { useState, useEffect } from 'react';
@@ -63,7 +64,7 @@ export default function EducationCategoryPage() {
         : allArticles.filter((a: any) => a.subcategory?.slug === activeSubcategory);
 
     return (
-        <div className="min-h-screen bg-background text-foreground pb-20">
+        <div className="education-category min-h-screen bg-background text-foreground pb-20">
             {/* Header */}
             <header className="border-b border-border/80 bg-card/60 px-4 py-8 sm:py-12">
                 <div className="max-w-6xl mx-auto space-y-4">
