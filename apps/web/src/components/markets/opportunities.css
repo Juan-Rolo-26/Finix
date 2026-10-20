@@ -131,3 +131,13 @@
         max-width: 110px;
     }
 }
+
+.opportunities-indicator-column { min-width: 195px; }
+.opportunities-table .opportunities-indicator { min-width: 195px; }
+.opportunities-indicator > strong { display: block; font-size: 20px; line-height: 1.3; }
+.opportunities-indicator > small { display: block; margin-top: 5px; font-size: 12px; font-weight: 400; color: hsl(var(--muted-foreground)); }
+.opportunities-score-track { display: block; height: 4px; width: 110px; margin-top: 8px; border-radius: 9px; overflow: hidden; background: hsl(var(--muted)); }
+.opportunities-score-track > span { display: block; height: 100%; background: hsl(var(--primary)); border-radius: inherit; }
+.opportunities-indicator-note { margin-bottom: 14px; text-align: left; justify-content: flex-start; }
+
+.opportunities-table-scroll { position: relative; }

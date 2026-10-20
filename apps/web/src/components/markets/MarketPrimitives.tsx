@@ -103,6 +103,7 @@ export function MarketQuoteCard({
     children,
     onSelect,
     action,
+    compact = false,
 }: {
     symbol: string;
     label: string;
@@ -115,8 +116,21 @@ export function MarketQuoteCard({
     children?: ReactNode;
     onSelect?: () => void;
     action?: ReactNode;
+    compact?: boolean;
 }) {
     const ticker = symbol.split(':').pop() || symbol;
+    if (compact) {
+        return (
+            <article className="market-quote-card market-quote-card--compact" title={`${label} (${ticker})`}>
+                {onSelect && <button type="button" className="market-quote-card__link" onClick={onSelect} aria-label={`Ver ${label} (${ticker})`} />}
+                <div className="market-compact-identity">
+                    <SymbolLogo symbol={symbol} size={28} />
+                    <strong>{label || ticker}</strong>
+                </div>
+                <MarketChange value={change} />
+            </article>
+        );
+    }
     return (
         <article className="market-quote-card">
             {onSelect && (

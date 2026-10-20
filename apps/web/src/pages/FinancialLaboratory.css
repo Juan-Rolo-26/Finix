@@ -10,3 +10,97 @@
 .lab-panel{scroll-margin-top:88px}
 
 .lab-exchange{max-width:360px}.lab-exchange small{line-height:1.6}.lab-currency[hidden]{display:none}
+
+/* Finix laboratory workspace: four focused tools and a full-width calculator. */
+.financial-lab { width: 100%; max-width: none; padding: 28px clamp(16px, 3vw, 44px) 64px; }
+.lab-header { padding-bottom: 24px; border-bottom: 1px solid hsl(var(--border)); margin-bottom: 22px; }
+.lab-header h1 { font-size: clamp(26px, 2.5vw, 34px); font-weight: 700; }
+.lab-header > .lab-link { padding: 0 14px; border: 1px solid hsl(var(--border)); border-radius: 8px; background: hsl(var(--card)); font-weight: 550; }
+.lab-search { max-width: 430px; border-radius: 8px; }
+.lab-discovery { justify-content: space-between; }
+.lab-workspace { display: flex; flex-direction: column; gap: 22px; }
+.lab-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; width: 100%; }
+.lab-tools > button { position: relative; padding: 18px; border: 1px solid hsl(var(--border)); border-radius: 10px; background: hsl(var(--card)); min-height: 120px; transition: border-color 150ms, background-color 150ms; }
+.lab-tools > button:hover { border-color: hsl(var(--primary) / .45); background: hsl(var(--primary) / .03); }
+.lab-tools > button.selected { background: hsl(var(--primary) / .07); border-color: hsl(var(--primary) / .5); box-shadow: inset 0 -3px hsl(var(--primary)); }
+.lab-tool-title { font-size: 15px; font-weight: 650; align-items: center; gap: 10px; }
+.lab-tool-title svg { color: hsl(var(--muted-foreground)); }
+.lab-tools > button.selected .lab-tool-title svg { color: hsl(var(--primary)); }
+.lab-tools > button > span + span { margin: 10px 0 0; font-size: 13px; line-height: 1.6; max-width: 38ch; }
+.lab-panel { width: 100%; padding: 28px; border-radius: 12px; box-shadow: 0 2px 8px hsl(var(--foreground) / .025); }
+.lab-panel-heading { align-items: center; }
+.lab-panel h2 { font-size: 25px; }
+.lab-panel-heading p { max-width: 70ch; font-size: 14px; }
+.lab-currency { font-size: 12px; }
+.lab-currency select { font-size: 13px; padding: 9px 12px; min-width: 130px; }
+.lab-assumption { font-size: 12px; line-height: 1.7; margin: 18px 0; max-width: 110ch; border-left: 0; padding-left: 0; }
+.lab-exchange { display: grid; grid-template-columns: minmax(170px, 1fr) minmax(140px, 220px) auto; align-items: center; gap: 4px 18px; max-width: none; padding: 14px 18px; margin: 0 0 24px; background: hsl(var(--muted) / .45); border: 1px solid hsl(var(--border)); border-radius: 9px; }
+.lab-exchange > span { grid-column: 1; grid-row: 1; margin: 0; font-size: 13px; }
+.lab-exchange > input { grid-column: 2; grid-row: 1; background: hsl(var(--card)); }
+.lab-exchange > button { grid-column: 3; grid-row: 1; font-size: 12px; white-space: nowrap; }
+.lab-exchange > small { grid-column: 1 / -1; font-size: 11px; margin: 2px 0 0; }
+.lab-calculator { grid-template-columns: 320px minmax(0, 1fr); gap: 30px; align-items: start; }
+.lab-inputs { padding: 20px; background: hsl(var(--muted) / .2); border: 1px solid hsl(var(--border)); border-radius: 10px; }
+.lab-calculator h3 { font-size: 16px; margin-bottom: 14px; }
+.lab-field > span { font-size: 13px; font-weight: 500; }
+.lab-field input, .lab-field select { background: hsl(var(--card)); min-height: 46px; border-radius: 7px; font-size: 15px; }
+.lab-field input:focus, .lab-field select:focus { border-color: hsl(var(--primary)); }
+.lab-field small { font-size: 12px; }
+.lab-number-hint { font-size: 12px; line-height: 1.6; }
+.lab-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding-bottom: 20px; }
+.lab-metrics > div { display: block; padding-inline: 18px; }
+.lab-metrics > div:first-child { padding-left: 0; }
+.lab-metrics > div + div { border-left: 1px solid hsl(var(--border)); }
+.lab-metrics span { font-size: 12px; min-height: 36px; }
+.lab-metrics strong { font-size: clamp(20px, 2vw, 29px); margin: 7px 0; text-align: left; }
+.lab-metrics small { font-size: 11px; line-height: 1.6; text-align: left; }
+.lab-chart { height: 340px; margin-top: 24px; }
+.lab-chart-caption { font-size: 12px; }
+.lab-button { font-size: 13px; border-radius: 8px; }
+.lab-method { font-size: 13px; line-height: 1.75; }
+.lab-method h3 { font-size: 16px; }
+.lab-method code { font-size: 12px; padding: 16px; border: 1px solid hsl(var(--border)); }
+.lab-detail { font-size: 13px; }
+.lab-saved { padding: 26px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); }
+.lab-save-form { max-width: 760px; }
+.lab-status:empty { display: none; }
+@media (max-width: 1100px) {
+    .lab-calculator { grid-template-columns: 270px minmax(0, 1fr); gap: 22px; }
+    .lab-metrics > div { padding-inline: 12px; }
+    .lab-tools > button { padding: 15px; }
+    .lab-tool-title { font-size: 14px; }
+}
+@media (max-width: 800px) {
+    .lab-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .lab-tools > button { min-height: 112px; }
+    .lab-calculator { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .lab-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+    .lab-inputs h3, .lab-number-hint, .lab-inputs > .lab-link, .lab-field-wide { grid-column: 1 / -1; }
+    .lab-exchange { grid-template-columns: minmax(0, 1fr) minmax(120px, 180px); gap: 6px 12px; }
+    .lab-exchange > button { grid-column: 1 / -1; grid-row: auto; justify-content: flex-start; min-height: 36px; }
+    .lab-panel { padding: 20px; }
+}
+@media (max-width: 520px) {
+    .financial-lab { padding: 20px 12px 72px; }
+    .lab-header h1 { font-size: 26px; }
+    .lab-header > .lab-link { margin-top: 8px; }
+    .lab-search { max-width: none; }
+    .lab-tools > button { padding: 13px 11px; min-height: 132px; }
+    .lab-tool-title { font-size: 13px; gap: 7px; }
+    .lab-tools > button > span + span { font-size: 12px; margin-top: 9px; }
+    .lab-panel { padding: 18px 12px; }
+    .lab-panel h2 { font-size: 23px; }
+    .lab-inputs { padding: 14px 12px; gap: 0 12px; }
+    .lab-field > span { font-size: 12px; }
+    .lab-field input, .lab-field select { font-size: 14px; }
+    .lab-exchange { padding: 12px; grid-template-columns: minmax(0, 1fr); }
+    .lab-exchange > input, .lab-exchange > span { grid-column: 1; grid-row: auto; }
+    .lab-metrics { grid-template-columns: minmax(0,1fr); gap: 14px; }
+    .lab-metrics > div { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 4px 10px; padding: 0; }
+    .lab-metrics > div + div { border-left: 0; padding-top: 14px; border-top: 1px solid hsl(var(--border)); }
+    .lab-metrics span { min-height: 0; }
+    .lab-metrics strong { font-size: 22px; margin: 0; text-align: right; }
+    .lab-metrics small { grid-column: 2; text-align: right; }
+    .lab-chart { height: 280px; }
+    .lab-saved { padding: 20px 14px; }
+}

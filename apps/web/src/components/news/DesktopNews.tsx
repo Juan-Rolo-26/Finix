@@ -4,6 +4,8 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Calendar, RefreshCw } from 'lucide-react';
 import type { NewsSlotData } from './NewsCard';
 import { DesktopNewsCard } from './DesktopNewsCard';
+import { NewsContextSidebar } from './NewsContextSidebar';
+import './news-context.css';
 
 export function DesktopNewsHero({ children }: { children?: ReactNode }) {
     return (
@@ -55,11 +57,12 @@ export function DesktopNews({ slots, categoryName, categoryColor, loading, refre
                     <span>{""}<FinixUiText text={"Actualizar noticias"} />{""}</span>
                 </button>
             </div>
-            <div className="desktop-news-columns">
+            <div className={`desktop-news-columns ${!loading && activeSlots.length <= 4 ? 'desktop-news-columns--brief' : ''}`}>
                 <div className="desktop-news-timeline" aria-busy={loading}>
                     {loading ? <div className="desktop-news-skeleton animate-pulse" /> : activeSlots.slice(4).map(slot => <DesktopNewsCard key={slot.article!.id} slot={slot} variant="timeline" {...shared} />)}
                     {!loading && activeSlots.length === 0 && <p className="desktop-news-empty">{""}<FinixUiText text={"No hay noticias publicadas en esta categoría."} />{""}</p>}
                 </div>
+                <NewsContextSidebar slots={activeSlots} loading={loading} categoryName={categoryName} onClickTracking={onClickTracking} />
             </div>
         </div>
     );

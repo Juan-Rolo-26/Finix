@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calculator, Search, Download, RotateCcw, Save, Trash2, BookOpen, ArrowRight, FlaskConical } from 'lucide-react';
+import { Calculator, Search, Download, RotateCcw, Save, Trash2, BookOpen, ArrowRight, FlaskConical, TrendingUp, TrendingDown, Target, Percent } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { TOOLS, calculate, validate, convertCurrency, parseLaboratoryNumber, type Currency, type ToolId, type Values, type Result } from '@/lib/laboratory';
 import { useTranslation } from '@/i18n';
@@ -8,6 +8,10 @@ import './FinancialLaboratory.css';
 
 type Snapshot = { id: string; name: string; tool: ToolId; values: Values; currency: Currency; exchangeRate?: number; date: string };
 const STORAGE = 'finix-laboratory-v1';
+const AVAILABLE_TOOLS = TOOLS.filter(tool => ['compuesto', 'objetivos', 'inflacion', 'comisiones'].includes(tool.id));
+const TOOL_ICONS: Partial<Record<ToolId, typeof Calculator>> = { compuesto: TrendingUp, objetivos: Target, inflacion: TrendingDown, comisiones: Percent };
+function ToolIcon({ id }: { id: ToolId }) { const Icon = TOOL_ICONS[id] || Calculator; return <Icon size={20} aria-hidden="true" />; }
+
 const formatNumber = (v: number, percent = false, locale = 'es-AR') => `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2, notation: Math.abs(v) >= 1e15 ? 'scientific' : 'standard' }).format(v)}${percent ? ' %' : ''}`;
 const compactNumber = (v: number, locale = 'es-AR') => new Intl.NumberFormat(locale, { notation: Math.abs(v) >= 1e15 ? 'scientific' : 'compact', maximumFractionDigits: 1 }).format(v);
 const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -47,7 +51,7 @@ export default function FinancialLaboratory() {
  const errors = validate(current, values, lang);
  const computed = useMemo(() => { try { return { result: calculate(current, values), error: '' }; } catch (e) { return { result: null, error: e instanceof Error ? e.message : 'Revisá los supuestos.' }; } }, [current, values]);
  const result = computed.result;
- const filtered = TOOLS.filter(t => (category === 'Todas' || t.category === category) && normalize(`${ui(t.title)} ${ui(t.description)} ${ui(t.category)} ${ui(t.formula)}`).includes(normalize(search)));
+ const filtered = AVAILABLE_TOOLS.filter(t => (category === 'Todas' || t.category === category) && normalize(`${ui(t.title)} ${ui(t.description)} ${ui(t.category)} ${ui(t.formula)}`).includes(normalize(search)));
  const loadQuote = async () => {
   setQuoteLoading(true);
   const controller = new AbortController();
@@ -97,8 +101,8 @@ export default function FinancialLaboratory() {
  const visibleRows = result?.rows.slice(page * 12, (page + 1) * 12) || [];
  return <div className="financial-lab">
   <header className="lab-header"><div><div className="lab-heading"><FlaskConical aria-hidden="true" size={28} /><h1>{ui('Laboratorio Financiero')}</h1></div><p>{ui('Probá tus números. Entendé cómo influyen el tiempo, las tasas y los costos.')}</p></div><Link className="lab-link" to="/educativa"><BookOpen size={17} />{ui(' Biblioteca educativa ')}<ArrowRight size={16} /></Link></header>
-  <div className="lab-discovery"><label className="lab-search"><Search size={18} aria-hidden="true" /><input aria-label={ui('Buscar herramientas')} placeholder={ui('Buscar: inflación, cuota, aportes…')} value={search} onChange={e => setSearch(e.target.value)} /><span>{filtered.length}/8</span></label><div className="lab-filters" aria-label={ui('Filtrar herramientas')}>{['Todas', ...new Set(TOOLS.map(t => t.category))].map(c => <button key={c} onClick={() => setCategory(c)} aria-pressed={category === c}>{ui(c)}</button>)}</div></div>
-  <div className="lab-workspace"><aside className="lab-tools" aria-label={ui('Herramientas financieras')}>{filtered.map(t => <button key={t.id} className={current.id === t.id ? 'selected' : ''} aria-pressed={current.id === t.id} onClick={() => select(t.id)}><span className="lab-tool-title"><Calculator size={17} />{ui(t.title)}</span><span>{ui(t.description)}</span></button>)}{filtered.length === 0 && <div className="lab-empty">{ui('No encontramos esa herramienta.')}<button onClick={() => { setSearch(''); setCategory('Todas'); }}>{ui('Restablecer búsqueda')}</button></div>}</aside>
+  <div className="lab-discovery"><label className="lab-search"><Search size={18} aria-hidden="true" /><input aria-label={ui('Buscar herramientas')} placeholder={ui('Buscar: inflación, aportes, comisiones…')} value={search} onChange={e => setSearch(e.target.value)} /><span>{filtered.length}/{AVAILABLE_TOOLS.length}</span></label><div className="lab-filters" aria-label={ui('Filtrar herramientas')}>{['Todas', ...new Set(AVAILABLE_TOOLS.map(t => t.category))].map(c => <button key={c} onClick={() => setCategory(c)} aria-pressed={category === c}>{ui(c)}</button>)}</div></div>
+  <div className="lab-workspace"><aside className="lab-tools" aria-label={ui('Herramientas financieras')}>{filtered.map(t => <button key={t.id} className={current.id === t.id ? 'selected' : ''} aria-pressed={current.id === t.id} onClick={() => select(t.id)}><span className="lab-tool-title"><ToolIcon id={t.id} />{ui(t.title)}</span><span>{ui(t.description)}</span></button>)}{filtered.length === 0 && <div className="lab-empty">{ui('No encontramos esa herramienta.')}<button onClick={() => { setSearch(''); setCategory('Todas'); }}>{ui('Restablecer búsqueda')}</button></div>}</aside>
    <section ref={panel} className="lab-panel" aria-label={ui(current.title)}><div className="lab-panel-heading"><div><h2>{ui(current.title)}</h2><p>{ui(current.description)}</p></div><label className="lab-currency" hidden={!hasMoney}>{ui('Moneda')}<select aria-label={ui('Moneda de la simulación')} value={currency} onChange={e => changeCurrency(e.target.value as Currency)}><option value="ARS">{ui('ARS · pesos')}</option><option value="USD">{ui('USD · dólares')}</option></select></label></div><p className="lab-assumption">{ui('Simulación con supuestos editables. Los valores de ejemplo no son tasas vigentes ni rendimientos garantizados. Los importes se convierten con esta cotización fija. Las tasas y la inflación permanecen iguales.')}</p>
     {hasMoney && <label className="lab-field lab-exchange" htmlFor="lab-exchange"><span>{ui('Tipo de cambio (ARS por USD)')}</span><input id="lab-exchange" type="text" inputMode="decimal" value={exchange} onChange={e => { setExchange(e.target.value); setQuoteSource(''); }} placeholder={ui('Tasa manual')} aria-invalid={exchange !== '' && (!Number.isFinite(exchangeRate) || exchangeRate <= 0)} /><small>{ui('Ingresá una cotización positiva para convertir los importes.')}</small><button type="button" className="lab-link" disabled={quoteLoading} onClick={loadQuote}>{ui('Cotización CCL de referencia')}</button>{quoteSource && <small>{quoteSource}</small>}</label>}
     {status && <p className="lab-status">{status}</p>}

@@ -24,8 +24,9 @@ import { SymbolLogo } from '@/components/SymbolLogo';
 import AddToWatchlistModal from '@/components/watchlist/AddToWatchlistModal';
 import { isWatchlistEnabled } from '@/lib/featureFlags';
 import './opportunities.css';
+import { getOpportunityIndicator, opportunityIndicatorMeta, type OpportunityCategory } from './opportunity-indicators';
 
-type Category = 'ALL' | 'UNDERVALUED' | 'HEALTH' | 'GROWTH' | 'DIVIDEND';
+type Category = OpportunityCategory;
 type Opportunity = any;
 type MetricTone = 'default' | 'positive' | 'negative' | 'accent';
 type OpportunityMetric = {
@@ -86,11 +87,6 @@ const categoryMeta: Record<
 const categoryMetrics: Record<Category, OpportunityMetric[]> = {
     ALL: [
         {
-            label: 'Score Finix',
-            value: (item) => scoreValue(item.opportunityScore),
-            tone: () => 'accent',
-        },
-        {
             label: 'Potencial',
             value: (item) => format(item.upside, true),
             tone: (item) => signedTone(item.upside),
@@ -131,11 +127,6 @@ const categoryMetrics: Record<Category, OpportunityMetric[]> = {
         },
     ],
     HEALTH: [
-        {
-            label: 'Balance',
-            value: (item) => scoreValue(item.scoreBreakdown?.balance),
-            tone: () => 'accent',
-        },
         {
             label: 'ROIC',
             value: (item) => format(item.roic),
@@ -200,11 +191,6 @@ const categoryMetrics: Record<Category, OpportunityMetric[]> = {
         },
     ],
     DIVIDEND: [
-        {
-            label: 'Yield',
-            value: (item) => format(item.dividendYield),
-            tone: (item) => signedTone(item.dividendYield),
-        },
         {
             label: 'Payout',
             value: (item) => format(item.payoutRatio),
@@ -375,7 +361,7 @@ export default function OpportunityScreener({
                 />
             </div>
             <div
-                className="market-segments mb-5"
+                className="market-segments market-segments--centered mb-5"
                 role="group"
                 aria-label={finixUi("Tipo de oportunidad")}
             >
@@ -471,6 +457,10 @@ export default function OpportunityScreener({
                     <p className="market-results">
                         {data?.summary?.matchingCount ?? 0} {" "}<FinixUiText text={"empresas ·"} />{""}{' '}
                         {scoreLabel}
+                    </p>
+                    <p className="market-note opportunities-indicator-note">
+                        <HelpCircle size={15} aria-hidden="true" />
+                        <span>{opportunityIndicatorMeta[category].description}</span>
                     </p>
                     {items.length > 0 && (
                         <OpportunityTable
@@ -574,6 +564,9 @@ function OpportunityTable({
                     <tr>
                         <th scope="col">{""}<FinixUiText text={"Empresa"} />{""}</th>
                         <th scope="col">{""}<FinixUiText text={"Precio / variación"} />{""}</th>
+                        <th scope="col" className="opportunities-indicator-column" title={opportunityIndicatorMeta[category].description}>
+                            {opportunityIndicatorMeta[category].label}
+                        </th>
                         {categoryMetrics[category].map((metric) => (
                             <th scope="col" key={metric.label}>{metric.label}</th>
                         ))}
@@ -609,6 +602,7 @@ function OpportunityRow({
     onAddToWatchlist: (ticker: string, name?: string) => void;
 }) {
     const { ui: finixUi } = useFinixUiTranslation();
+    const indicator = getOpportunityIndicator(category, item);
 
     return (
         <tr onClick={() => onOpen(item.ticker)}>
@@ -633,6 +627,15 @@ function OpportunityRow({
             <td className="opportunities-price">
                 <strong>{money(item.price)}</strong>
                 <MarketChange value={item.change} />
+            </td>
+            <td className={`opportunities-indicator ${metricToneClass(indicator.tone)}`} title={indicator.description}>
+                <strong>{indicator.display}</strong>
+                {indicator.progress !== null && (
+                    <span className="opportunities-score-track" aria-hidden="true">
+                        <span style={{ width: `${indicator.progress}%` }} />
+                    </span>
+                )}
+                <small>{indicator.detail}</small>
             </td>
             {categoryMetrics[category].map((metric) => (
                 <td key={metric.label} className={metricToneClass(metric.tone?.(item) || 'default')}>

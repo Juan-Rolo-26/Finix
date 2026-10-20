@@ -202,13 +202,16 @@ function AssetTile({
     item,
     onSelect,
     quoteLabel,
+    compact = true,
 }: {
     item: MarketDashboardAsset;
     onSelect?: (symbol: string) => void;
     quoteLabel?: string;
+    compact?: boolean;
 }) {
     return (
         <MarketQuoteCard
+            compact={compact}
             symbol={item.symbol}
             label={item.label}
             value={formatValue(item)}
@@ -496,6 +499,7 @@ export default function MarketDashboard({
                     {topGainer ? (
                         <AssetTile
                             item={topGainer}
+                            compact={false}
                             quoteLabel="Mejor rendimiento"
                             onSelect={onSelectSymbol}
                         />

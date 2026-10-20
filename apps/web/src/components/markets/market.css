@@ -1246,3 +1246,37 @@
         font-size: 17px !important;
     }
 }
+
+/* Fill the toolbar so each wrapped row of options stays centered. */
+.market-segments--centered {
+    width: 100%;
+    flex: 1 1 100%;
+    justify-content: center;
+}
+.market-quote-card.market-quote-card--compact {
+    min-height: 0;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+.market-compact-identity {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    flex: 1;
+}
+.market-compact-identity > :first-child { flex-shrink: 0; }
+.market-compact-identity strong {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 600;
+}
+.market-quote-card--compact .market-change { flex-shrink: 0; font-size: 13px; }

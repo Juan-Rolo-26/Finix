@@ -290,7 +290,7 @@ export default function MarketHeatmap({ onSelectSymbol }: MarketHeatmapProps) {
             )}
             <div className="market-toolbar">
                 <div
-                    className="market-segments"
+                    className="market-segments market-segments--centered"
                     aria-label={finixUi("Indicador del mapa de calor")}
                 >
                     {modes.map(({ value, label, icon: Icon }) => (

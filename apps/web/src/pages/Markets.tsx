@@ -366,7 +366,7 @@ export default function Markets() {
                         </TabsTrigger>
                         <TabsTrigger value="heatmap" className="market-tab">
                             <span className="market-tab-icon">
-                                <Flame className="h-3.5 w-3.5 fill-emerald-500/20 text-emerald-600 dark:text-emerald-400" />
+                                <Flame className="h-3.5 w-3.5" />
                             </span>
                             <span>{""}<FinixUiText text={"Mapa de Calor"} />{""}</span>
                         </TabsTrigger>
@@ -390,7 +390,7 @@ export default function Markets() {
                             className="market-tab"
                         >
                             <span className="market-tab-icon">
-                                <Sparkles className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <Sparkles className="h-3.5 w-3.5" />
                             </span>
                             <span>{""}<FinixUiText text={"Oportunidades"} />{""}</span>
                         </TabsTrigger>
