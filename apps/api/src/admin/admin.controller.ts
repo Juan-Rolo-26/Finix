@@ -44,6 +44,7 @@ import { AnalysisService } from '../analysis/analysis.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
 import { ValueCreationService } from '../market/value-creation.service';
 import { EmailMarketingService } from './email-marketing.service';
+import { NewsletterScheduler } from './newsletter.scheduler';
 import { buildUploadPublicPath, getUploadFolder, getUploadsRootDir } from '../uploads/upload-url.util';
 
 type AdminRequest = Request & {
@@ -87,6 +88,7 @@ export class AdminController {
         private readonly proEmailCampaignService: ProEmailCampaignService,
         private readonly valueCreationService: ValueCreationService,
         private readonly emailMarketingService: EmailMarketingService,
+        private readonly newsletterScheduler: NewsletterScheduler,
     ) { }
 
     @Get('email-marketing/dashboard')
@@ -105,6 +107,11 @@ export class AdminController {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
     testEmail(@Body() body: any) { return this.emailMarketingService.test(body.campaign, body.email); }
+
+    @Post('email-marketing/test-newsletters')
+    @Throttle({ default: { limit: 1, ttl: 60000 } })
+    @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
+    testNewsletters(@Body() body: any) { return this.newsletterScheduler.sendTestBriefings(body.email); }
 
     @Post('email-marketing/media')
     @Throttle({ default: { limit: 15, ttl: 60000 } })
