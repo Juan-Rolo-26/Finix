@@ -59,11 +59,12 @@ export class NewsletterScheduler {
 
         const content = (a: typeof articles[number]) => (a.titleEs || a.title) + ' ' + (a.descriptionEs || a.description || '') + ' ' + (a.category?.name || '') + ' ' + (a.category?.slug || '');
         const macroRx = /macroeconom[ií]a|econom[ií]a|inflaci[oó]n|ipc|indec|bcra|pib|reservas|d[oó]lar|fiscal|actividad|construcci[oó]n|comercio/i;
+        const argentinaMacroRx = /argentina|argentin[oa]|bcra|indec|merval|ipc|peso(s)? argentino(s)?|buenos aires|econom[ií]a local/i;
         const localRx = /mercado local|argentina|merval|byma|acciones argentinas|renta variable|ypf|galicia|ggal|pampa|cresud|tgs|alua|txar|bono|obligaci[oó]n negociable|lecap/i;
         const worldRx = /wall street|s&p|nasdaq|federal reserve|fed\b|treasury|global|internacional|china|europe|petr[oó]leo|gold|oro|bitcoin|mercados/i;
         const recent = [...articles].sort((a,b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0));
-        const macro = recent.filter(a => macroRx.test(content(a))).slice(0,3);
-        const local = recent.filter(a => localRx.test(content(a)) && !macroRx.test(content(a))).slice(0,3);
+        const macro = recent.filter(a => macroRx.test(content(a)) && argentinaMacroRx.test(content(a))).slice(0,3);
+        const local = recent.filter(a => localRx.test(content(a)) && !macro.includes(a)).slice(0,3);
         const global = recent.filter(a => worldRx.test(content(a)) && !macro.includes(a) && !local.includes(a)).slice(0,3);
         const used = new Set([...macro,...local,...global]);
         const investment = recent.filter(a => /bono|obligaci[oó]n negociable|deuda|emisi[oó]n|dividendo|balance|resultados|earnings/i.test(content(a)) && !used.has(a)).slice(0,1);
@@ -89,14 +90,17 @@ export class NewsletterScheduler {
         };
         const quotes = marketData?.sections ? '<div style="margin:0 0 15px"><div style="font-size:12px;color:#087747;font-weight:bold;margin:0 5px 5px">Mercados de referencia · ' + esc(dateKey(now)) + '</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>' + quoteBox('Argentina · S&P Merval y acciones',marketData.sections.argentina,6) + quoteBox('Estados Unidos y mundo',marketData.sections.global,5) + '</tr><tr>' + quoteBox('Materias primas',marketData.sections.commodities,4) + quoteBox('Cripto',marketData.sections.crypto,3) + '</tr></table><p style="font-size:10px;color:#7b8d83;margin:6px 5px 0">Cotizaciones indicativas según disponibilidad de cada fuente. <a style="color:#087747" href="' + app + '/market">Ver mercados en Finix</a></p></div>' : '';
 
-        const equities = (marketData?.sections?.argentina || []).filter((a:any) => a.id !== 'merval' && typeof a.change === 'number').sort((a:any,b:any) => b.change-a.change);
+        const equities = (marketData?.sections?.argentina || []).filter((a:any) => a.id !== 'merval' && typeof a.change === 'number');
+        const gainers = equities.filter((a:any) => a.change > 0).sort((a:any,b:any) => b.change-a.change).slice(0,3);
+        const losers = equities.filter((a:any) => a.change < 0).sort((a:any,b:any) => a.change-b.change).slice(0,3);
         const movers = equities.length ? panel('Renta variable local · variación disponible',
-            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="width:50%;vertical-align:top;padding-right:12px"><div style="font-size:11px;color:#087747;font-weight:bold">MAYORES SUBAS</div><table role="presentation" width="100%">' + quoteRows(equities.slice(0,3),3) + '</table></td><td style="width:50%;vertical-align:top;border-left:1px solid #e5eee8;padding-left:12px"><div style="font-size:11px;color:#bd4545;font-weight:bold">MAYORES BAJAS</div><table role="presentation" width="100%">' + quoteRows([...equities].reverse().slice(0,3),3) + '</table></td></tr></table>') : '';
+            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="width:50%;vertical-align:top;padding-right:12px"><div style="font-size:11px;color:#087747;font-weight:bold">' + (gainers.length ? 'MAYORES SUBAS' : 'SIN SUBAS EN LA MUESTRA') + '</div><table role="presentation" width="100%">' + (gainers.length ? quoteRows(gainers,3) : '<tr><td style="padding:7px 0;color:#71857a;font-size:11px">No hubo variaciones positivas entre estos activos.</td></tr>') + '</table></td><td style="width:50%;vertical-align:top;border-left:1px solid #e5eee8;padding-left:12px"><div style="font-size:11px;color:#bd4545;font-weight:bold">' + (losers.length ? 'MAYORES BAJAS' : 'SIN BAJAS EN LA MUESTRA') + '</div><table role="presentation" width="100%">' + (losers.length ? quoteRows(losers,3) : '<tr><td style="padding:7px 0;color:#71857a;font-size:11px">No hubo variaciones negativas entre estos activos.</td></tr>') + '</table></td></tr></table>') : '';
 
-        const agendaItems = [
+        const agendaCandidates = [
             ...macroEvents.map(e => ({ title:e.title, date:e.date, time:e.time, url:e.sourceUrl, detail:[e.country,e.actualValue ? 'Dato: '+e.actualValue : '',e.consensusValue ? 'Consenso: '+e.consensusValue : e.forecastValue ? 'Estimación: '+e.forecastValue : ''].filter(Boolean).join(' · ') })),
             ...earnings.map(e => ({ title:e.ticker+' · '+e.companyName, date:e.date, time:e.reportTiming, url:e.sourceUrl, detail:'Resultados en agenda' })),
-        ].slice(0,4);
+        ];
+        const agendaItems = [...new Map(agendaCandidates.map(e => [e.title+'|'+e.date+'|'+(e.time || ''),e])).values()].slice(0,4);
         const agenda = agendaItems.length ? panel('Agenda para seguir',
             '<table role="presentation" width="100%" cellspacing="0" cellpadding="0">' + agendaItems.map(e => '<tr><td style="padding:6px 0;border-top:1px solid #e5eee8;font-size:12px;color:#344c41"><b>' + esc(e.title) + '</b><br><span style="color:#74867c">' + esc(e.date) + (e.time ? ' · '+esc(e.time) : '') + (e.detail ? ' · '+esc(e.detail) : '') + '</span>' + (href(e.url) ? ' · <a style="color:#087747" href="'+href(e.url)+'">Fuente</a>' : '') + '</td></tr>').join('') + '</table>') : '';
         const investmentPanel = investment.length ? storyPanel('Una inversión para analizar · no es una recomendación',investment,'Sin novedades recientes de deuda o resultados.')
