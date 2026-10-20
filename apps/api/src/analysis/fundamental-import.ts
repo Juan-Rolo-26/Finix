@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-export const FUNDAMENTAL_EXPANSION_TICKERS = 'AVGO ORCL CRM NOW INTU CSCO QCOM MU AMAT LRCX TXN ADI PANW CRWD SNPS CDNS SHOP SPOT COST HD LOW TGT SBUX PG CL UNH JNJ LLY ABBV MRK PFE AMGN ISRG TMO DHR ABT BAC C WFC GS MS MA AXP XOM CVX COP CAT DE GE HON'.split(' ');
+export const FUNDAMENTAL_EXPANSION_TICKERS = 'AVGO ORCL CRM NOW INTU CSCO QCOM MU AMAT LRCX TXN ADI PANW CRWD SNPS CDNS SHOP TMUS COST HD LOW TGT SBUX PG CL UNH JNJ LLY ABBV MRK PFE AMGN ISRG TMO DHR ABT BAC C WFC GS MS MA AXP XOM CVX COP CAT DE GE HON'.split(' ');
 const columns = ['name','description','logoid','sector','industry','exchange','country','close','change','market_cap_basic','price_earnings_ttm','price_sales_current','price_book_fq','price_free_cash_flow_ttm','enterprise_value_to_ebitda_ttm','dividend_yield_recent','earnings_per_share_diluted_ttm','total_revenue_ttm','gross_margin_ttm','operating_margin_ttm','net_margin_ttm','free_cash_flow_ttm','return_on_equity_fq','return_on_assets_fq','return_on_invested_capital_fq','total_debt_fq','net_debt_fq','current_ratio_fq','quick_ratio_fq','total_assets_fq','total_liabilities_fq','total_shares_outstanding_fundamental'];
 
 export function observedFundamentalSnapshot(row: { s: string; d: any[] }, now = new Date()) {
