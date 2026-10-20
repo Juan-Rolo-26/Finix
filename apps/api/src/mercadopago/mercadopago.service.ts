@@ -26,10 +26,14 @@ export class MercadoPagoService {
         const validToken = /^(APP_USR|TEST)-/.test(this.accessToken)
             && !this.accessToken.includes('...')
             && this.accessToken.length > 20;
+        const expectedPrefix = this.environment === 'production' ? 'APP_USR-' : 'TEST-';
+        const matchingPublicKey = this.publicKey.startsWith(expectedPrefix)
+            && !this.publicKey.includes('...')
+            && this.publicKey.length > 20;
         const environmentMatches = this.environment === 'production'
             ? this.isProductionCredential()
             : this.isSandboxCredential();
-        return validToken && environmentMatches;
+        return validToken && matchingPublicKey && environmentMatches;
     }
 
     public isProductionCredential(): boolean {
@@ -38,6 +42,14 @@ export class MercadoPagoService {
 
     private isSandboxCredential(): boolean {
         return this.accessToken.startsWith('TEST-');
+    }
+
+    private checkoutUrl(data: any): string {
+        const url = this.environment === 'sandbox' ? data?.sandbox_init_point : data?.init_point;
+        if (typeof url !== 'string' || !url.startsWith('https://')) {
+            throw new ServiceUnavailableException('Mercado Pago no devolvió el enlace de checkout del entorno configurado. Revisá las credenciales de la cuenta Finix.');
+        }
+        return url;
     }
 
     private providerErrorMessage(data: any, fallback: string): string {
@@ -195,9 +207,7 @@ export class MercadoPagoService {
                     id: data.id,
                     init_point: data.init_point,
                     sandbox_init_point: data.sandbox_init_point,
-                    checkoutUrl: this.environment === 'sandbox'
-                        ? (data.sandbox_init_point || data.init_point)
-                        : (data.init_point || data.sandbox_init_point),
+                    checkoutUrl: this.checkoutUrl(data),
                     autoRenew: true,
                 };
             } catch (error: any) {
@@ -262,9 +272,7 @@ export class MercadoPagoService {
             }
 
             const data = await response.json();
-            const checkoutUrl = this.environment === 'sandbox'
-                ? (data.sandbox_init_point || data.init_point)
-                : (data.init_point || data.sandbox_init_point);
+            const checkoutUrl = this.checkoutUrl(data);
             return {
                 id: data.id,
                 init_point: data.init_point,
@@ -298,9 +306,7 @@ export class MercadoPagoService {
         const response = await fetch('https://api.mercadopago.com/checkout/preferences', { signal: AbortSignal.timeout(15000), method: 'POST', headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (!response.ok) throw new BadRequestException('Mercado Pago no pudo crear el checkout de la comunidad.');
         const data = await response.json();
-        const checkoutUrl = this.environment === 'sandbox'
-            ? (data.sandbox_init_point || data.init_point)
-            : (data.init_point || data.sandbox_init_point);
+        const checkoutUrl = this.checkoutUrl(data);
         return {
             id: data.id,
             init_point: data.init_point,

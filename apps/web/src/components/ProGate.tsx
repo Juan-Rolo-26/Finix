@@ -290,7 +290,7 @@ export function ProGate({
     });
 
     return (
-        <div className={`relative w-full flex-1 flex flex-col items-center justify-center min-h-[calc(100vh-60px)] px-4 sm:px-6 py-10 overflow-hidden bg-background ${className}`}>
+        <div className={`relative w-full flex-1 flex flex-col items-center justify-center min-h-[calc(100svh-60px)] px-3 sm:px-5 py-3 sm:py-4 overflow-hidden bg-background ${className}`}>
 
             {/* ── TEASER DE FONDO: INTERFAZ FINANCIERA CON DATOS OCULTOS / DIFUMINADOS ── */}
             <div aria-hidden="true" {...{ inert: '' }} className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none select-none filter blur-[2px] opacity-15 dark:opacity-15 scale-[0.99] transition-all">
@@ -465,34 +465,34 @@ export function ProGate({
                 initial={{ opacity: 0, y: 20, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ duration: 0.4, ease: 'easeOut' }}
-                className="relative z-20 w-full max-w-xl mx-auto rounded-3xl sm:rounded-[2.5rem] bg-card dark:bg-card backdrop-blur-2xl border border-primary/35 shadow-[0_0_60px_-15px_rgba(16,185,129,0.25)] p-5 sm:p-8 text-center my-auto"
+                className="relative z-20 w-full max-w-4xl mx-auto rounded-2xl sm:rounded-3xl bg-card dark:bg-card backdrop-blur-2xl border border-primary/35 shadow-[0_0_60px_-15px_rgba(16,185,129,0.25)] p-4 sm:p-5 lg:p-6 text-center my-auto"
             >
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">{""}<FinixUiText text={"Vista de ejemplo de las herramientas. No son cotizaciones ni resultados de tu cuenta."} />{""}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">{""}<FinixUiText text={"Vista de ejemplo de las herramientas. No son cotizaciones ni resultados de tu cuenta."} />{""}</p>
                 {/* Header Badge */}
-                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30 mb-3 sm:mb-5 shadow-xs">
+                <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-primary/15 text-primary border border-primary/30 mb-2 sm:mb-3 shadow-xs">
                     <Crown className="w-3.5 h-3.5 text-primary" />
                     <span>{displayBadge}</span>
                 </div>
 
                 {/* Lock Icon with Pulsating Ring */}
-                <div className="relative mb-3 sm:mb-4 flex justify-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary/20 via-emerald-500/10 to-transparent border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
+                <div className="relative mb-2 sm:mb-3 flex justify-center">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary/20 via-emerald-500/10 to-transparent border border-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
                         <Lock className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
                     </div>
                 </div>
 
                 {/* Title */}
-                <h2 className="text-xl sm:text-3xl font-heading font-extrabold text-foreground tracking-tight mb-2 sm:mb-2.5">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-heading font-extrabold text-foreground tracking-tight mb-1.5 sm:mb-2">
                     {displayTitle}
                 </h2>
 
                 {/* Description */}
-                <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-4 sm:mb-5 max-w-md mx-auto">
+                <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 max-w-2xl mx-auto">
                     {displayDesc}
                 </p>
 
                 {/* Section-Specific Key Benefits List */}
-                <div className="bg-secondary/40 border border-border/60 rounded-2xl p-3.5 sm:p-5 mb-4 sm:mb-5 text-left space-y-2.5 sm:space-y-3">
+                <div className="bg-secondary/40 border border-border/60 rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 text-left space-y-2">
                     <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between pb-1 border-b border-border/50">
                         <span>{""}<FinixUiText text={"Herramientas activas en esta sección:"} />{""}</span>
                         <span className="text-emerald-500 font-extrabold">{""}<FinixUiText text={"FINIX PRO"} />{""}</span>
@@ -517,7 +517,7 @@ export function ProGate({
                 </div>
 
                 {/* Toggle All 5 PRO Sections Preview */}
-                <div className="mb-5">
+                <div className="mb-3">
                     <button
                         type="button"
                         onClick={() => setShowAllSections(!showAllSections)}
@@ -555,10 +555,10 @@ export function ProGate({
                 </div>
 
                 {/* CTA Action Button */}
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-2">
                     <Button
                         onClick={handleUpgrade}
-                        className="w-full min-h-11 h-auto py-3 px-4 whitespace-normal text-base sm:text-lg font-extrabold rounded-2xl bg-gradient-to-r from-emerald-600 via-primary to-emerald-500 hover:from-emerald-500 hover:to-primary text-white border-0 shadow-xl shadow-primary/25 hover:shadow-primary/40 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full min-h-10 h-auto py-2.5 px-4 whitespace-normal text-sm sm:text-base font-extrabold rounded-2xl bg-gradient-to-r from-emerald-600 via-primary to-emerald-500 hover:from-emerald-500 hover:to-primary text-white border-0 shadow-xl shadow-primary/25 hover:shadow-primary/40 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
                     >
                         <span>{freeAccess ? 'Creá tu cuenta y accedé gratis' : purchasesPaused ? 'Ver estado de los planes' : buttonText}</span>
                         <ChevronRight className="w-5 h-5 ml-1" />
