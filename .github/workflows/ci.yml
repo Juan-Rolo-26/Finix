@@ -27,6 +27,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run build -w @finix/shared
       - run: npm run typecheck -w web --if-present
         env:
           VITE_API_URL: /api
@@ -41,6 +42,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run build -w @finix/shared
       - name: Generate Prisma client
         working-directory: apps/api
         run: npx prisma generate --schema prisma/schema.prisma
@@ -119,13 +121,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run build -w @finix/shared
       - name: Generate Prisma client
         working-directory: apps/api
         run: npx prisma generate --schema prisma/schema.prisma
       - working-directory: apps/api
         run: npx prisma migrate deploy --schema prisma/schema.prisma || true
       - working-directory: apps/api
-        run: npm test -- --passWithNoTests
+        run: npm run test --workspace web --if-present
 
   test-web:
     name: Unit Tests — Web
@@ -138,6 +141,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run build -w @finix/shared
       - working-directory: apps/web
         run: npm test -- --passWithNoTests
         env:
@@ -157,6 +161,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run build -w @finix/shared
       - name: Generate Prisma client
         working-directory: apps/api
         run: npx prisma generate --schema prisma/schema.prisma
@@ -179,6 +184,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - run: npm run build -w @finix/shared
       - working-directory: apps/web
         run: npm run build
         env:
