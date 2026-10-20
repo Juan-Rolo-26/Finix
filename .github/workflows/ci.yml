@@ -128,7 +128,7 @@ jobs:
       - working-directory: apps/api
         run: npx prisma migrate deploy --schema prisma/schema.prisma || true
       - working-directory: apps/api
-        run: npm run test --workspace web --if-present
+        run: npm test -- --passWithNoTests
 
   test-web:
     name: Unit Tests — Web
@@ -143,7 +143,7 @@ jobs:
       - run: npm ci
       - run: npm run build -w @finix/shared
       - working-directory: apps/web
-        run: npm test -- --passWithNoTests
+        run: npm run test --workspace web --if-present
         env:
           VITE_API_URL: /api
 
