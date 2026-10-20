@@ -48,6 +48,29 @@ export class EmailMarketingService {
         };
     }
 
+    private canSendCampaign(campaign?: { sourceKey?: string | null } | null) {
+        return process.env.EMAIL_SEND_ENABLED === 'true'
+            || (process.env.FINIX_APPROVED_EMAILS_ENABLED === 'true' && campaign?.sourceKey?.startsWith('finix-approved:') === true);
+    }
+
+    async createApprovedCampaign(input: {
+        sourceKey: string;
+        subject: string;
+        title: string;
+        message: string;
+        contentHtml: string;
+        createdById: string;
+        audience?: 'OFFICIAL';
+    }) {
+        const audience = input.audience || 'OFFICIAL';
+        const recipientCount = await this.prisma.user.count({ where: this.recipientWhere(audience) });
+        return this.prisma.proEmailCampaign.upsert({
+            where: { sourceKey: input.sourceKey },
+            update: {},
+            create: { ...input, audience, status: 'SENDING', recipientCount, audienceReady: false },
+        });
+    }
+
     async getCampaignDetail(id: string) {
         const campaign = await this.prisma.proEmailCampaign.findUnique({
             where: { id },
@@ -140,18 +163,27 @@ export class EmailMarketingService {
     }
     @Interval(5000)
     async tick() {
-        if (this.busy || process.env.EMAIL_SEND_ENABLED !== 'true') return;
+        const approvedOnly = process.env.EMAIL_SEND_ENABLED !== 'true';
+        if (this.busy || (approvedOnly && process.env.FINIX_APPROVED_EMAILS_ENABLED !== 'true')) return;
         this.busy = true;
         try {
-            const campaigns = await this.prisma.proEmailCampaign.findMany({ where: { status: { in: ['SENDING', 'SCHEDULED'] }, OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }] }, take: 5, orderBy: { createdAt: 'asc' } });
+            const campaigns = await this.prisma.proEmailCampaign.findMany({
+                where: {
+                    status: { in: ['SENDING', 'SCHEDULED'] },
+                    OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }],
+                    ...(approvedOnly ? { sourceKey: { startsWith: 'finix-approved:' } } : {}),
+                },
+                take: 5,
+                orderBy: { createdAt: 'asc' },
+            });
             for (const campaign of campaigns) await this.processBatch(campaign.id);
         } catch { this.logger.error('Fallo de cola email; se reintentara.'); }
         finally { this.busy = false; }
     }
     async processBatch(id: string) {
-        if (process.env.EMAIL_SEND_ENABLED !== 'true') return { paused: true };
         const campaign = await this.prisma.proEmailCampaign.findUnique({ where: { id } });
         if (!campaign || !['SENDING', 'SCHEDULED'].includes(campaign.status) || (campaign.scheduledAt && campaign.scheduledAt > new Date())) return { skipped: true };
+        if (!this.canSendCampaign(campaign)) return { paused: true };
         if (!campaign.audienceReady) {
             const users = await this.prisma.user.findMany({ where: { ...this.recipientWhere(campaign.audience), ...(campaign.audienceCursor ? { id: { gt: campaign.audienceCursor } } : {}) }, select: { id: true, email: true }, orderBy: { id: 'asc' }, take: 500 });
             await this.prisma.$transaction(async tx => {
