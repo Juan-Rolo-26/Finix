@@ -23,7 +23,7 @@ jobs:
           script: |
             set -e
             FINIX_DIR="${FINIX_DEPLOY_DIR:-}"
-            for candidate in "$FINIX_DIR" "$HOME/Finix" "$HOME/finix" "/root/Finix" "/var/www/finix"; do
+            for candidate in "$FINIX_DIR" "/opt/finix/source" "$HOME/Finix" "$HOME/finix" "/root/Finix" "/var/www/finix"; do
               [ -n "$candidate" ] || continue
               if [ -f "$candidate/deploy.sh" ]; then
                 origin="$(git -C "$candidate" remote get-url origin 2>/dev/null || true)"

@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '22'
 
 jobs:
   # ──────────────────────────────────────────────────────────────────────────
@@ -125,10 +125,13 @@ jobs:
       - name: Generate Prisma client
         working-directory: apps/api
         run: npx prisma generate --schema prisma/schema.prisma
+      # This is a new disposable Postgres service, not an existing production DB.
+      # Historical migrations include the legacy SQLite bootstrap.
+      - name: Create isolated test schema
+        working-directory: apps/api
+        run: npx prisma db push --skip-generate --schema prisma/schema.prisma
       - working-directory: apps/api
-        run: npx prisma migrate deploy --schema prisma/schema.prisma || true
-      - working-directory: apps/api
-        run: npm test -- --passWithNoTests
+        run: npm test
 
   test-web:
     name: Unit Tests — Web
@@ -142,6 +145,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build -w @finix/shared
+      - name: Opportunity indicator calculations
+        run: node --test scripts/opportunity-indicators.test.cjs
       - working-directory: apps/web
         run: npm run test --workspace web --if-present
         env:
@@ -275,7 +280,7 @@ jobs:
           script: |
             set -e
             FINIX_DIR="${FINIX_DEPLOY_DIR:-}"
-            for candidate in "$FINIX_DIR" "$HOME/Finix" "$HOME/finix" "/root/Finix" "/var/www/finix"; do
+            for candidate in "$FINIX_DIR" "/opt/finix/source" "$HOME/Finix" "$HOME/finix" "/root/Finix" "/var/www/finix"; do
               [ -n "$candidate" ] || continue
               if [ -f "$candidate/deploy.sh" ]; then
                 origin="$(git -C "$candidate" remote get-url origin 2>/dev/null || true)"

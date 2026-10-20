@@ -17,6 +17,14 @@ after(() => {
 });
 const basic = { id: 'basic', role: 'USER', plan: 'FREE', subscriptionStatus: 'INACTIVE', proAccessOverride: false };
 const userPrisma = { user: { findUnique: async () => ({ ...basic }) } };
+// Match the real service's transaction and private-community approval boundary.
+function transactional(prisma) {
+    prisma.$queryRaw = async () => [];
+    prisma.$transaction = async callback => callback(prisma);
+    prisma.communityJoinRequest = { findUnique: async () => null };
+    return prisma;
+}
+
 
 test('launch mode opens all platform features without rewriting accounts', async () => {
     delete process.env.FINIX_FREE_ACCESS_ENABLED;
@@ -73,7 +81,7 @@ test('free community access keeps private communities and administrative roles p
     process.env.FINIX_FREE_ACCESS_ENABLED = 'true';
     const prisma = {
         ...userPrisma,
-        community: { findUnique: async () => ({ id: 'community', creatorId: 'owner', privacyType: 'PRIVATE', plans: [] }) },
+        community: { findUnique: async () => ({ id: 'community', creatorId: 'owner', privacyType: 'PRIVATE', status: 'PUBLISHED', plans: [] }) },
         communityMember: { findUnique: async () => null },
     };
     const permissions = new CommunityPermissionsService(prisma);
@@ -81,7 +89,7 @@ test('free community access keeps private communities and administrative roles p
     assert.equal(permissions.canViewCommunities(basic), true);
     assert.equal(permissions.isPlatformAdmin(basic), false);
     await assert.rejects(permissions.assertCanManageCommunity('community', basic.id), /administrativos/);
-    const service = new CommunitiesService(prisma, {}, permissions, {}, {});
+    const service = new CommunitiesService(transactional(prisma), {}, permissions, {}, {});
     await assert.rejects(service.joinFree(basic.id, 'community'), /privada/);
 });
 
@@ -91,7 +99,7 @@ test('paid community plans can be joined free, without fabricating a successful 
     let write;
     const prisma = {
         community: {
-            findUnique: async () => ({ id: 'community', privacyType: 'PAID', plans: [plan] }),
+            findUnique: async () => ({ id: 'community', privacyType: 'PAID', status: 'PUBLISHED', plans: [plan] }),
             update: async () => ({}),
         },
         communityMember: {
@@ -101,7 +109,7 @@ test('paid community plans can be joined free, without fabricating a successful 
     };
     const permissions = { assertCanViewCommunities: async () => {} };
     const provider = { createCommunityPayment: async () => { throw new Error('Must not contact payment provider'); } };
-    const service = new CommunitiesService(prisma, {}, permissions, provider, provider);
+    const service = new CommunitiesService(transactional(prisma), {}, permissions, provider, provider);
     const result = await service.createCheckoutSession(basic.id, 'community', plan.id, 'stripe');
     assert.equal(result.freeJoined, true);
     assert.equal(write.create.paymentStatus, 'FREE_ACCESS');
@@ -116,10 +124,10 @@ test('joining during launch preserves existing paid memberships', async () => {
     process.env.FINIX_FREE_ACCESS_ENABLED = 'true';
     const paid = { subscriptionStatus: 'ACTIVE', paymentStatus: 'SUCCEEDED', stripeSubscriptionId: 'existing', planId: 'existing-plan' };
     const prisma = {
-        community: { findUnique: async () => ({ privacyType: 'PAID', plans: [{ id: 'existing-plan', price: 1000 }] }) },
+        community: { findUnique: async () => ({ privacyType: 'PAID', status: 'PUBLISHED', plans: [{ id: 'existing-plan', price: 1000 }] }) },
         communityMember: { findUnique: async () => paid },
     };
-    const service = new CommunitiesService(prisma, {}, { assertCanViewCommunities: async () => {} }, {}, {});
+    const service = new CommunitiesService(transactional(prisma), {}, { assertCanViewCommunities: async () => {} }, {}, {});
     assert.equal(await service.joinFree(basic.id, 'community'), paid);
 });
 
