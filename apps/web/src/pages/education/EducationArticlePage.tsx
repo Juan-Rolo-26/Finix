@@ -1,3 +1,4 @@
+import { educationHeadingId } from '@/lib/educationReading';
 import './education.css';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
@@ -25,18 +26,22 @@ export default function EducationArticlePage() {
 
     const [article, setArticle] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [retry, setRetry] = useState(0);
+    const [loadError, setLoadError] = useState(false);
     const [activeHeadingId, setActiveHeadingId] = useState<string>('');
-    const lessonContent = useMemo(() => removeIllustratedLessonCharts(article?.content || ''), [article?.content]);
+    const originalLesson = useMemo(() => removeIllustratedLessonCharts(article?.content || ''), [article?.content]);
+    const visual = useMemo(() => originalLesson.match(/!\[([^\]]+)\]\((\/images\/education\/worked\/[^)]+\.svg)\)/), [originalLesson]);
+    const lessonContent = useMemo(() => visual ? originalLesson.replace(visual[0], '') : originalLesson, [originalLesson, visual]);
 
     // Extract table of contents headings
     const tocItems: TocItem[] = useMemo(() => {
         if (!article?.content) return [];
-        const lines = lessonContent.split('\n');
+        const lines = lessonContent.split('\n\n');
         const items: TocItem[] = [];
         lines.forEach((line: string, index: number) => {
             if (line.startsWith('### ')) {
-                const title = line.replace('### ', '').trim();
-                const id = 'sec-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `sec-${index}`;
+                const title = line.split('\n')[0].replace('### ', '').trim();
+                const id = educationHeadingId(title, index);
                 items.push({ id, title });
             }
         });
@@ -158,16 +163,19 @@ export default function EducationArticlePage() {
 
     useEffect(() => {
         let mounted = true;
+        const controller = new AbortController();
+        setArticle(null);
+        setLoadError(false);
         const load = async () => {
             setLoading(true);
             try {
-                const res = await apiFetch(`/education/articles/${articleSlug}`);
+                const res = await apiFetch(`/education/articles/${articleSlug}`, { signal: controller.signal });
                 if (res.ok && mounted) {
                     const data = await res.json();
                     setArticle(data);
-                }
+                } else if (mounted && res.status !== 404) setLoadError(true);
             } catch (err) {
-                console.error(err);
+                if (mounted && !controller.signal.aborted) setLoadError(true);
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -175,8 +183,8 @@ export default function EducationArticlePage() {
 
         if (articleSlug) void load();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        return () => { mounted = false; };
-    }, [articleSlug]);
+        return () => { mounted = false; controller.abort(); };
+    }, [articleSlug, retry]);
 
     if (loading) {
         return (
@@ -189,7 +197,8 @@ export default function EducationArticlePage() {
         return (
             <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-6 space-y-4">
                 <GraduationCap className="w-12 h-12 text-muted-foreground" />
-                <h2 className="text-xl font-bold">{""}<FinixUiText text={"Artículo no encontrado"} />{""}</h2>
+                <h2 className="text-xl font-bold">{""}<FinixUiText text={loadError ? 'No se pudo cargar la clase' : 'Artículo no encontrado'} />{""}</h2>
+                {loadError && <button type="button" onClick={() => setRetry(value => value + 1)} className="rounded-lg bg-primary px-5 py-3 text-primary-foreground">Reintentar</button>}
                 <Link
                     to="/educativa"
                     className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-xs"
@@ -227,53 +236,13 @@ export default function EducationArticlePage() {
                 </div>
             </div>
 
-            {/* MAIN 3-ZONE LAYOUT */}
+            {/* READING LAYOUT */}
             <div className="mx-auto w-full max-w-[1800px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10 2xl:px-14">
-                <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12 xl:gap-8">
-                    {/* LEFT SIDEBAR: THEMATIC CONTEXT */}
-                    <aside className="hidden min-w-0 space-y-6 lg:sticky lg:top-28 lg:col-span-2 lg:block">
-                        <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-4">
-                            <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
-                                <BookOpen className="w-4 h-4" />
-                                {article.category?.name}
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                {" "}<FinixUiText text={"Conceptos relacionados y artículos de esta categoría."} />{" "}</p>
-                            <div className="pt-2 border-t border-border/60">
-                                <Link
-                                    to={`/educativa/${article.category?.slug}`}
-                                    className="text-xs font-semibold text-primary hover:underline flex items-center justify-between"
-                                >
-                                    {" "}<FinixUiText text={"Ver todos los conceptos"} />{" "}<ChevronRight className="w-3.5 h-3.5" />
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Category Fast Switcher */}
-                        <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3 text-sm">
-                            <h4 className="font-bold text-foreground mb-2">{""}<FinixUiText text={"Otras Categorías"} />{""}</h4>
-                            {[
-                                { name: 'Fundamentos', slug: 'fundamentos' },
-                                { name: 'Análisis Fundamental', slug: 'analisis-fundamental' },
-                                { name: 'Análisis Técnico', slug: 'analisis-tecnico' },
-                                { name: 'Macroeconomía', slug: 'macroeconomia' },
-                                { name: 'Estrategias & Riesgo', slug: 'estrategias' },
-                            ].map(cat => (
-                                <Link
-                                    key={cat.slug}
-                                    to={`/educativa/${cat.slug}`}
-                                    className="block p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                                >
-                                    {cat.name}
-                                </Link>
-                            ))}
-                        </div>
-                    </aside>
-
+                <div className="education-reading-layout">
                     {/* CENTRAL ZONE: ARTICLE CONTENT */}
-                    <div className="min-w-0 space-y-8 lg:col-span-7">
+                    <div className="education-reading-main min-w-0 space-y-8">
                         {/* Header Details */}
-                        <div className="space-y-4 border-b border-border/70 pb-6">
+                        <div className="education-lesson-heading space-y-5 pb-4">
                             <div className="flex flex-wrap items-center gap-2 text-sm">
                                 <span className={`font-bold px-2.5 py-0.5 rounded-full ${
                                     article.level === 'BEGINNER' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
@@ -286,14 +255,22 @@ export default function EducationArticlePage() {
                                     <Clock className="w-3.5 h-3.5" /> {article.readTimeMinutes} {" "}<FinixUiText text={"min de lectura"} />{" "}</span>
                             </div>
 
-                            <h1 className="text-3xl font-black leading-tight tracking-tight text-foreground sm:text-5xl">
+                            <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-[2.75rem]">
                                 {article.title}
                             </h1>
 
                             {/* Executive Summary */}
-                            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-base font-medium leading-relaxed text-foreground sm:p-6 sm:text-lg">
+                            <div className="education-lesson-summary">
                                 {article.summary}
                             </div>
+
+                            {visual && <figure className="education-lesson-visual">
+                                <a href={visual[2]} target="_blank" rel="noopener noreferrer" aria-label="Ampliar el ejemplo de la clase">
+                                    <picture><source media="(max-width: 640px)" srcSet={visual[2].replace('.svg', '-mobile.svg')} />
+                                        <img src={visual[2]} alt={visual[1]} width="960" height="440" decoding="async" /></picture>
+                                </a>
+                                <figcaption>Ejemplo visual de Finix · Supuestos hipotéticos · Tocá para ampliar</figcaption>
+                            </figure>}
 
                             {/* MOBILE TABLE OF CONTENTS ACCORDION */}
                             {tocItems.length > 0 && (
@@ -339,10 +316,10 @@ export default function EducationArticlePage() {
 
                         {/* FORMULA HIGHLIGHT (IF CONFIGURED) */}
                         {article.formula && (
-                            <div className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 text-zinc-100 shadow-sm space-y-2">
-                                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">
+                            <div className="p-5 rounded-xl bg-primary/5 border border-primary/15 text-foreground shadow-none space-y-2">
+                                <span className="text-[11px] font-bold text-primary uppercase tracking-wider block">
                                     {" "}<FinixUiText text={"Fórmula Matemática"} />{" "}</span>
-                                <pre className="font-mono text-xs sm:text-sm whitespace-pre-wrap text-emerald-300 leading-relaxed overflow-x-auto">
+                                <pre className="font-mono text-xs sm:text-sm whitespace-pre-wrap text-foreground leading-relaxed overflow-x-auto">
                                     {article.formula}
                                 </pre>
                             </div>
@@ -356,7 +333,7 @@ export default function EducationArticlePage() {
                                 if (block.startsWith('### ')) {
                                     const [heading, ...remainingLines] = block.split('\n');
                                     const title = heading.replace('### ', '').trim();
-                                    const id = 'sec-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `sec-${idx}`;
+                                    const id = educationHeadingId(title, idx);
                                     return (
                                         <Fragment key={idx}>
                                         <h3
@@ -407,7 +384,7 @@ export default function EducationArticlePage() {
                                                         />
                                                     </a>
                                                     <div className="p-2.5 bg-muted/50 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground px-3">
-                                                        <span className="truncate">{""}<FinixUiText text={"Gráfico educativo"} />{""}</span>
+                                                        <span className="truncate">{""}<FinixUiText text={"Imagen de la clase"} />{""}</span>
                                                         <a
                                                             href={src}
                                                             target="_blank"
@@ -532,7 +509,7 @@ export default function EducationArticlePage() {
                     </div>
 
                     {/* RIGHT SIDEBAR: READING SUMMARY & FAST LINKS */}
-                    <aside className="hidden min-w-0 space-y-6 lg:sticky lg:top-28 lg:col-span-3 lg:block">
+                    <aside className="education-reading-aside hidden min-w-0 space-y-6 lg:sticky lg:top-28 lg:block">
                         {/* TABLE OF CONTENTS (DESKTOP SCROLL-SPY) */}
                         {tocItems.length > 0 && (
                             <div className="p-4 rounded-2xl border border-border/80 bg-card space-y-3">
@@ -611,7 +588,7 @@ export default function EducationArticlePage() {
                                     {article.relatedArticles.map((rel: any) => (
                                         <Link
                                             key={rel.id}
-                                            to={`/educativa/${article.category?.slug}/${rel.slug}`}
+                                            to={`/educativa/${rel.category?.slug || article.category?.slug}/${rel.slug}`}
                                             className="block p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs font-semibold text-foreground truncate"
                                         >
                                             {rel.title}

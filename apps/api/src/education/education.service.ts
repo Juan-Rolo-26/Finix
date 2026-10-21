@@ -1,3 +1,5 @@
+import { deepenLesson, lessonReadTime, LESSON_REVISION } from './lesson-depth';
+import { LESSON_DEPTH } from './lesson-depth.data';
 import { TECHNICAL_IMAGES } from './technical-images.data';
 import { Injectable, Logger, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
@@ -156,6 +158,22 @@ export class EducationService implements OnModuleInit {
                     }
                 }
                 articleMap.set(art.slug, articleId);
+            }
+
+            // Add a reviewed worked example once, retaining editor text and all unpublished records.
+            for (const lesson of LESSON_DEPTH) {
+                try {
+                    await this.prisma.$transaction(async tx => {
+                        const key = LESSON_REVISION + lesson.slug;
+                        if (await tx.platformSetting.findUnique({ where: { key } })) return;
+                        const article = await tx.educationArticle.findUnique({ where: { slug: lesson.slug } });
+                        if (!article || article.status !== 'PUBLISHED') return;
+                        const content = deepenLesson(lesson.slug, article.content);
+                        await tx.educationArticle.updateMany({ where: { id: article.id, status: 'PUBLISHED', updatedAt: article.updatedAt },
+                            data: { content, readTimeMinutes: lessonReadTime(content) } }).then(result => { if (!result.count) throw new Error('Article edited during enrichment'); });
+                        await tx.platformSetting.create({ data: { key, value: JSON.stringify({ articleId: article.id, appliedAt: new Date().toISOString() }), description: 'Ejemplo didáctico añadido sin sustituir el texto del editor.' } });
+                    });
+                } catch (error) { this.logger.warn('Ejemplo educativo pendiente de sincronización: ' + lesson.slug); }
             }
 
             // 3. Learning Paths

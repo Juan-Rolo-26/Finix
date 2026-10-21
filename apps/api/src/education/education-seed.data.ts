@@ -1,3 +1,4 @@
+import { deepenLesson, lessonReadTime } from './lesson-depth';
 import { TECHNICAL_IMAGES } from './technical-images.data';
 import { ASSET_CATEGORY, EDUCATION_EXPANSION } from './education-expansion.data';
 // Auto-generated & verified Education Seed Data for Finix
@@ -1540,6 +1541,8 @@ for (const article of SEED_ARTICLES) {
 
 SEED_CATEGORIES.push(ASSET_CATEGORY);
 SEED_ARTICLES.push(...EDUCATION_EXPANSION);
+for (const article of SEED_ARTICLES) { article.content = deepenLesson(article.slug, article.content); article.readTimeMinutes = lessonReadTime(article.content); }
+
 
 export const SEED_LEARNING_PATHS: SeedLearningPath[] = [
     {

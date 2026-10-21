@@ -55,3 +55,10 @@ test('an expired daily campaign cannot acquire prices for another day',async()=>
  const f=workerFixture('finix-approved:daily:2000-01-01');f.service.setDailyBriefRenderer(async()=>{throw Error('must not render');});
  await f.service.processBatch('campaign');assert.equal(f.row.status,'SKIPPED');assert.equal(f.sent.length,0);
 });
+
+test('a payload stored before any provider attempt is refreshed again rather than sent stale',async()=>{
+ const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ const f=workerFixture('finix-approved:daily:'+day);f.row.renderedContent={html:'STALE UNSENT',text:'old',subject:'Daily'};f.recover();
+ f.service.setDailyBriefRenderer(async()=>({html:'FRESH UNSENT',message:'Fresh',day}));await f.service.processBatch('campaign');
+ assert.equal(f.sent.length,1);assert.equal(f.sent[0].html,'FRESH UNSENT');
+});

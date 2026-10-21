@@ -245,7 +245,7 @@ export class EmailMarketingService {
             if (!user) { await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SKIPPED' } }); continue; }
             try {
                 const unsubscribe = (process.env.API_URL || process.env.FRONTEND_URL || 'https://finixarg.com') + '/api/email-preferences/unsubscribe?user=' + row.userId + '&token=' + this.signature(row.userId);
-                let snapshot = row.renderedContent as { html: string; text: string; subject: string } | null;
+                let snapshot = (row.firstAttemptAt ? row.renderedContent : null) as { html: string; text: string; subject: string } | null;
                 if (!snapshot) {
                     // Legacy uncertain attempts retain the original campaign payload.
                     let html = campaign.contentHtml || renderCampaign(campaign), message = campaign.message;

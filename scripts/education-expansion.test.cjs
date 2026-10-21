@@ -32,7 +32,7 @@ async function main() {
    const image=detail.content.match(/!\[[^\]]+\]\(([^)]+)\)/)[1];
    const imagePath=root+'/apps/web/public'+image;
    assert(fs.existsSync(imagePath),image);
-   const response=await fetch('http://127.0.0.1:5173'+image);
+   const response=await fetch((process.env.EDUCATION_WEB_URL || 'http://127.0.0.1:5173')+image);
    assert.equal(response.status,200,image);
    assert(response.headers.get('content-type')?.startsWith('image/'));
    assert(detail.content.includes('Licencia:') && detail.content.includes('Wikimedia Commons'));
