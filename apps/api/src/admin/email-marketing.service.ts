@@ -1,3 +1,4 @@
+import { isOfficialPublisher } from '../posts/publication-email';
 import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { createHmac, timingSafeEqual, randomUUID } from 'crypto';
@@ -15,6 +16,10 @@ const schema = z.object({ subject: z.string().trim().min(1).max(160), title: z.s
 
 @Injectable()
 export class EmailMarketingService {
+    private dailyBriefRenderer?: (now: Date) => Promise<{ html: string; message: string; day: string }>;
+    setDailyBriefRenderer(renderer: (now: Date) => Promise<{ html: string; message: string; day: string }>) {
+        this.dailyBriefRenderer = renderer;
+    }
     private busy = false;
     private readonly logger = new Logger(EmailMarketingService.name);
     constructor(private readonly prisma: PrismaService, private readonly mail: MailService, @Optional() private readonly quota?: ResendQuotaService) {}
@@ -56,9 +61,16 @@ export class EmailMarketingService {
         };
     }
 
-    private canSendCampaign(campaign?: { sourceKey?: string | null } | null) {
+    private canSendCampaign(campaign?: { sourceKey?: string | null; createdAt?: Date } | null) {
         return process.env.EMAIL_SEND_ENABLED === 'true'
-            || (process.env.FINIX_APPROVED_EMAILS_ENABLED === 'true' && campaign?.sourceKey?.startsWith('finix-approved:') === true);
+            || (process.env.FINIX_APPROVED_EMAILS_ENABLED === 'true' && (campaign?.sourceKey?.startsWith('finix-approved:') === true || this.isEnabledOfficialCampaign(campaign)));
+    }
+
+    private isEnabledOfficialCampaign(campaign?: { sourceKey?: string | null; createdAt?: Date } | null) {
+        const from = Date.parse(process.env.FINIX_OFFICIAL_POST_EMAILS_FROM || '');
+        return process.env.FINIX_OFFICIAL_POST_EMAILS_ENABLED === 'true' &&
+            campaign?.sourceKey?.startsWith('official-post:') === true && Number.isFinite(from) &&
+            !!campaign.createdAt && campaign.createdAt.getTime() >= from;
     }
 
     async createApprovedCampaign(input: {
@@ -182,7 +194,7 @@ export class EmailMarketingService {
                 where: {
                     status: { in: ['SENDING', 'SCHEDULED'] },
                     OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }],
-                    ...(approvedOnly ? { sourceKey: { startsWith: 'finix-approved:' } } : {}),
+                    ...(approvedOnly ? { AND: [{ OR: [{ sourceKey: { startsWith: 'finix-approved:' } }, ...(process.env.FINIX_OFFICIAL_POST_EMAILS_ENABLED === 'true' && Number.isFinite(Date.parse(process.env.FINIX_OFFICIAL_POST_EMAILS_FROM || '')) ? [{ sourceKey: { startsWith: 'official-post:' }, createdAt: { gte: new Date(process.env.FINIX_OFFICIAL_POST_EMAILS_FROM!) } }] : [])] }] } : {}),
                 },
                 take: 5,
                 orderBy: { createdAt: 'asc' },
@@ -195,6 +207,16 @@ export class EmailMarketingService {
         const campaign = await this.prisma.proEmailCampaign.findUnique({ where: { id } });
         if (!campaign || !['SENDING', 'SCHEDULED'].includes(campaign.status) || (campaign.scheduledAt && campaign.scheduledAt > new Date())) return { skipped: true };
         if (!this.canSendCampaign(campaign)) return { paused: true };
+        if (campaign.sourceKey?.startsWith('official-post:')) {
+            const post = await this.prisma.post.findUnique({ where: { id: campaign.sourceKey.slice('official-post:'.length) },
+                select: { visibility: true, deletedAt: true, communityId: true, parentId: true,
+                    author: { select: { id: true, username: true, role: true, isVerified: true, status: true } } } });
+            if (!post || post.deletedAt || post.communityId || post.parentId || post.visibility !== 'VISIBLE' || !isOfficialPublisher(post.author)) {
+                await this.prisma.proEmailCampaign.update({ where: { id }, data: { status: 'CANCELLED' } });
+                return { skipped: true };
+            }
+        }
+
         if (!campaign.audienceReady) {
             const users = await this.prisma.user.findMany({ where: { ...this.recipientWhere(campaign.audience), ...(campaign.audienceCursor ? { id: { gt: campaign.audienceCursor } } : {}) }, select: { id: true, email: true }, orderBy: { id: 'asc' }, take: 500 });
             await this.prisma.$transaction(async tx => {
@@ -217,14 +239,32 @@ export class EmailMarketingService {
                 await this.prisma.emailCampaignRecipient.updateMany({ where: { id: row.id, ...eligible }, data: { status: 'FAILED', error: 'Requiere conciliacion con el proveedor antes de reenviar' } });
                 continue;
             }
-            const claim = await this.prisma.emailCampaignRecipient.updateMany({ where: { id: row.id, ...eligible }, data: { status: 'PROCESSING', firstAttemptAt: row.firstAttemptAt || now, lockedUntil: new Date(Date.now() + 120000), attempts: { increment: 1 } } });
+            const claim = await this.prisma.emailCampaignRecipient.updateMany({ where: { id: row.id, ...eligible }, data: { status: 'PROCESSING', lockedUntil: new Date(Date.now() + 120000), attempts: { increment: 1 } } });
             if (!claim.count) continue;
             const user = await this.prisma.user.findFirst({ where: { id: row.userId, email: row.email, ...this.recipientWhere(campaign.audience) }, select: { id: true } });
             if (!user) { await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SKIPPED' } }); continue; }
             try {
                 const unsubscribe = (process.env.API_URL || process.env.FRONTEND_URL || 'https://finixarg.com') + '/api/email-preferences/unsubscribe?user=' + row.userId + '&token=' + this.signature(row.userId);
-                const html = (campaign.contentHtml || renderCampaign(campaign)).replace('{{unsubscribe_url}}', escapeEmail(unsubscribe));
-                const result = await this.mail.sendEmail({ to: row.email, subject: campaign.subject, html, text: campaign.message + '\n' + (campaign.ctaUrl || '') + '\nCancelar suscripcion: ' + unsubscribe, idempotencyKey: 'campaign/' + row.id });
+                let snapshot = row.renderedContent as { html: string; text: string; subject: string } | null;
+                if (!snapshot) {
+                    // Legacy uncertain attempts retain the original campaign payload.
+                    let html = campaign.contentHtml || renderCampaign(campaign), message = campaign.message;
+                    if (!row.firstAttemptAt && campaign.sourceKey?.startsWith('finix-approved:daily:')) {
+                        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                        if (!campaign.sourceKey.endsWith(today)) {
+                            await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SKIPPED', error: 'La rueda del informe ya finalizó; se espera el próximo informe diario.', lockedUntil: null } });
+                            continue;
+                        }
+                        if (!this.dailyBriefRenderer) throw new Error('Daily renderer not ready');
+                        const fresh = await this.dailyBriefRenderer(new Date());
+                        html = fresh.html; message = fresh.message;
+                    }
+                    snapshot = { html: html.replace('{{unsubscribe_url}}', escapeEmail(unsubscribe)), subject: campaign.subject,
+                        text: message + '\n' + (campaign.ctaUrl || '') + '\nCancelar suscripcion: ' + unsubscribe };
+                    await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { renderedContent: snapshot } });
+                }
+                if (!row.firstAttemptAt) await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { firstAttemptAt: new Date() } });
+                const result = await this.mail.sendEmail({ to: row.email, ...snapshot, idempotencyKey: 'campaign/' + row.id });
                 await this.prisma.$transaction([
                     this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SENT', sentAt: new Date(), providerId: result.id, lockedUntil: null } }),
                     this.prisma.emailEvent.create({ data: { type: 'SENT', campaignId: id, recipientId: row.id, userId: row.userId, providerId: result.id } }),

@@ -255,6 +255,7 @@ export class PostsService {
             }
         }
 
+        let officialPublication = false;
         const post = await this.prisma.$transaction(async tx => {
         const created = await tx.post.create({
             data: {
@@ -280,7 +281,7 @@ export class PostsService {
             },
             include: POST_INCLUDE(userId),
         });
-        await queueOfficialPost(tx, created);
+        officialPublication = (await queueOfficialPost(tx, created)) === true;
         return created;
         });
 
@@ -331,7 +332,7 @@ export class PostsService {
             }).catch(() => { });
         }
 
-        this.mailService.sendAdminAlert({
+        if (officialPublication) this.mailService.sendAdminAlert({
             eventType: 'POST_CREATED',
             title: `Nueva Publicación de @${authorUsername}`,
             badgeText: 'NUEVA PUBLICACIÓN',
@@ -339,13 +340,13 @@ export class PostsService {
             summary: `El usuario @${authorUsername} ha subido una nueva publicación a Finix.`,
             details: [
                 { label: 'Autor', value: `@${authorUsername}` },
-                { label: 'Tipo de Publicación', value: post.type || 'post' },
+                { label: 'Tipo de Publicación', value: post.type === 'chart' ? 'Análisis gráfico' : post.type === 'image' ? 'Imagen' : 'Publicación' },
                 { label: 'Símbolo / Tickers', value: post.assetSymbol || post.tickers || 'N/A' },
                 { label: 'Contenido / Extracto', value: snippet },
                 { label: 'ID Publicación', value: post.id },
                 { label: 'Fecha y Hora', value: new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) },
             ],
-            actionUrl: `${this.mailService.getAppUrl()}/post/${post.id}`,
+            actionUrl: `${this.mailService.getAppUrl()}/posts/${post.id}`,
             actionLabel: 'Ver Publicación en Finix',
         });
 

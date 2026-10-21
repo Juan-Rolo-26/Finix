@@ -1486,6 +1486,7 @@ model EmailTemplate {
 }
 
 model EmailCampaignRecipient {
+  renderedContent Json?
   attempts       Int              @default(0)
   firstAttemptAt DateTime?
   nextAttemptAt  DateTime         @default(now())

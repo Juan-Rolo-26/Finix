@@ -30,6 +30,9 @@ export interface NewsItem {
 }
 
 export interface MarketQuote {
+    queriedAt?: string;
+    referenceSessionAt?: string | null;
+    dataDelaySeconds?: number | null;
     marketCap?: number | null;
     inputSymbol: string;
     symbol: string;
@@ -42,6 +45,8 @@ export interface MarketQuote {
 }
 
 interface ScannerQuote {
+    referenceSessionAt?: string | null;
+    dataDelaySeconds?: number | null;
     marketCap?: number | null;
     price: number;
     change: number | null;
@@ -82,6 +87,9 @@ interface MarketDashboardAssetDefinition {
 }
 
 export interface MarketDashboardAsset extends MarketDashboardAssetDefinition {
+    queriedAt?: string;
+    referenceSessionAt?: string | null;
+    dataDelaySeconds?: number | null;
     price: number | null;
     change: number | null;
     updatedAt: string;
@@ -850,6 +858,9 @@ export class MarketService {
     private buildDashboardAsset(definition: MarketDashboardAssetDefinition, quote?: MarketQuote): MarketDashboardAsset {
         return {
             ...definition,
+            queriedAt: quote?.queriedAt,
+            referenceSessionAt: quote?.referenceSessionAt,
+            dataDelaySeconds: quote?.dataDelaySeconds,
             price: quote?.price ?? null,
             change: quote?.change ?? null,
             updatedAt: quote?.updatedAt || new Date().toISOString(),
@@ -949,13 +960,14 @@ export class MarketService {
     private dollarRatesCache: { data: MarketDollarRate[]; timestamp: number } | null = null;
 
     private readonly dollarRequestCache = new TtlCache<MarketDollarRate[]>(1);
-    async getDollarRates(): Promise<MarketDollarRate[]> {
+    async getDollarRates(fresh = false): Promise<MarketDollarRate[]> {
+        if (fresh) return this.loadDollarRates(true);
         return this.dollarRequestCache.getOrLoad('rates', 0, () => this.loadDollarRates());
     }
 
-    private async loadDollarRates(): Promise<MarketDollarRate[]> {
+    private async loadDollarRates(fresh = false): Promise<MarketDollarRate[]> {
         const now = Date.now();
-        if (this.dollarRatesCache && now - this.dollarRatesCache.timestamp < 60000) {
+        if (!fresh && this.dollarRatesCache && now - this.dollarRatesCache.timestamp < 60000) {
             return this.dollarRatesCache.data;
         }
 
@@ -1018,7 +1030,7 @@ export class MarketService {
             return rates;
         } catch (error) {
             console.error('[MarketService] Dollar rates failed:', error);
-            if (this.dollarRatesCache?.data) {
+            if (!fresh && this.dollarRatesCache?.data) {
                 return this.dollarRatesCache.data;
             }
             return [];
@@ -1154,16 +1166,17 @@ export class MarketService {
         }
     }
 
-    async getDashboard(): Promise<MarketDashboardPayload> {
+    async getDashboard(fresh = false): Promise<MarketDashboardPayload> {
+        if (fresh) return this.buildDashboard(true);
         if (this.cache) return this.cache.remember('market-dashboard', 5000, () => this.buildDashboard());
         return this.buildDashboard();
     }
 
-    private async buildDashboard(): Promise<MarketDashboardPayload> {
+    private async buildDashboard(fresh = false): Promise<MarketDashboardPayload> {
         const definitions = this.getDashboardDefinitions();
         const [quotes, dollars, community] = await Promise.all([
-            this.getQuotes(definitions.map((item) => item.symbol)),
-            this.getDollarRates(),
+            this.getQuotes(definitions.map((item) => item.symbol), { fresh }),
+            this.getDollarRates(fresh),
             this.getCommunityTrends(),
         ]);
 
@@ -2070,7 +2083,7 @@ export class MarketService {
                         tickers: dedupedTickers,
                         query: { types: [] },
                     },
-                    columns: ['close', 'change', 'change_abs', 'volume', 'Recommend.All', 'premarket_close', 'premarket_change', 'market_cap_basic'],
+                    columns: ['close', 'change', 'change_abs', 'volume', 'Recommend.All', 'premarket_close', 'premarket_change', 'market_cap_basic', 'update_mode', 'time'],
                 }),
                 signal: controller.signal,
             });
@@ -2096,7 +2109,13 @@ export class MarketService {
                 const marketCap = typeof values[7] === 'number' && Number.isFinite(values[7]) && values[7] > 0 ? values[7] : null;
                 if (price === null && premarketPrice === null) return;
 
+                const mode = String(values[8] || '');
+                const delay = mode.match(/^delayed_streaming_(\d+)$/);
+                // Scanner "time" identifies the daily bar/session, not the last trade.
+                const referenceSessionAt = typeof values[9] === 'number' && Number.isFinite(values[9]) && values[9] > 0
+                    ? new Date(values[9] * 1000).toISOString() : null;
                 quoteMap.set(symbol, {
+                    referenceSessionAt, dataDelaySeconds: delay ? Number(delay[1]) : mode === 'streaming' ? 0 : null,
                     marketCap,
                     price: price ?? premarketPrice ?? 0,
                     change,
@@ -2117,7 +2136,8 @@ export class MarketService {
     private readonly pendingQuotes = new Map<string, Promise<MarketQuote>>();
     private readonly historyCache = new TtlCache<any>(200);
 
-    async getQuotes(symbols: string[]): Promise<MarketQuote[]> {
+    async getQuotes(symbols: string[], options: { fresh?: boolean } = {}): Promise<MarketQuote[]> {
+        if (options.fresh) return this.loadQuotes(symbols);
         const inputs = symbols.map(symbol => this.normalizeQuoteInputSymbol(symbol)).filter(Boolean);
         const missing = [...new Set(inputs)].filter(input => !this.quoteCache.peek(input) && !this.pendingQuotes.has(input));
         if (missing.length) {
@@ -2165,6 +2185,9 @@ export class MarketService {
 
             return {
                 inputSymbol,
+                queriedAt: updatedAt,
+                referenceSessionAt: match?.referenceSessionAt ?? null,
+                dataDelaySeconds: match?.dataDelaySeconds ?? null,
                 marketCap: match?.marketCap ?? null,
                 symbol: matchedSymbol,
                 price: match?.price ?? null,

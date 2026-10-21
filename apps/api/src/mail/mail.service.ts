@@ -1,3 +1,4 @@
+import { renderPublicationEmail } from '../posts/publication-email';
 import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { ResendQuotaService } from './resend-quota.service';
 import { isLocalMode } from '../config/local-mode';
@@ -452,6 +453,11 @@ export class MailService {
         },
         destination: string,
     ) {
+        if (params.badgeText === 'NUEVA PUBLICACIÓN' && params.actionUrl) {
+            const detail = (label: string) => String(params.details.find(row => row.label === label)?.value || '');
+            return renderPublicationEmail({ admin: true, message: detail('Contenido / Extracto') || params.summary,
+                ctaUrl: params.actionUrl, ticker: detail('Símbolo / Tickers').replace(/^N\/A$/, ''), date: detail('Fecha y Hora') });
+        }
         const badgeColor = params.badgeColor || '#10b981';
         const badgeBg = `${badgeColor}22`;
         const badgeBorder = `${badgeColor}55`;

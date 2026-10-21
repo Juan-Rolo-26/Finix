@@ -44,7 +44,7 @@ export async function newsletterSectorStocks(market:Pick<MarketService,'getQuote
  const etf=sector?sectorEtf(sector.name,sector.proxySymbol):null;
  if(!etf)return {html:'',text:'',count:0};
  try{
-  const holdings=await loadSectorHoldings(etf),quotes=await market.getQuotes(holdings.items.map(item=>item.ticker));
+  const holdings=await loadSectorHoldings(etf),quotes=await market.getQuotes(holdings.items.map(item=>item.ticker),{fresh:true});
   const byTicker=new Map(quotes.map(quote=>[quote.inputSymbol.split(':').pop()!,quote]));
   const selected=holdings.items.map(item=>({...item,quote:byTicker.get(item.ticker)}))
    .filter(item=>number(item.quote?.marketCap)!==null&&item.quote!.marketCap!>0)

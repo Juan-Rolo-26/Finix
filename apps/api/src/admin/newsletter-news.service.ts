@@ -2,6 +2,7 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import * as Parser from 'rss-parser';
 import { PrismaService } from '../prisma.service';
 import { NewsTranslationService } from '../news/news-translation.service';
+import { newsletterTopicSignature, NewsletterTopicTracker } from './newsletter-news-topics';
 
 const SOURCE_AR = /ámbito|ambito|cronista|infobae|la nación|la nacion|clarín|clarin|iprofesional|perfil|bcra|indec/i;
 const SOURCE_US = /reuters|associated press|ap news|bloomberg|cnbc|marketwatch|nasdaq|yahoo finance|wall street journal|financial times|nyt economy|bbc business|investing/i;
@@ -20,15 +21,16 @@ export class NewsletterNewsService {
 
     async getHighlights(now = new Date()) {
         const since = new Date(now.getTime() - 72 * 3600000);
-        const fields = { id: true, title: true, titleEs: true, description: true, descriptionEs: true, sourceName: true, sourceUrl: true, url: true, publishedAt: true };
+        const fields = { eventFingerprint: true, id: true, title: true, titleEs: true, description: true, descriptionEs: true, sourceName: true, sourceUrl: true, url: true, publishedAt: true };
         const base = { isActive: true, isPublished: true, status: 'PUBLISHED', publishedAt: { gte: since, lte: now } };
         // Independent source pools prevent high-volume international feeds from
         // crowding all Argentine stories out of a shared top-N query.
         const [argentinaPool, usPool] = await Promise.all([
-            this.prisma.newsArticle.findMany({ where: { ...base, OR: ['Ámbito','Ambito','Cronista','Infobae','Nación','Nacion','Clarín','Clarin','iProfesional','Perfil','BCRA','INDEC'].map(name => ({ sourceName: { contains: name, mode: 'insensitive' as const } })) }, select: fields, orderBy: [{ relevanceScore: 'desc' }, { publishedAt: 'desc' }], take: 100 }),
-            this.prisma.newsArticle.findMany({ where: { ...base, OR: ['Reuters','Associated Press','AP News','Bloomberg','CNBC','MarketWatch','Nasdaq','Yahoo Finance','Wall Street Journal','Financial Times','NYT Economy','BBC Business','Investing'].map(name => ({ sourceName: { contains: name, mode: 'insensitive' as const } })) }, select: fields, orderBy: [{ relevanceScore: 'desc' }, { publishedAt: 'desc' }], take: 100 }),
+            this.prisma.newsArticle.findMany({ where: { ...base, OR: ['Ámbito','Ambito','Cronista','Infobae','Nación','Nacion','Clarín','Clarin','iProfesional','Perfil','BCRA','INDEC'].map(name => ({ sourceName: { contains: name, mode: 'insensitive' as const } })) }, select: fields, orderBy: [{ relevanceScore: 'desc' }, { publishedAt: 'desc' }], take: 250 }),
+            this.prisma.newsArticle.findMany({ where: { ...base, OR: ['Reuters','Associated Press','AP News','Bloomberg','CNBC','MarketWatch','Nasdaq','Yahoo Finance','Wall Street Journal','Financial Times','NYT Economy','BBC Business','Investing'].map(name => ({ sourceName: { contains: name, mode: 'insensitive' as const } })) }, select: fields, orderBy: [{ relevanceScore: 'desc' }, { publishedAt: 'desc' }], take: 250 }),
         ]);
         const usedUrls = new Set<string>(), usedTitles = new Set<string>();
+        const topicTracker = new NewsletterTopicTracker();
         const select = async (pool: any[], region: 'AR' | 'US', selected: NewsletterStory[]) => {
             for (const article of pool) {
                 if (selected.length >= 4) break;
@@ -48,11 +50,13 @@ export class NewsletterNewsService {
                 if (!this.translator.isSpanish(title)) continue;
                 const key = normalized(title);
                 if (usedTitles.has(key)) continue;
+                const signature = newsletterTopicSignature({ title, originalTitle: article.title, eventFingerprint: article.eventFingerprint }, region);
+                if (topicTracker.isDuplicate(signature)) continue;
                 let description = clean(article.descriptionEs);
                 if (!this.translator.isSpanish(description)) description = clean(article.description);
                 if (description && !this.translator.isSpanish(description)) description = await this.translator.translateToSpanish(description.slice(0, 700));
                 if (!this.translator.isSpanish(description) || SHOW_DESCRIPTION.test(description)) description = 'Consultá la noticia completa en la fuente original.';
-                usedUrls.add(url.href); usedTitles.add(key);
+                usedUrls.add(url.href); usedTitles.add(key); topicTracker.add(signature);
                 selected.push({ title, description: description.slice(0, 400), sourceName: source, url: url.href, publishedAt: date });
                 // Persist only verified Spanish translations for later sends.
                 if (article.id && (article.titleEs !== title || article.descriptionEs !== description)) {
@@ -80,7 +84,7 @@ export class NewsletterNewsService {
             }
         }
         if (argentina.length < 4 || unitedStates.length < 4) {
-            throw new ServiceUnavailableException(`El boletín se reintentará: hay ${argentina.length}/4 noticias de Argentina y ${unitedStates.length}/4 de Estados Unidos verificadas en español.`);
+            throw new ServiceUnavailableException(`El boletín se reintentará: hay ${argentina.length}/4 noticias de Argentina y ${unitedStates.length}/4 de Estados Unidos verificadas en español y de temáticas distintas.`);
         }
         return { argentina, unitedStates };
     }

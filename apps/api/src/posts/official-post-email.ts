@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { renderCampaign } from '../admin/email-content';
+import { isOfficialPublisher, renderPublicationEmail } from './publication-email';
 
 // Stable account IDs prevent another user from enabling broadcasts by changing a handle.
 export async function queueOfficialPost(tx: Prisma.TransactionClient, post: {
@@ -10,12 +10,7 @@ export async function queueOfficialPost(tx: Prisma.TransactionClient, post: {
     const author = await tx.user.findUnique({ where: { id: post.authorId }, select: {
         id: true, username: true, role: true, isVerified: true, status: true,
     } });
-    if (!author || author.status !== 'ACTIVE') return;
-    const accountId = process.env.FINIX_OFFICIAL_USER_ID?.trim();
-    const official = accountId ? author.id === accountId :
-        ['finixarg', 'finix_oficial'].includes(author.username.toLowerCase()) &&
-        ['ADMIN', 'SUPER_ADMIN'].includes(author.role) && author.isVerified;
-    if (!official) return;
+    if (!isOfficialPublisher(author)) return false;
     const title = 'Nueva publicación de FINIX';
     const message = post.content || 'FINIX compartió una nueva imagen o análisis. Entrá para verlo.';
     const ctaUrl = `${(process.env.FRONTEND_URL || 'https://finixarg.com').replace(/\/$/, '')}/posts/${post.id}`;
@@ -24,7 +19,8 @@ export async function queueOfficialPost(tx: Prisma.TransactionClient, post: {
     if (cover) { try { const url = new URL(cover.url, process.env.FRONTEND_URL || 'https://finixarg.com'); if (['http:', 'https:'].includes(url.protocol)) imageUrl = url.href; } catch {} }
     const data = { imageUrl, sourceKey: `official-post:${post.id}`, subject: title, title, message,
         ctaUrl, ctaLabel: 'Ver publicación', audience: 'OFFICIAL',
-        contentHtml: renderCampaign({ title, message, imageUrl, ctaUrl, ctaLabel: 'Ver publicación', audience: 'OFFICIAL' }),
+        contentHtml: renderPublicationEmail({ message, imageUrl, ctaUrl }),
         createdById: author.id, status: 'SENDING' };
     await tx.proEmailCampaign.upsert({ where: { sourceKey: data.sourceKey }, create: data, update: {} });
+    return true;
 }
