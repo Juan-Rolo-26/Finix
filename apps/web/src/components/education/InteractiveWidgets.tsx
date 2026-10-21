@@ -75,7 +75,7 @@ export function RoicWaccWidget() {
             <div className="p-3.5 rounded-xl bg-muted/40 border border-border/60 text-xs text-muted-foreground leading-relaxed">
                 {isCreating ? (
                     <p>
-                        🟢 <strong>{""}<FinixUiText text={"Creación genuina de valor:"} />{""}</strong> {" "}<FinixUiText text={"Por cada US$ 100 invertidos en el negocio, la empresa obtiene un retorno de US$"} />{" "}{roic}{""}<FinixUiText text={", mientras que el costo de financiarse es de solo US$"} />{" "}{wacc}{""}<FinixUiText text={". El excedente de"} />{" "}<strong>{""}<FinixUiText text={"US$"} />{" "}{spread}</strong> {" "}<FinixUiText text={"va directo a capitalizar al accionista."} />{" "}</p>
+                        🟢 <strong>{""}<FinixUiText text={"Creación genuina de valor:"} />{""}</strong> {" "}<FinixUiText text={"Por cada US$ 100 invertidos en el negocio, la empresa obtiene un retorno de US$"} />{" "}{roic}{""}<FinixUiText text={", mientras que el costo de financiarse es de solo US$"} />{" "}{wacc}{""}<FinixUiText text={". El excedente de"} />{" "}<strong>{""}<FinixUiText text={"US$"} />{" "}{spread}</strong> {" "}<FinixUiText text={"es una medida de beneficio económico sobre ese capital; no equivale a caja disponible ni a una ganancia bursátil asegurada."} />{" "}</p>
                 ) : (
                     <p>
                         🔴 <strong>{""}<FinixUiText text={"Destrucción de valor:"} />{""}</strong> {" "}<FinixUiText text={"Aunque la compañía registre ganancias contables en su balance, su rentabilidad ("} />{""}{roic}{""}<FinixUiText text={"%) es inferior a lo que cuesta conseguir el dinero ("} />{""}{wacc}{""}<FinixUiText text={"%). Cada reinversión empobrece al negocio."} />{" "}</p>

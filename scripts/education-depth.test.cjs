@@ -26,3 +26,9 @@ test('Spanish repeated headings produce unique anchors that survive accent norma
  new Function('module','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(module,module.exports);
  const id=module.exports.educationHeadingId;assert.equal(id('Qué revisar',1),'sec-1-que-revisar');assert.notEqual(id('Qué revisar',1),id('Qué revisar',2));
 });
+
+test('ROIC examples distinguish after-tax operating profit from cash and financing requirements',()=>{
+ const roic=SEED_ARTICLES.find(a=>a.slug==='que-es-el-roic');assert.doesNotMatch(roic.content,/libre de impuestos|debe endeudarse fuertemente|reinv[eie]rtido se multiplica/);
+ assert.match(roic.content,/después de impuestos/);assert.match(roic.content,/hacen falta reinversión/);assert.match(roic.formula,/Caja Excedente/);assert.doesNotMatch(roic.formula,/Caja Neta/);
+ const {refineRoicText}=require('../apps/api/dist/education/lesson-depth');assert.equal(refineRoicText(refineRoicText(roic.content)),roic.content);assert.equal(refineRoicText('Texto propio del editor'),'Texto propio del editor');
+});

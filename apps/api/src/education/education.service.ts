@@ -1,4 +1,4 @@
-import { deepenLesson, lessonReadTime, LESSON_REVISION } from './lesson-depth';
+import { deepenLesson, lessonReadTime, LESSON_REVISION, refineRoicText, LEGACY_ROIC_FORMULA, REFINED_ROIC_FORMULA } from './lesson-depth';
 import { LESSON_DEPTH } from './lesson-depth.data';
 import { TECHNICAL_IMAGES } from './technical-images.data';
 import { Injectable, Logger, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
@@ -174,6 +174,18 @@ export class EducationService implements OnModuleInit {
                         await tx.platformSetting.create({ data: { key, value: JSON.stringify({ articleId: article.id, appliedAt: new Date().toISOString() }), description: 'Ejemplo didáctico añadido sin sustituir el texto del editor.' } });
                     });
                 } catch (error) { this.logger.warn('Ejemplo educativo pendiente de sincronización: ' + lesson.slug); }
+            }
+
+            const legacyRoic = await this.prisma.educationArticle.findUnique({ where: { slug: 'que-es-el-roic' } });
+            if (legacyRoic?.status === 'PUBLISHED') {
+                const content = refineRoicText(legacyRoic.content);
+                const formula = legacyRoic.formula?.replace(LEGACY_ROIC_FORMULA, REFINED_ROIC_FORMULA);
+                const summary = legacyRoic.summary.startsWith('El ROIC es la métrica reina')
+                    ? 'El ROIC relaciona el beneficio operativo después de impuestos con el capital necesario para producirlo. Aprendé a calcularlo, compararlo y reconocer sus límites.' : legacyRoic.summary;
+                if (content !== legacyRoic.content || formula !== legacyRoic.formula || summary !== legacyRoic.summary) {
+                    await this.prisma.educationArticle.updateMany({ where: { id: legacyRoic.id, status: 'PUBLISHED', updatedAt: legacyRoic.updatedAt },
+                        data: { content, formula, summary, readTimeMinutes: lessonReadTime(content) } });
+                }
             }
 
             // 3. Learning Paths

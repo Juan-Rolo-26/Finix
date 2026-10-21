@@ -1,4 +1,4 @@
-import { deepenLesson, lessonReadTime } from './lesson-depth';
+import { deepenLesson, lessonReadTime, refineRoicText, LEGACY_ROIC_FORMULA, REFINED_ROIC_FORMULA } from './lesson-depth';
 import { TECHNICAL_IMAGES } from './technical-images.data';
 import { ASSET_CATEGORY, EDUCATION_EXPANSION } from './education-expansion.data';
 // Auto-generated & verified Education Seed Data for Finix
@@ -1541,7 +1541,14 @@ for (const article of SEED_ARTICLES) {
 
 SEED_CATEGORIES.push(ASSET_CATEGORY);
 SEED_ARTICLES.push(...EDUCATION_EXPANSION);
-for (const article of SEED_ARTICLES) { article.content = deepenLesson(article.slug, article.content); article.readTimeMinutes = lessonReadTime(article.content); }
+for (const article of SEED_ARTICLES) {
+    if (article.slug === 'que-es-el-roic') {
+        article.content = refineRoicText(article.content);
+        article.formula = article.formula?.replace(LEGACY_ROIC_FORMULA, REFINED_ROIC_FORMULA);
+        if (article.summary.startsWith('El ROIC es la métrica reina')) article.summary = 'El ROIC relaciona el beneficio operativo después de impuestos con el capital necesario para producirlo. Aprendé a calcularlo, compararlo y reconocer sus límites.';
+    }
+    article.content = deepenLesson(article.slug, article.content); article.readTimeMinutes = lessonReadTime(article.content);
+}
 
 
 export const SEED_LEARNING_PATHS: SeedLearningPath[] = [
