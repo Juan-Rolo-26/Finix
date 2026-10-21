@@ -16,31 +16,34 @@ export class SiteAnalyticsService {
     await this.prisma.siteAnalyticsVisitor.deleteMany({ where: { lastSeenAt: { lt: cutoff } } });
   }
 
-  async page(input: any) {
+  async page(input: any, userId?: string) {
     const { visitorId, sessionId, page } = input || {};
     if (!UUID.test(visitorId || '') || !UUID.test(sessionId || '') || !PAGES.has(page)) {
       throw new BadRequestException('Datos de analítica inválidos');
     }
-    const existing = await this.prisma.siteAnalyticsSession.findUnique({ where: { id: sessionId }, select: { visitorId: true } });
-    if (existing && existing.visitorId !== visitorId) throw new BadRequestException('Sesión inválida');
+    const user = userId ? await this.prisma.user.findUnique({where:{id:userId},select:{id:true,email:true}}) : null;
+    if (user && excludedAnalyticsEmail(user.email)) return {ignored:true,pageViewId:null};
+    const accountId=user?.id || null;
+    const existing = await this.prisma.siteAnalyticsSession.findUnique({ where: { id: sessionId }, select: { visitorId: true, userId:true } });
+    if (existing && (existing.visitorId !== visitorId || existing.userId !== accountId)) throw new BadRequestException('Sesión inválida');
     const now = new Date();
     await this.prisma.siteAnalyticsVisitor.upsert({
       where: { id: visitorId }, create: { id: visitorId, firstSeenAt: now, lastSeenAt: now }, update: { lastSeenAt: now },
     });
     await this.prisma.siteAnalyticsSession.upsert({
-      where: { id: sessionId }, create: { id: sessionId, visitorId, startedAt: now, lastSeenAt: now }, update: { lastSeenAt: now },
+      where: { id: sessionId }, create: { id: sessionId, visitorId, userId:accountId, startedAt: now, lastSeenAt: now }, update: { lastSeenAt: now },
     });
     const view = await this.prisma.siteAnalyticsPageView.create({ data: { id: randomUUID(), sessionId, page, startedAt: now } });
     return { pageViewId: view.id };
   }
 
-  async heartbeat(input: any) {
+  async heartbeat(input: any, userId?: string) {
     const { visitorId, sessionId, pageViewId, seconds } = input || {};
     if (!UUID.test(visitorId || '') || !UUID.test(sessionId || '') || !UUID.test(pageViewId || '') || !Number.isInteger(seconds) || seconds < 1 || seconds > 30) {
       throw new BadRequestException('Datos de analítica inválidos');
     }
-    const existingSession = await this.prisma.siteAnalyticsSession.findUnique({ where: { id: sessionId }, select: { visitorId: true } });
-    if (!existingSession || existingSession.visitorId !== visitorId) return { accepted: false };
+    const existingSession = await this.prisma.siteAnalyticsSession.findUnique({ where: { id: sessionId }, select: { visitorId: true,userId:true } });
+    if (!existingSession || existingSession.visitorId !== visitorId || existingSession.userId !== (userId || null)) return { accepted: false };
     const now = new Date();
     const updated = await this.prisma.siteAnalyticsPageView.updateMany({
       where: { id: pageViewId, sessionId }, data: { visibleSeconds: { increment: seconds } },
@@ -51,12 +54,20 @@ export class SiteAnalyticsService {
     return { accepted: true };
   }
 
+  async visitors(days: number, page = 1) {
+    const from=analyticsPeriodStart(days),take=30;
+    const where={sessions:{some:{startedAt:{gte:from}}}};
+    const [total,rows]=await Promise.all([
+      this.prisma.siteAnalyticsVisitor.count({where}),
+      this.prisma.siteAnalyticsVisitor.findMany({where,orderBy:[{lastSeenAt:'desc'},{id:'asc'}],skip:(page-1)*take,take,select:{id:true,firstSeenAt:true,lastSeenAt:true,sessions:{where:{startedAt:{gte:from}},select:{startedAt:true,lastSeenAt:true,activeSeconds:true,user:{select:{email:true}},_count:{select:{pageViews:true}}}}}}),
+    ]);
+    return {total,page,pageSize:take,items:rows.map(row=>({id:row.id,firstSeenAt:row.firstSeenAt,lastSeenAt:row.lastSeenAt,emails:[...new Set(row.sessions.flatMap(session=>session.user?.email?[session.user.email]:[]))],sessions:row.sessions.length,pageViews:row.sessions.reduce((n,session)=>n+session._count.pageViews,0),visibleSeconds:row.sessions.reduce((n,session)=>n+session.activeSeconds,0)}))};
+  }
+
   async dashboard(days: number) {
-    const from = new Date();
-    from.setUTCHours(0, 0, 0, 0);
-    from.setUTCDate(from.getUTCDate() - (days - 1));
+    const from = analyticsPeriodStart(days);
     const [visitors, returningVisitors, sessionsSummary, pageSummary, topPages, daily] = await Promise.all([
-      this.prisma.siteAnalyticsVisitor.count({ where: { lastSeenAt: { gte: from } } }),
+      this.prisma.siteAnalyticsVisitor.count({ where: { sessions: {some:{startedAt:{gte:from}}} } }),
       this.prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
         'SELECT COUNT(*)::bigint AS count FROM (SELECT "visitorId" FROM "SiteAnalyticsSession" WHERE "startedAt" >= $1 GROUP BY "visitorId" HAVING COUNT(*) > 1 UNION SELECT "id" FROM "SiteAnalyticsVisitor" WHERE "firstSeenAt" < $1 AND "lastSeenAt" >= $1) repeated',
         from,
@@ -110,3 +121,9 @@ export class SiteAnalyticsService {
     };
   }
 }
+
+export function excludedAnalyticsEmail(email: string) {
+  const normalized=String(email||'').trim().toLowerCase();
+  return ['juanpablorolo2007@gmail.com','finixarg@gmail.com','finixarg.com'].includes(normalized)||normalized.endsWith('@finixarg.com');
+}
+function analyticsPeriodStart(days:number){const from=new Date();from.setUTCHours(0,0,0,0);from.setUTCDate(from.getUTCDate()-(days-1));return from;}

@@ -358,7 +358,7 @@ export class AdminController {
         const verifications = await this.prisma.financialAdvisorVerification.findMany({
             include: { user: { select: { username: true, email: true, id: true } } },
             orderBy: { createdAt: 'desc' },
-            take: 50,
+            take: 500,
         });
         return { data: verifications };
     }
@@ -395,6 +395,7 @@ export class AdminController {
         }
 
         const adminId = req.user?.id;
+        if(body.reason && (typeof body.reason!=='string'||body.reason.length>2000))throw new BadRequestException('El motivo debe tener hasta 2000 caracteres');
 
         const updated = await this.prisma.$transaction(async (tx) => {
             const current = await tx.financialAdvisorVerification.findUnique({ where: { id } });
@@ -406,7 +407,7 @@ export class AdminController {
                     status: body.status,
                     reviewedById: adminId,
                     reviewedAt: new Date(),
-                    rejectionReason: body.reason,
+                    rejectionReason: body.status==='approved'?null:body.reason,
                 }
             });
 
@@ -441,6 +442,7 @@ export class AdminController {
                 }
             });
 
+            if(current.status!==body.status)await tx.notification.create({data:{userId:verification.userId,type:'SYSTEM_ALERT',priority:'HIGH',title:body.status==='approved'?'Tu verificación fue aprobada':body.status==='rejected'?'Resultado de tu solicitud de verificación':'Actualización de tu verificación',message:body.status==='approved'?'Ya podés ver la insignia de cuenta verificada en tu perfil.':(body.reason||'Podés consultar el estado de tu solicitud en Configuración.'),link:'/settings?tab=verificacion',entityType:'VERIFICATION_REQUEST',entityId:id}});
             return verification;
         });
 

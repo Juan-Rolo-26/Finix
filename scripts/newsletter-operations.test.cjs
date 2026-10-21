@@ -41,7 +41,7 @@ async function quotaFixture(usage,run){
 }
 const usage=(daily,monthly=0)=>({daily:{used:daily,limit:100,resets_at:'2026-10-20T23:59:59.999Z'},monthly:{used:monthly,limit:3000,resets_at:'2026-11-05T00:00:00Z'}});
 test('quota warnings use actual account usage and are deduplicated across monitor restarts',()=>quotaFixture(usage(80,2400),async(service,sent,records)=>{
- await service.check();assert.equal(sent.length,2);assert.ok(sent.every(mail=>mail.to[0]==='juanpablorolo2007@gmail.com'&&mail.from.startsWith('Finix <')));
+ await service.check();assert.equal(sent.length,2);assert.ok(sent.every(mail=>mail.from.startsWith('Finix <')));for(const mail of sent){assert.deepEqual(mail.to,['juanpablorolo2007@gmail.com']);assert.equal(mail.cc,undefined);assert.equal(mail.bcc,undefined);}
  await service.check();assert.equal(sent.length,2,'no repeated warning at the same threshold');
  assert.ok([...records.values()].filter(row=>row.key.startsWith('resend.quota.alert')).every(row=>JSON.parse(row.value).status==='SENT'));
 }));

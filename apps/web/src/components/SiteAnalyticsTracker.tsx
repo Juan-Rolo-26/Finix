@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { apiFetch,getAccessToken } from '@/lib/api';
 
 const CONSENT_KEY = 'finix_cookie_consent';
 const VISITOR_KEY = 'finix_analytics_visitor';
@@ -40,16 +41,16 @@ function safePage(pathname: string) {
     return allowed.has(page) ? page : '/dashboard';
 }
 
-function identity() {
+function identity(accountId:string) {
     const now = Date.now();
     let visitorId = localStorage.getItem(VISITOR_KEY);
     if (!visitorId) {
         visitorId = crypto.randomUUID();
         localStorage.setItem(VISITOR_KEY, visitorId);
     }
-    let session: { id: string; lastSeen: number } | null = null;
+    let session: { id: string; lastSeen: number; accountId?:string } | null = null;
     try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch {}
-    if (!session?.id || now - session.lastSeen > SESSION_TIMEOUT) session = { id: crypto.randomUUID(), lastSeen: now };
+    if (!session?.id || session.accountId!==accountId || now - session.lastSeen > SESSION_TIMEOUT) session = { id: crypto.randomUUID(), lastSeen: now,accountId };
     session.lastSeen = now;
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return { visitorId, sessionId: session.id };
@@ -59,7 +60,9 @@ export default function SiteAnalyticsTracker() {
     const { pathname } = useLocation();
     const page = safePage(pathname);
     const userEmail = useAuthStore(state => String(state.user?.email || '').trim().toLowerCase());
-    const excludedFromAnalytics = ANALYTICS_EXCLUDED_EMAILS.has(userEmail);
+    const userId=useAuthStore(state=>state.user?.id || '');
+    const token=useAuthStore(state=>state.token);
+    const excludedFromAnalytics = ANALYTICS_EXCLUDED_EMAILS.has(userEmail) || userEmail.endsWith('@finixarg.com');
     const [consentVersion, setConsentVersion] = useState(() => analyticsAllowed() ? 1 : 0);
 
     useEffect(() => {
@@ -73,14 +76,14 @@ export default function SiteAnalyticsTracker() {
     }, []);
 
     useEffect(() => {
-        if (!analyticsAllowed() || excludedFromAnalytics) return;
+        if (!analyticsAllowed() || excludedFromAnalytics || (userId&&!getAccessToken())) return;
         let alive = true;
-        const ids = identity();
+        const ids = identity(userId);
         let pageViewId = '';
         let lastSentAt = Date.now();
         const postPage = async () => {
             try {
-                const response = await fetch('/api/site-analytics/page', {
+                const response = await apiFetch('/site-analytics/page', {
                     method: 'POST', credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...ids, page }),
@@ -92,7 +95,7 @@ export default function SiteAnalyticsTracker() {
         const flush = (seconds: number) => {
             if (!analyticsAllowed() || !pageViewId || seconds < 1) return;
             const payload = JSON.stringify({ ...ids, pageViewId, seconds: Math.min(30, seconds) });
-            void fetch('/api/site-analytics/heartbeat', {
+            void apiFetch('/site-analytics/heartbeat', {
                 method: 'POST', credentials: 'same-origin', keepalive: true,
                 headers: { 'Content-Type': 'application/json' }, body: payload,
             }).catch(() => {});
@@ -134,7 +137,7 @@ export default function SiteAnalyticsTracker() {
             window.removeEventListener('pagehide', onPageHide);
             if (document.visibilityState === 'visible') flush(Math.min(30, Math.floor((Date.now() - lastSentAt) / 1000)));
         };
-    }, [page, consentVersion, excludedFromAnalytics]);
+    }, [page, consentVersion, excludedFromAnalytics,userId,token]);
 
     return null;
 }

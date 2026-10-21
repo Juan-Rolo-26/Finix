@@ -165,6 +165,7 @@ model User {
   proEmailCampaigns ProEmailCampaign[]       @relation("ProEmailCampaignCreator")
   emailRecipients   EmailCampaignRecipient[]
   emailEvents       EmailEvent[]
+  analyticsSessions SiteAnalyticsSession[]
   emailPreferences  EmailPreference?
   emailSegments     EmailSegment[]           @relation("EmailSegmentCreator")
   emailMedia        EmailMedia[]
@@ -221,10 +222,13 @@ model SiteAnalyticsSession {
   startedAt     DateTime               @default(now())
   lastSeenAt    DateTime               @default(now())
   activeSeconds Int                    @default(0)
+  userId        String?
+  user          User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
   pageViews     SiteAnalyticsPageView[]
 
   @@index([startedAt])
   @@index([visitorId, startedAt])
+  @@index([userId, startedAt])
 }
 
 model SiteAnalyticsPageView {
@@ -1722,6 +1726,8 @@ model FinancialAdvisorVerification {
   website                   String?
   linkedin                  String?
   professionalDescription   String?
+  truthDeclarationAccepted  Boolean   @default(false)
+  revocationConsentAccepted Boolean   @default(false)
   submittedAt               DateTime  @default(now())
   reviewedAt                DateTime?
   reviewedById              String?

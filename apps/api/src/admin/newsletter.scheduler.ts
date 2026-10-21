@@ -1,3 +1,5 @@
+import { newsletterSectorStocks } from './newsletter-sector-stocks';
+import { newsletterTomorrow } from './newsletter-tomorrow';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma.service';
@@ -38,27 +40,18 @@ export class NewsletterScheduler {
     }
 
     private async dailyBrief(now: Date) {
-        const [highlights, marketData, macroEvents, earnings, technologyQuotes, semiconductorQuotes, sectorMap, premarketData] = await Promise.all([
+        const [highlights, marketData, tomorrow, technologyQuotes, semiconductorQuotes, sectorMap, premarketData] = await Promise.all([
             this.news.getHighlights(now),
             this.market.getDashboard().catch(() => null),
-            this.prisma.marketCalendarEvent.findMany({
-                where: { isPublished: true, status: 'PUBLISHED', timestampUtc: { gte: now, lte: new Date(now.getTime() + 7 * 86400000) } },
-                select: { title: true, date: true, time: true, country: true, sourceUrl: true, actualValue: true, forecastValue: true, consensusValue: true, impactScore: true },
-                orderBy: [{ impactScore: 'desc' }, { timestampUtc: 'asc' }], take: 3,
-            }).catch(() => []),
-            this.prisma.marketEarningsEvent.findMany({
-                where: { isPublished: true, timestampUtc: { gte: now, lte: new Date(now.getTime() + 7 * 86400000) } },
-                select: { ticker: true, companyName: true, date: true, reportTiming: true, sourceUrl: true },
-                orderBy: { timestampUtc: 'asc' }, take: 4,
-            }).catch(() => []),
+            newsletterTomorrow(this.prisma,now),
             this.market.getQuotes(['AAPL','MSFT','NVDA','AMZN','GOOGL','META','TSLA']).catch(() => []),
             this.market.getQuotes(['NVDA','AVGO','AMD','QCOM','INTC','MU','TSM']).catch(() => []),
             this.market.getFinvizHeatmap('d1').catch(() => null),
             this.market.getPremarket(),
         ]);
-        const premarketSymbols = PREMARKET_EMAIL_GROUPS.flatMap(([key]) => (premarketData[key] || []).map((asset: {symbol:string}) => asset.symbol));
+        const premarketSymbols = PREMARKET_EMAIL_GROUPS.filter(([key])=>key==='argentina').flatMap(([key]) => (premarketData[key] || []).map((asset: {symbol:string}) => asset.symbol));
         const regularQuotes = premarketSymbols.length ? await this.market.getQuotes([...new Set<string>(premarketSymbols)]).catch(() => []) : [];
-        const premarket = newsletterPremarket(premarketData, regularQuotes, app);
+        const premarket = newsletterPremarket(premarketData, regularQuotes, app,['argentina']);
         const local = highlights.argentina;
         const global = highlights.unitedStates;
         const articles = [...local, ...global];
@@ -91,10 +84,11 @@ export class NewsletterScheduler {
         const dailySectors = sectorRows.filter((s:any) => typeof s.perf === 'number').sort((a:any,b:any) => b.perf-a.perf);
         const leadingSector: { name: string; perf: number; proxySymbol?: string } | null = dailySectors[0] ||
             leadingSectorEtf(await this.market.getQuotes(Object.keys(NEWSLETTER_SECTOR_ETFS).map(ticker => 'AMEX:' + ticker)).catch(() => []));
+        const sectorStocks=await newsletterSectorStocks(this.market,leadingSector);
         const sectorBasis = leadingSector?.proxySymbol
             ? 'Comparación de los 11 ETF sectoriales del S&P 500 · referencia del sector mediante ' + leadingSector.proxySymbol + ' · Fuente: TradingView · <a style="color:#087747" href="https://www.ssga.com/mainfund/' + esc(leadingSector.proxySymbol) + '">Ver ETF de referencia</a>'
             : 'Variación sectorial ponderada por capitalización · Fuente: Finviz';
-        const sectorHighlight = leadingSector ? panel(leadingSector.perf > 0 ? 'Sector destacado del día · EE. UU.' : 'Mejor desempeño relativo · EE. UU.', '<div style="font-size:19px;font-weight:bold;color:#17332a">' + esc(leadingSector.name) + ' <span style="color:' + (leadingSector.perf >= 0 ? '#087747' : '#bd4545') + '">' + (leadingSector.perf > 0 ? '+' : '') + esc(fmt(leadingSector.perf)) + '%</span></div><p style="margin:5px 0 0;color:#71857a;font-size:11px">' + (leadingSector.perf > 0 ? 'Mayor suba de la comparación diaria' : 'Mayor variación relativa de la comparación diaria') + ' · cierre del ' + esc(dateKey(now)) + ' · ' + sectorBasis + '</p>') : panel('Sector destacado del día · EE. UU.','<p style="margin:0;color:#71857a;font-size:12px">El proveedor no informó una variación sectorial confiable para esta rueda.</p>');
+        const sectorHighlight = leadingSector ? panel(leadingSector.perf > 0 ? 'Sector destacado del día · EE. UU.' : 'Mejor desempeño relativo · EE. UU.', '<div style="font-size:19px;font-weight:bold;color:#17332a">' + esc(leadingSector.name) + ' <span style="color:' + (leadingSector.perf >= 0 ? '#087747' : '#bd4545') + '">' + (leadingSector.perf > 0 ? '+' : '') + esc(fmt(leadingSector.perf)) + '%</span></div><p style="margin:5px 0 0;color:#71857a;font-size:11px">' + (leadingSector.perf > 0 ? 'Mayor suba de la comparación diaria' : 'Mayor variación relativa de la comparación diaria') + ' · cierre del ' + esc(dateKey(now)) + ' · ' + sectorBasis + '</p>'+sectorStocks.html) : panel('Sector destacado del día · EE. UU.','<p style="margin:0;color:#71857a;font-size:12px">El proveedor no informó una variación sectorial confiable para esta rueda.</p>');
         const dollarTiles = (marketData?.dollars || []).filter((d:any) => ['oficial','mep','ccl','blue'].includes(String(d.id).toLowerCase())).slice(0,4);
         const fx = dollarTiles.length ? '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px"><tr>' + dollarTiles.map((d:any) => '<td class="fx-tile" style="width:25%;padding:5px"><div style="padding:11px 8px;border:1px solid #e8eaf2;border-radius:10px;text-align:center;background:#fbfdfb"><div style="font-size:10px;color:#74867c;text-transform:uppercase;font-weight:bold">Dólar ' + esc(d.label || d.id) + '</div><div style="font-size:17px;color:#17332a;font-weight:bold">' + esc(fmt(d.sell,'ARS')) + '</div></div></td>').join('') + '</tr></table>' : '';
         const quotes = marketData?.sections ? '<div style="margin:0 0 15px"><div style="font-size:12px;color:#087747;font-weight:bold;margin:0 5px 5px">Cotizaciones al cierre · ' + esc(dateKey(now)) + '</div>' + fx + '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;table-layout:fixed"><tr>' + quoteBox('7 Tecnológicas',quoteAssets(technologyQuotes,techLabels),7) + quoteBox('Semiconductores',quoteAssets(semiconductorQuotes,semiLabels),7) + '</tr><tr>' + quoteBox('Argentina · S&P Merval y acciones',marketData.sections.argentina,6) + quoteBox('Mercado global · ETF y acciones',globalAssets,5) + '</tr><tr>' + quoteBox('Materias primas',marketData.sections.commodities,4) + quoteBox('Cripto',marketData.sections.crypto,3) + '</tr></table><p style="font-size:10px;color:#7b8d83;margin:6px 5px 0">Variaciones de la rueda según disponibilidad de cada fuente. <a style="color:#087747" href="' + app + '/market">Ver mercados en Finix</a></p></div>' : '';
@@ -105,18 +99,12 @@ export class NewsletterScheduler {
         const movers = equities.length ? panel('Renta variable local · variación disponible',
             '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="width:50%;vertical-align:top;padding-right:12px"><div style="font-size:11px;color:#087747;font-weight:bold">' + (gainers.length ? 'MAYORES SUBAS' : 'SIN SUBAS EN LA MUESTRA') + '</div><table role="presentation" width="100%">' + (gainers.length ? quoteRows(gainers,3) : '<tr><td style="padding:7px 0;color:#71857a;font-size:11px">No hubo variaciones positivas entre estos activos.</td></tr>') + '</table></td><td style="width:50%;vertical-align:top;border-left:1px solid #e5eee8;padding-left:12px"><div style="font-size:11px;color:#bd4545;font-weight:bold">' + (losers.length ? 'MAYORES BAJAS' : 'SIN BAJAS EN LA MUESTRA') + '</div><table role="presentation" width="100%">' + (losers.length ? quoteRows(losers,3) : '<tr><td style="padding:7px 0;color:#71857a;font-size:11px">No hubo variaciones negativas entre estos activos.</td></tr>') + '</table></td></tr></table>') : '';
 
-        const agendaCandidates = [
-            ...macroEvents.map(e => ({ title:e.title, date:e.date, time:e.time, url:e.sourceUrl, detail:[e.country,e.actualValue ? 'Dato: '+e.actualValue : '',e.consensusValue ? 'Consenso: '+e.consensusValue : e.forecastValue ? 'Estimación: '+e.forecastValue : ''].filter(Boolean).join(' · ') })),
-            ...earnings.map(e => ({ title:e.ticker+' · '+e.companyName, date:e.date, time:e.reportTiming, url:e.sourceUrl, detail:'Resultados en agenda' })),
-        ];
-        const agendaItems = [...new Map(agendaCandidates.map(e => [e.title+'|'+e.date+'|'+(e.time || ''),e])).values()].slice(0,4);
-        const agenda = agendaItems.length ? panel('Agenda para seguir',
-            '<table role="presentation" width="100%" cellspacing="0" cellpadding="0">' + agendaItems.map(e => '<tr><td style="padding:6px 0;border-top:1px solid #e5eee8;font-size:12px;color:#344c41"><b>' + esc(e.title) + '</b><br><span style="color:#74867c">' + esc(e.date) + (e.time ? ' · '+esc(e.time) : '') + (e.detail ? ' · '+esc(e.detail) : '') + '</span>' + (href(e.url) ? ' · <a style="color:#087747" href="'+href(e.url)+'">Fuente</a>' : '') + '</td></tr>').join('') + '</table>') : '';
+        const agenda=panel('Calendario de mañana · '+tomorrow.date,tomorrow.html);
         const investmentPanel = investment.length ? storyPanel('Una inversión para analizar · no es una recomendación',investment,'Sin novedades recientes de deuda o resultados.')
             : panel('Idea para investigar','<p style="margin:0;color:#60766b;font-size:12px">Seguí resultados, valuaciones y eventos publicados antes de tomar decisiones.</p><a style="color:#087747" href="'+app+'/calendario">Abrir calendario de Finix</a>');
         const title = 'El cierre de mercado, en contexto', day = dateKey(now);
         const mood = marketData?.pulse ? '<p style="margin:0 0 8px;color:#415c4e;font-size:13px"><b>'+esc(marketData.pulse.label)+':</b> '+esc(marketData.pulse.summary)+'</p>' : '';
-        const message = articles.slice(0,12).map(a => a.title+': '+(a.description || '')+' ('+(a.url)+')').join('\n\n') + '\n\nAgenda: ' + agendaItems.map(e=>e.title+' · '+e.date+' '+(e.url || '')).join('\n') + '\n\n' + premarket.text;
+        const message = articles.slice(0,12).map(a => a.title+': '+(a.description || '')+' ('+(a.url)+')').join('\n\n') + '\n\n' + tomorrow.text + '\n\n' + sectorStocks.text + '\n\n' + premarket.text;
         const html = layout('AFTER MARKET · CIERRE DE MERCADO',title,day+' · Resumen de la rueda argentina y global, después del cierre.',
             quotes + sectorHighlight +
             panel('El pulso de la rueda',mood+'<p style="margin:0;color:#60766b;font-size:12px">Cierre diario · noticias y variaciones observadas durante la rueda.</p>') +
@@ -207,7 +195,7 @@ export class NewsletterScheduler {
         return {day,title,message,html,weekStart,weekEnd};
     }
 
-    @Cron('*/10 17-21 * * *', { timeZone: 'America/Argentina/Buenos_Aires' })
+    @Cron('*/10 17-21 * * 1-5', { timeZone: 'America/Argentina/Buenos_Aires' })
     async daily() {
         if (process.env.FINIX_APPROVED_EMAILS_ENABLED !== 'true') return;
         try {

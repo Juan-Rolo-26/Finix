@@ -64,9 +64,9 @@ export default function FinancialVerificationTab() {
         }
     }, [user?.id]);
 
-    const fetchRequest = async () => {
+    const fetchRequest = async (background=false) => {
         try {
-            setLoading(true);
+            if(!background)setLoading(true);
             setLoadError(false);
             const res = await apiFetch('/me/verification');
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -75,6 +75,7 @@ export default function FinancialVerificationTab() {
                 const data = body.trim() ? JSON.parse(body) : null;
                 if (data && data.id) {
                     setRequest(data as VerificationRequest);
+                    if(data.status==='approved' && !useAuthStore.getState().user?.isVerified)useAuthStore.getState().updateUser({isVerified:true});
                 } else {
                     setRequest(null);
                 }
@@ -85,6 +86,13 @@ export default function FinancialVerificationTab() {
             setLoading(false);
         }
     };
+
+    useEffect(()=>{
+        if(!request||!['pending','under_review'].includes(request.status))return;
+        const refresh=()=>{if(document.visibilityState==='visible')void fetchRequest(true);};
+        const interval=window.setInterval(refresh,30000);window.addEventListener('focus',refresh);
+        return()=>{window.clearInterval(interval);window.removeEventListener('focus',refresh);};
+    },[request?.id,request?.status]);
 
     const uploadFile = async (file: File): Promise<string> => {
         const formData = new FormData();
@@ -131,6 +139,7 @@ export default function FinancialVerificationTab() {
             const profPath = await uploadFile(files.professional);
 
             const payload = {
+                consent,
                 fullName: form.fullName,
                 documentType: form.documentType,
                 documentCountry: form.documentCountry,

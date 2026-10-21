@@ -8,7 +8,7 @@ import { Cookie, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 interface CookiePreferences {
     necessary: boolean;   // Always true, cannot be disabled
     preferences: boolean; // UI preferences (theme, sidebar)
-    analytics: boolean; // First-party anonymous site analytics
+    analytics: boolean; // Optional first-party site analytics
 }
 
 const STORAGE_KEY = 'finix_cookie_consent';
@@ -193,7 +193,7 @@ export default function CookieConsent() {
                         </div>
 
                         <p className="mb-1 text-base leading-relaxed text-emerald-50/90">
-                            {" "}<FinixUiText text={"Usamos almacenamiento local necesario para el funcionamiento de Finix. La analítica anónima es opcional y solo se activa si la aceptás."} />{""}{' '}
+                            {" "}<FinixUiText text={"Usamos almacenamiento local necesario para el funcionamiento de Finix. La analítica de visitas es opcional y solo se activa si la aceptás."} />{""}{' '}
                             <Link to="/cookies" className="font-semibold !text-white underline decoration-white/50 underline-offset-4 hover:decoration-white" tabIndex={0}>
                                 {" "}<FinixUiText text={"Política de Cookies"} />{" "}</Link>
                         </p>
@@ -219,15 +219,15 @@ export default function CookieConsent() {
                                     onChange={v => setPrefs(p => ({ ...p, preferences: v }))}
                                 />
                                 <CookieToggle
-                                    label="Analítica anónima"
-                                    description="Mide visitas, páginas consultadas y tiempo visible para mejorar Finix. Usa un identificador aleatorio propio; no guarda IP, nombre ni contenido."
+                                    label="Analítica de visitas"
+                                    description="Mide visitas, páginas y tiempo visible. Si iniciás sesión, vincula tu cuenta para mostrar el correo solo al administrador. No guarda IP ni contenido."
                                     checked={prefs.analytics}
                                     onChange={v => setPrefs(p => ({ ...p, analytics: v }))}
                                 />
                             </div>
                             <div className="mt-3 rounded-xl border border-emerald-200/70 bg-emerald-50/70 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
                                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                                    <strong className="text-foreground">{""}<FinixUiText text={"Nota:"} />{""}</strong> {" "}<FinixUiText text={"La analítica propia es anónima y opcional. Finix no usa cookies de publicidad ni rastreo entre sitios. TradingView puede establecer sus propias cookies según sus políticas."} />{" "}</p>
+                                    <strong className="text-foreground">{""}<FinixUiText text={"Nota:"} />{""}</strong> {" "}<FinixUiText text={"La analítica propia es opcional. Con sesión iniciada, el correo de tu cuenta puede aparecer en las estadísticas privadas del administrador. Finix no usa publicidad ni rastreo entre sitios. TradingView aplica sus propias políticas."} />{" "}</p>
                             </div>
                         </div>
                     )}

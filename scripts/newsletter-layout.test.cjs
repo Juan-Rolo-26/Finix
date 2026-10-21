@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 require('reflect-metadata');
+global.fetch=async()=>{throw Error('External requests disabled in layout fixtures');};
 const { NewsletterScheduler } = require('../apps/api/dist/admin/newsletter.scheduler');
 const { newsletterLayout, newsletterCompanyHeading } = require('../apps/api/dist/admin/newsletter-layout');
 const now = new Date('2026-10-20T15:00:00Z');
@@ -13,7 +14,7 @@ function fixture() {
     const earnings = firms.map(([ticker, companyName]) => ({ ticker, companyName, date: '2026-10-19', logoUrl: 'https://s3-symbol-logo.tradingview.com/example.svg',
         sourceUrl: 'https://www.sec.gov/example', actualEps: 1.23, epsEstimate: 1.2, actualRevenue: 2000000, revenueEstimate: 1900000, marketCap: 1000000000 }));
     const sent = [];
-    const prisma = { newsArticle: { findMany: async () => articles }, marketCalendarEvent: { findMany: async () => [] }, marketEarningsEvent: { findMany: async () => earnings } };
+    const prisma = { newsArticle: { findMany: async () => articles }, marketCalendarEvent: { findMany: async () => [] }, marketDividendEvent:{findMany:async()=>[]}, marketEarningsEvent: { findMany: async () => earnings } };
     const market = { getPremarket: async () => ({ indices:[],commodities:[],magnificent7:[],argentina:[],crypto:[],session:{sentiment:'neutral',sentimentScore:50},dataContext:{referenceSession:'2026-10-20'} }), getDashboard: async () => ({ dollars: [{ id: 'mep', label: 'MEP', sell: 1536 }], sections: { argentina: [sample], global: [sample], commodities: [sample], crypto: [sample] } }),
         getQuotes: async symbols => symbols.map(inputSymbol => ({ inputSymbol, price: 1234.56, change: -1.23 })),
         getFinvizHeatmap: async () => ({ sectors: [{ name: 'Tecnología', perf: 1.25 }] }) };
@@ -111,12 +112,12 @@ test('daily bulletin uses a labeled ETF reference when Finviz is unavailable',as
 });
 
 const {newsletterPremarket,resolveEmailPremarket}=require('../apps/api/dist/admin/newsletter-premarket');
-test('full premarket coverage is added without losing the existing close, news or agenda',async()=>{
+test('requested comparison duplicates are removed while Argentina context, close and news remain',async()=>{
  const {engine}=fixture();const keys=['argentina','magnificent7','indices','commodities','crypto'];
  engine.market.getPremarket=async()=>Object.fromEntries([...keys.map((key,i)=>[key,Array.from({length:12},(_,j)=>({symbol:'NASDAQ:MARKER'+i+'X'+j,label:'Empresa '+i+'X'+j,description:'Descripción única '+i+'X'+j,format:'currency',currency:'USD',premarketPrice:123,premarketChange:0,regularPrice:124,regularChange:1,updatedAt:'2026-10-20T13:30:00Z'}))]),['session',{sentiment:'neutral',sentimentScore:50}],['dataContext',{referenceSession:'2026-10-20',source:'Fuente verificable'}]]);
  engine.market.getQuotes=async symbols=>symbols.map(symbol=>({inputSymbol:symbol,symbol,price:125,change:-1,updatedAt:'2026-10-20T20:00:00Z',unavailable:false}));
- const daily=await engine.dailyBrief(now);for(let i=0;i<5;i++)for(let j=0;j<12;j++){assert.ok(daily.html.includes('MARKER'+i+'X'+j));assert.ok(daily.message.includes('MARKER'+i+'X'+j));assert.ok(daily.html.includes('Descripción única '+i+'X'+j));}
- assert.match(daily.html,/60 \/ 60 cotizando/);assert.match(daily.html,/09:30 Nueva York/);assert.match(daily.html,/Rueda regular/);assert.match(daily.html,/Semiconductores/);assert.equal((daily.html.match(/Fuente original<\/a>/g)||[]).length,8);assert.ok(Buffer.byteLength(daily.html,'utf8')<100*1024,'Gmail-size budget for the complete catalog');
+ const daily=await engine.dailyBrief(now);for(let i=0;i<5;i++)for(let j=0;j<12;j++){const marker='MARKER'+i+'X'+j;assert.equal(daily.html.includes(marker),i===0);assert.equal(daily.message.includes(marker),i===0);if(i===0)assert.ok(daily.html.includes('Descripción única '+i+'X'+j));}
+ assert.match(daily.html,/12 \/ 12 cotizando/);assert.match(daily.html,/09:30 Nueva York/);assert.match(daily.html,/Rueda regular/);assert.match(daily.html,/Semiconductores/);assert.equal((daily.html.match(/Fuente original<\/a>/g)||[]).length,8);assert.ok(Buffer.byteLength(daily.html,'utf8')<100*1024,'Gmail-size budget for the complete catalog');
 });
 test('US regular quotes never masquerade as premarket; zero and unavailable data remain distinct',()=>{
  const a={symbol:'NASDAQ:AAPL',price:123,change:1,premarketPrice:null};assert.equal(resolveEmailPremarket(a).value,null);

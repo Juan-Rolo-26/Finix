@@ -29,6 +29,7 @@ export class SettingsService {
                 username: true,
                 email: true,
                 notificationPrefs: true,
+                emailPreferences: {select:{marketing:true,daily:true,weekly:true}},
                 bio: true,
                 bioLong: true,
                 avatarUrl: true,
@@ -82,6 +83,7 @@ export class SettingsService {
                 email: stored.email !== false, push: stored.push !== false,
             };
         } catch { /* Keep defaults for legacy invalid JSON. */ }
+        if ((user as any).emailPreferences?.marketing === false) notificationPrefs.email=false;
         return { ...this.normalizeUserMedia(user), notificationPrefs };
     }
 
@@ -287,6 +289,10 @@ export class SettingsService {
             throw new BadRequestException('Faltan campos obligatorios para la verificación');
         }
 
+        if(data.consent?.trueDocs!==true || data.consent?.revoke!==true) throw new BadRequestException('Aceptá las declaraciones de documentación y revisión antes de enviar la solicitud');
+        for(const [key,value] of Object.entries(data)) if(typeof value==='string' && value.length>(key==='professionalDescription'?6000:1000)) throw new BadRequestException('Uno de los campos supera el máximo permitido');
+        for(const key of ['website','linkedin']) if(data[key]) {try{const url=new URL(data[key]);if(url.protocol!=='https:'&&url.protocol!=='http:')throw Error();}catch{throw new BadRequestException('El sitio web y LinkedIn deben ser enlaces válidos');}}
+
         for (const key of ['identityDocumentFrontPath', 'identityDocumentBackPath', 'professionalDocumentPath']) {
             const path = data[key];
             if (!isOwnedVerificationDocument(path, userId)) {
@@ -314,7 +320,7 @@ export class SettingsService {
             identityDocumentFrontPath: String(data.identityDocumentFrontPath || '').trim(),
             identityDocumentBackPath: String(data.identityDocumentBackPath || '').trim(),
             professionalDocumentPath: String(data.professionalDocumentPath || '').trim(),
-            experienceYears: data.experienceYears ? Number(data.experienceYears) : null,
+            experienceYears: data.experienceYears !== undefined && data.experienceYears !== null && data.experienceYears !== '' ? Number(data.experienceYears) : null,
             specialization: data.specialization ? String(data.specialization).trim() : null,
             company: data.company ? String(data.company).trim() : null,
             professionalPosition: data.professionalPosition ? String(data.professionalPosition).trim() : null,
@@ -322,6 +328,8 @@ export class SettingsService {
             linkedin: data.linkedin ? String(data.linkedin).trim() : null,
             professionalDescription: data.professionalDescription ? String(data.professionalDescription).trim() : null,
             status: 'pending',
+            truthDeclarationAccepted:true,
+            revocationConsentAccepted:true,
             submittedAt: new Date(),
         };
 
@@ -332,11 +340,12 @@ export class SettingsService {
             });
         }
 
-        return this.prisma.financialAdvisorVerification.create({
-            data: {
-                ...payload,
-                userId,
-            },
+        return this.prisma.$transaction(async tx=>{
+            const request=await tx.financialAdvisorVerification.create({data:{...payload,userId}});
+            await tx.financialVerificationAuditLog.create({data:{verificationId:request.id,action:'SUBMIT',newStatus:'pending'}});
+            const admins=await tx.user.findMany({where:{status:'ACTIVE',role:{in:['ADMIN','SUPER_ADMIN']}},select:{id:true}});
+            if(admins.length)await tx.notification.createMany({data:admins.map(admin=>({userId:admin.id,type:'SYSTEM_ALERT',priority:'HIGH',title:'Nueva solicitud de verificación',message:'Hay una nueva solicitud con información y documentos para revisar en el administrador.',link:(process.env.ADMIN_URL||'https://admin.finixarg.com').replace(/\/$/,'')+'/verifications',entityType:'VERIFICATION_REQUEST',entityId:request.id}))});
+            return request;
         });
     }
 

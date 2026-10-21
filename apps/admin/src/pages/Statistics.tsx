@@ -1,3 +1,4 @@
+import VisitorsDialog from '../components/VisitorsDialog';
 import { useCallback, useEffect, useState } from 'react';
 import { adminFetch } from '../lib/api';
 import { Activity, BarChart3, Clock3, DollarSign, Eye, FileText, Globe, RotateCcw, Users } from 'lucide-react';
@@ -22,6 +23,8 @@ function formatDay(value: string) {
     return new Date(value + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
 }
 export default function Statistics() {
+    const [visitorsOpen,setVisitorsOpen]=useState(false);
+    const closeVisitors=useCallback(()=>setVisitorsOpen(false),[]);
     const [stats, setStats] = useState<StatsData | null>(null);
     const [visits, setVisits] = useState<VisitsData | null>(null);
     const [days, setDays] = useState(30);
@@ -84,7 +87,7 @@ export default function Statistics() {
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                     <div>
                         <div className="flex items-center gap-2"><Eye className="h-5 w-5 text-primary" /><h2 className="text-xl font-bold text-foreground">Visitas al sitio</h2></div>
-                        <p className="mt-1 text-sm text-muted-foreground">Visitantes anónimos, sesiones y tiempo que las páginas estuvieron visibles.</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Visitas con y sin sesión, páginas consultadas y tiempo visible.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <label htmlFor="visits-range" className="text-sm text-muted-foreground">Período</label>
@@ -99,18 +102,18 @@ export default function Statistics() {
                 {visitsError ? <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-600">No se pudieron cargar las visitas. Actualizá el panel o volvé a iniciar sesión.</div> : <>
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
                         {[
-                            { label: 'Visitantes únicos', value: visits?.visitors ?? 0, icon: Users, hint: 'personas anónimas' },
+                            { label: 'Visitantes únicos', value: visits?.visitors ?? 0, icon: Users, hint: 'Ver correos y visitas sin sesión' },
                             { label: 'Nuevos', value: visits?.newVisitors ?? 0, icon: Users, hint: 'primera visita en el período' },
                             { label: 'Recurrentes', value: visits?.returningVisitors ?? 0, icon: RotateCcw, hint: returningRate + '% del total' },
                             { label: 'Sesiones', value: visits?.sessions ?? 0, icon: Activity, hint: 'se reinician tras 30 min' },
                             { label: 'Páginas vistas', value: visits?.pageViews ?? 0, icon: Eye, hint: (visits?.pagesPerSession ?? 0) + ' por sesión' },
                             { label: 'Sesiones con interacción', value: visits?.engagedSessions ?? 0, icon: Activity, hint: (visits?.engagementRate ?? 0) + '% con 2+ páginas o 10+ s visibles' },
                             { label: 'Rebotes', value: (visits?.bounceRate ?? 0) + '%', icon: RotateCcw, hint: (visits?.bounceSessions ?? 0).toLocaleString('es-AR') + ' sesiones de una página y menos de 10 s' },
-                        ].map(item => <div key={item.label} className="min-w-0 rounded-xl border border-border bg-card p-4">
+                        ].map(item => {const clickable=item.label==='Visitantes únicos';const Tile=clickable?'button':'div';return <Tile key={item.label} type={clickable?'button':undefined} onClick={clickable?()=>setVisitorsOpen(true):undefined} disabled={clickable?visitsLoading:undefined} className={'min-w-0 rounded-xl border border-border bg-card p-4 text-left '+(clickable?'cursor-pointer transition-colors hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary':'')}>
                             <div className="flex items-center gap-2 text-muted-foreground"><item.icon className="h-4 w-4 shrink-0 text-primary" /><span className="truncate text-xs font-medium">{item.label}</span></div>
                             <p className="mt-3 text-2xl font-bold text-foreground">{visitsLoading ? '—' : item.value.toLocaleString('es-AR')}</p>
                             <p className="mt-1 truncate text-xs text-muted-foreground">{item.hint}</p>
-                        </div>)}
+                        </Tile>;})}
                     </div>
                     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(280px,1fr)]">
                         <div className="rounded-xl border border-border bg-card p-5">
@@ -152,8 +155,9 @@ export default function Statistics() {
                         </div>)}</div> : <p className="mt-4 text-sm text-muted-foreground">{visitsLoading ? 'Cargando páginas…' : 'Las páginas consultadas aparecerán acá cuando haya visitas registradas.'}</p>}
                     </div>
                 </>}
-                <p className="text-xs text-muted-foreground">La medición es anónima y opcional. Los datos empiezan a acumularse cuando cada visitante acepta la analítica en el aviso de cookies.</p>
+                <p className="text-xs text-muted-foreground">La medición es opcional y comienza al aceptar la analítica. Los correos de sesiones iniciadas son visibles solo para la administración; las visitas anónimas quedan sin correo.</p>
             </section>
+            {visitorsOpen&&<VisitorsDialog days={days} onClose={closeVisitors}/>}
         </div>
     );
 }

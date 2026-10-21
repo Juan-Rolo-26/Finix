@@ -35,8 +35,7 @@ import {
     Bell,
     Clock,
     ImagePlus,
-    BadgeCheck,
-    Mail,
+    ShieldCheck,
     Crown,
     Zap,
     CreditCard,
@@ -195,7 +194,6 @@ export default function Settings() {
     const [bannerUploadError, setBannerUploadError] = useState('');
 
     const [notificationPrefs, setNotificationPrefs] = useState({ email: true, push: true });
-    const [isSavingInvestmentEmails, setIsSavingInvestmentEmails] = useState(false);
 
 
     // ── Privacy form state ──
@@ -554,32 +552,6 @@ export default function Settings() {
         }
     };
 
-    const updateInvestmentEmailNotifications = async (enabled: boolean) => {
-        if (!isProActive) {
-            showToast(ui("Las alertas por email de inversiones son exclusivas para Finix PRO"), 'error');
-            return;
-        }
-
-        setIsSavingInvestmentEmails(true);
-        try {
-            const res = await apiFetch('/me/preferences', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ investmentEmailNotifications: enabled }),
-            });
-            if (!res.ok) {
-                const data = await res.json().catch(() => null);
-                throw new Error(data?.message || ui("No se pudo guardar la preferencia"));
-            }
-            setSettings((previous) => previous ? { ...previous, investmentEmailNotifications: enabled } : previous);
-            showToast(enabled ? ui("Emails de inversiones activados") : ui("Emails de inversiones desactivados"));
-        } catch (error: any) {
-            showToast(error.message || ui("No se pudo guardar la preferencia"), 'error');
-        } finally {
-            setIsSavingInvestmentEmails(false);
-        }
-    };
-
     // ─── Password change ──────────────────────────────────────────────────────
     const changePassword = async () => {
         const errors: string[] = [];
@@ -677,7 +649,7 @@ export default function Settings() {
                             { value: 'preferencias', label: ui("Preferencias"), icon: <Globe className="w-4 h-4 shrink-0" /> },
                             { value: 'notificaciones', label: ui("Notificaciones"), icon: <Bell className="w-4 h-4 shrink-0" /> },
                             { value: 'seguridad', label: ui("Seguridad"), icon: <Lock className="w-4 h-4 shrink-0" /> },
-                            { value: 'verificacion', label: ui("Verificación"), icon: <BadgeCheck className="w-4 h-4 shrink-0" /> },
+                            { value: 'verificacion', label: ui("Verificación"), icon: <ShieldCheck size={16} className="h-4 w-4 min-w-4 shrink-0" aria-hidden="true" /> },
                         ].map(({ value, label, icon }) => (
                             <TabsTrigger
                                 key={value}
@@ -1509,56 +1481,17 @@ export default function Settings() {
                             <PushSettings />
                             <ToggleRow
                                 label={ui("Notificaciones por Email")}
-                                description={ui("Recibí resúmenes y novedades por email. Los avisos de seguridad siguen activos.")}
+                                description={ui("Activá o desactivá el After Market diario y los balances de los viernes. Disponible para todas las cuentas.")}
                                 checked={notificationPrefs.email}
                                 onChange={(v) => {
                                     setNotificationPrefs((p) => ({ ...p, email: v }));
                                 }}
                             />
 
-                            {/* PRO Email / Gmail Notifications Banner Card */}
-                            <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card/50 to-primary/5 p-5 space-y-4 backdrop-blur-sm">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3.5">
-                                        <div className="mt-0.5 rounded-xl bg-amber-500/20 p-2.5 text-amber-500 shadow-sm shadow-amber-500/10">
-                                            <Mail className="h-5 w-5" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="font-semibold text-sm text-foreground">{ui("Alertas y Reportes Premium a tu Gmail / Email")} </p>
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-500 border border-amber-500/30">
-                                                    <Crown className="h-3 w-3" />{ui("EXCLUSIVO PRO")} </span>
-                                            </div>
-                                            <p className="text-xs leading-relaxed text-muted-foreground max-w-xl">{ui("Recibí análisis de mercado urgentes, señales técnicas de alta convicción, movimientos de ballenas y resúmenes ejecutivos directamente en tu casilla de Gmail seleccionadas por el equipo de Finix.")} </p>
-                                        </div>
-                                    </div>
-                                    <Switch
-                                        id="investment-email-notifications"
-                                        aria-label={ui("Notificaciones de inversión exclusivas por email")}
-                                        checked={settings?.investmentEmailNotifications ?? false}
-                                        onCheckedChange={updateInvestmentEmailNotifications}
-                                        disabled={isSavingInvestmentEmails || !isProActive}
-                                    />
-                                </div>
-
-                                {isProActive ? (
-                                    <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5 text-xs text-emerald-400">
-                                        <Check className="h-4 w-4 shrink-0" />
-                                        <span>{freeAccess ? ui("Las notificaciones y reportes están incluidos gratis durante esta etapa.") : ui("Tu suscripción Finix PRO está activa. Tenés acceso total a las notificaciones y reportes directos en tu casilla.")}</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-500/25 bg-background/80 p-3.5">
-                                        <div className="space-y-0.5 text-xs text-muted-foreground">
-                                            <p className="font-medium text-amber-400 flex items-center gap-1.5">
-                                                <Sparkles className="h-3.5 w-3.5" />{ui("Función bloqueada para cuentas gratuitas")} </p>
-                                            <p>{ui("Finix PRO:")} {formatArs(proPriceArs)}{ui("por mes. Podés pagar un mes o renovarlo automáticamente y cancelarlo cuando quieras.")} </p>
-                                        </div>
-                                        <Link to="/pro" className="shrink-0 w-full sm:w-auto">
-                                            <Button size="sm" className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-bold text-xs gap-1.5 shadow-md shadow-amber-500/20">
-                                                <Zap className="h-3.5 w-3.5" />{ui("Obtener Finix PRO")} </Button>
-                                        </Link>
-                                    </div>
-                                )}
+                            <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 text-sm leading-relaxed text-muted-foreground">
+                                <p className="font-semibold text-foreground">After Market y balances semanales</p>
+                                <p className="mt-1">After Market de lunes a viernes a las 17:00 de Argentina. Los viernes, a la misma hora, también recibís cuatro balances de la semana.</p>
+                                <p className="mt-2 text-xs">Incluidos para todas las cuentas, gratuitas y Pro. Este selector controla los dos boletines; los mensajes de seguridad siguen activos.</p>
                             </div>
 
                             <div className="flex justify-end pt-2 border-t border-border/30">

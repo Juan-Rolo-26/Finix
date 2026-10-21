@@ -1,18 +1,21 @@
+import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
 import { BadgeCheck, Check, X, Loader2, User, Eye } from 'lucide-react';
-import { adminFetch } from '../lib/api';
+import { adminFetch,readAdminErrorMessage } from '../lib/api';
 
 export default function VerificationsManagement() {
+    const [error,setError]=useState('');
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
 
-    const getDocumentUrl = (path: string) => {
-        if (!path) return '';
-        if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) return path;
-        return `/api/admin/verifications/document?path=${encodeURIComponent(path)}`;
+    const openDocument = async (path:string) => {
+        const popup=window.open('about:blank','_blank');if(popup)popup.opener=null;
+        try{setError('');const response=await adminFetch('/admin/verifications/document?path='+encodeURIComponent(path));if(!response.ok)throw new Error(await readAdminErrorMessage(response,'No se pudo abrir el documento privado.'));const url=URL.createObjectURL(await response.blob());if(popup)popup.location.href=url;else{URL.revokeObjectURL(url);throw new Error('Permití abrir una pestaña para ver el documento.');}window.setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(error){popup?.close();setError(error instanceof Error?error.message:'No se pudo abrir el documento.');}
     };
+    useEffect(()=>{if(!selectedRequest)return;const previous=document.body.style.overflow;document.body.style.overflow='hidden';const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setSelectedRequest(null);};document.addEventListener('keydown',close);return()=>{document.body.style.overflow=previous;document.removeEventListener('keydown',close);};},[selectedRequest?.id]);
+    const statusLabel=(status:string)=>({approved:'Aprobado',rejected:'Rechazado',pending:'Pendiente',under_review:'En revisión',suspended:'Suspendido',expired:'Vencido'}[status]||status);
 
     useEffect(() => {
         fetchRequests();
@@ -20,19 +23,20 @@ export default function VerificationsManagement() {
 
     const fetchRequests = async () => {
         try {
-            setLoading(true);
+            setLoading(true);setError('');
             const res = await adminFetch('/admin/verifications');
+            if(!res.ok)throw new Error(await readAdminErrorMessage(res,'No se pudieron cargar las solicitudes.'));
             const data = await res.json();
             setRequests(data.data || []);
         } catch (err) {
-            console.error(err);
+            setError(err instanceof Error?err.message:'No se pudieron cargar las solicitudes.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleUpdateStatus = async (id: string, status: string, reason?: string) => {
-        if (!confirm(`¿Estás seguro de que deseas marcar esta solicitud como ${status.toUpperCase()}?`)) return;
+        if (!confirm(`¿Querés marcar esta solicitud como ${statusLabel(status).toLowerCase()}?`)) return;
 
         try {
             setProcessingId(id);
@@ -41,12 +45,12 @@ export default function VerificationsManagement() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status, reason }),
             });
-            if (res.ok) {
-                // Update local list
-                setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-            }
+            if(!res.ok)throw new Error(await readAdminErrorMessage(res,'No se pudo actualizar la solicitud.'));
+            const {data}=await res.json();setError('');
+            setRequests(prev=>prev.map(request=>request.id===id?{...request,...data}:request));
+            setSelectedRequest((request:any)=>request?.id===id?{...request,...data}:request);
         } catch (err) {
-            console.error(err);
+            setError(err instanceof Error?err.message:'No se pudo actualizar la solicitud.');
         } finally {
             setProcessingId(null);
         }
@@ -70,6 +74,7 @@ export default function VerificationsManagement() {
                 </div>
             </div>
 
+            {error&&<div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-600">{error}<button type="button" onClick={()=>void fetchRequests()} className="ml-3 underline">Actualizar solicitudes</button></div>}
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-lg">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
@@ -116,7 +121,7 @@ export default function VerificationsManagement() {
                                                 req.status === 'rejected' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
                                                     'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                 }`}>
-                                                {req.status === 'approved' ? 'Aprobado' : req.status === 'rejected' ? 'Rechazado' : 'Pendiente'}
+                                                {statusLabel(req.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -163,12 +168,12 @@ export default function VerificationsManagement() {
                 </div>
             </div>
 
-            {selectedRequest && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+            {selectedRequest && createPortal(
+                <div role="dialog" aria-modal="true" aria-labelledby="verification-details-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
                         <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card z-10">
                             <div>
-                                <h2 className="text-xl font-bold text-foreground">Detalles de Verificación</h2>
+                                <h2 id="verification-details-title" className="text-xl font-bold text-foreground">Detalles de Verificación</h2>
                                 <p className="text-sm text-muted-foreground">Usuario: @{selectedRequest.user?.username}</p>
                             </div>
                             <button
@@ -180,6 +185,7 @@ export default function VerificationsManagement() {
                         </div>
 
                         <div className="p-6 space-y-8">
+                            {error&&<p role="alert" className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-600">{error}</p>}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <h3 className="text-lg font-semibold text-emerald-500 border-b border-border pb-2">Datos Personales</h3>
@@ -193,15 +199,15 @@ export default function VerificationsManagement() {
                                     <div className="space-y-3">
                                         <div>
                                             <p className="text-sm text-muted-foreground mb-1">DNI / Documento (Frente)</p>
-                                            <a href={getDocumentUrl(selectedRequest.identityDocumentFrontPath)} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-sm flex items-center gap-2">
+                                            <button type="button" onClick={()=>void openDocument(selectedRequest.identityDocumentFrontPath)} className="text-blue-400 hover:underline text-sm flex items-center gap-2">
                                                 <Eye className="w-4 h-4" /> Ver Archivo Frente
-                                            </a>
+                                            </button>
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground mb-1">DNI / Documento (Dorso)</p>
-                                            <a href={getDocumentUrl(selectedRequest.identityDocumentBackPath)} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-sm flex items-center gap-2">
+                                            <button type="button" onClick={()=>void openDocument(selectedRequest.identityDocumentBackPath)} className="text-blue-400 hover:underline text-sm flex items-center gap-2">
                                                 <Eye className="w-4 h-4" /> Ver Archivo Dorso
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -219,18 +225,26 @@ export default function VerificationsManagement() {
                                     <div className="space-y-3">
                                         <div>
                                             <p className="text-sm text-muted-foreground mb-1">Certificado / Matrícula</p>
-                                            <a href={getDocumentUrl(selectedRequest.professionalDocumentPath)} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-sm flex items-center gap-2">
+                                            <button type="button" onClick={()=>void openDocument(selectedRequest.professionalDocumentPath)} className="text-blue-400 hover:underline text-sm flex items-center gap-2">
                                                 <Eye className="w-4 h-4" /> Ver Archivo Profesional
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
+                            <div className="rounded-xl border border-border bg-secondary/20 p-4 text-sm space-y-2">
+                                <p><span className="text-muted-foreground">Estado: </span>{statusLabel(selectedRequest.status)}</p>
+                                <p><span className="text-muted-foreground">Correo: </span>{selectedRequest.user?.email}</p>
+                                <p><span className="text-muted-foreground">Enviada: </span>{new Date(selectedRequest.submittedAt).toLocaleString('es-AR')}</p>
+                                <p>Declaración de documentos verdaderos: {selectedRequest.truthDeclarationAccepted?'Aceptada':'Sin registro anterior'}</p>
+                                <p>Consentimiento de revisión y revocación: {selectedRequest.revocationConsentAccepted?'Aceptado':'Sin registro anterior'}</p>
+                                {selectedRequest.rejectionReason&&<p>Motivo de la decisión: {selectedRequest.rejectionReason}</p>}
+                            </div>
                             <div className="space-y-4">
                                 <h3 className="text-lg font-semibold text-emerald-500 border-b border-border pb-2">Información Adicional (Opcional)</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <p><span className="text-muted-foreground">Años Exp:</span> {selectedRequest.experienceYears || '-'}</p>
+                                    <p><span className="text-muted-foreground">Años Exp:</span> {selectedRequest.experienceYears ?? '-'}</p>
                                     <p><span className="text-muted-foreground">Especialización:</span> {selectedRequest.specialization || '-'}</p>
                                     <p><span className="text-muted-foreground">Empresa:</span> {selectedRequest.company || '-'}</p>
                                     <p><span className="text-muted-foreground">Cargo:</span> {selectedRequest.professionalPosition || '-'}</p>
@@ -256,8 +270,7 @@ export default function VerificationsManagement() {
                             {selectedRequest.status !== 'approved' && (
                                 <button
                                     onClick={() => {
-                                        handleUpdateStatus(selectedRequest.id, 'approved');
-                                        setSelectedRequest(null);
+                                        void handleUpdateStatus(selectedRequest.id, 'approved');
                                     }}
                                     disabled={processingId === selectedRequest.id}
                                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
@@ -270,8 +283,7 @@ export default function VerificationsManagement() {
                                     onClick={() => {
                                         const reason = prompt('Rechazar - Motivo (Opcional):');
                                         if (reason !== null) {
-                                            handleUpdateStatus(selectedRequest.id, 'rejected', reason);
-                                            setSelectedRequest(null);
+                                            void handleUpdateStatus(selectedRequest.id, 'rejected', reason);
                                         }
                                     }}
                                     disabled={processingId === selectedRequest.id}
@@ -283,7 +295,7 @@ export default function VerificationsManagement() {
                         </div>
                     </div>
                 </div>
-            )}
+            ,document.body)}
         </div>
     );
 }

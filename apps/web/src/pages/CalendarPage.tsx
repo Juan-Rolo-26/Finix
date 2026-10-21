@@ -1123,9 +1123,25 @@ export default function CalendarPage() {
                                     </span>
                                 </div>
                                 <div className="market-grid calendar-event-grid">
-                                    {day.economic.map(normalizeEconomicSurprise).map(event=><article key={event.id} className="calendar-compact-card"><h3>{formatEconomicEventTitle(event.title,event.country)}</h3><button type="button" onClick={()=>setDetail({kind:'economic',event})} aria-label={'Ver detalles de '+formatEconomicEventTitle(event.title,event.country)}>Ver detalles <ArrowUpRight size={14}/></button></article>)}
+                                    {day.economic.map(normalizeEconomicSurprise).map(event=>(
+                                        <button key={event.id} type="button" className="calendar-compact-card calendar-card-button" onClick={()=>setDetail({kind:'economic',event})} aria-label={'Ver detalles de '+formatEconomicEventTitle(event.title,event.country)}>
+                                            <span className="calendar-compact-title">{formatEconomicEventTitle(event.title,event.country)}</span>
+                                            <span className="calendar-card-details">Ver detalles <ArrowUpRight size={14}/></span>
+                                        </button>
+                                    ))}
 
-                                    {day.earnings.map(earn=>{const outcome=getEarningsOutcome(earn);const tone=outcome==='VICTORIOSO'?'positive':outcome==='DESVICTORIOSO'?'negative':outcome==='MIXTO'?'mixed':'neutral';return <article key={earn.id} className={'calendar-compact-card calendar-result--'+tone}><div className="calendar-compact-company"><span className="calendar-compact-logo"><AssetLogoImg ticker={earn.ticker} src={earn.logoUrl} name={earn.companyName}/></span><div><h3>{earn.ticker}</h3><p>{earn.companyName}</p></div><span className="sr-only">{outcome==='VICTORIOSO'?'Resultado positivo':outcome==='DESVICTORIOSO'?'Resultado negativo':outcome==='MIXTO'?'Resultado mixto':'Resultado pendiente o sin comparación'}</span></div><button type="button" onClick={()=>setDetail({kind:'earnings',event:earn})} aria-label={'Ver detalles del balance de '+earn.companyName}>Ver detalles <ArrowUpRight size={14}/></button></article>;})}
+                                    {day.earnings.map(earn=>{
+                                        const outcome=getEarningsOutcome(earn);
+                                        const tone=outcome==='VICTORIOSO'?'positive':outcome==='DESVICTORIOSO'?'negative':outcome==='MIXTO'?'mixed':'neutral';
+                                        const eps=earn.actualEps??earn.epsEstimate,revenue=earn.actualRevenue??earn.revenueEstimate;
+                                        return <button key={earn.id} type="button" className={'market-quote-card calendar-event-card calendar-card-button calendar-earnings-preview calendar-result--'+tone} onClick={()=>setDetail({kind:'earnings',event:earn})} aria-label={'Ver detalles del balance de '+earn.companyName}>
+                                            <span className="calendar-card-meta"><span>Balance trimestral</span><span>{earn.actualEps!=null||earn.actualRevenue!=null?'Publicado':'Pendiente'}</span></span>
+                                            <span className="calendar-compact-company"><span className="calendar-compact-logo"><AssetLogoImg ticker={earn.ticker} src={earn.logoUrl} name={earn.companyName}/></span><span className="min-w-0"><span className="calendar-compact-title">{earn.ticker}</span><span className="block text-xs text-muted-foreground mt-1">{earn.companyName}</span></span></span>
+                                            <span className="calendar-earnings-values"><span><span className="calendar-value-label">{earn.actualEps==null?'EPS estimado':'EPS reportado'}</span><strong>{eps==null?'Sin dato':eps.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></span><span><span className="calendar-value-label">{earn.actualRevenue==null?'Ingresos estimados':'Ingresos reportados'}</span><strong>{revenue==null?'Sin dato':formatFinancialAmount(revenue).replace('$','').replace('T',' billones').replace('B',' mil millones').replace('M',' millones').replace('K',' miles')}</strong></span></span>
+                                            <span className="calendar-card-footer calendar-earnings-footer"><span><span className="calendar-value-label">Fecha del balance</span><strong>{formatDateLabel(earn.date)}</strong></span><span className="calendar-card-details">Ver detalles <ArrowUpRight size={14}/></span></span>
+                                            <span className="sr-only">{outcome==='VICTORIOSO'?'Resultado positivo':outcome==='DESVICTORIOSO'?'Resultado negativo':outcome==='MIXTO'?'Resultado mixto':'Resultado pendiente o sin comparación'}. Moneda no informada por el proveedor.</span>
+                                        </button>;
+                                    })}
 
                                     {day.dividends.map((dividend) => (
                                         <article

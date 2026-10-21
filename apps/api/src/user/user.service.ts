@@ -633,10 +633,13 @@ export class UserService {
             }
         }
 
+        let emailEnabled: boolean | undefined;
         if (updateData.notificationPrefs !== undefined) {
-            filteredData.notificationPrefs = typeof updateData.notificationPrefs === 'string'
-                ? updateData.notificationPrefs
-                : JSON.stringify(updateData.notificationPrefs);
+            let preferences: any;
+            try { preferences=typeof updateData.notificationPrefs==='string'?JSON.parse(updateData.notificationPrefs):updateData.notificationPrefs; } catch { throw new BadRequestException('Preferencias de notificación inválidas'); }
+            if (!preferences || typeof preferences!=='object' || Array.isArray(preferences) || JSON.stringify(preferences).length>10000 || (preferences.email!==undefined && typeof preferences.email!=='boolean')) throw new BadRequestException('Preferencias de notificación inválidas');
+            emailEnabled=preferences.email;
+            filteredData.notificationPrefs=JSON.stringify(preferences);
         }
 
         if (updateData.theme !== undefined) {
@@ -665,10 +668,13 @@ export class UserService {
         }
 
         try {
-            const updated = await this.prisma.user.update({
-                where: { id: userId },
-                data: filteredData,
-                select: this.getProfileSelect(),
+            const update={where:{id:userId},data:filteredData,select:this.getProfileSelect()};
+            const updated = emailEnabled===undefined ? await this.prisma.user.update(update) : await this.prisma.$transaction(async tx=>{
+                const user=await tx.user.update(update);
+                const enabled=emailEnabled!;
+                const preferences={marketing:enabled,daily:enabled,weekly:enabled,analysis:enabled,product:enabled};
+                await tx.emailPreference.upsert({where:{userId},create:{userId,...preferences},update:preferences});
+                return user;
             });
             this.searchCache.clear();
             return this.normalizeUserMedia(updated);

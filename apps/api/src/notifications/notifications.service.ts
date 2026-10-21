@@ -262,9 +262,12 @@ export class NotificationsService {
     async updatePreferences(userId: string, prefs: any) {
         // Enforce security notifications are always true
         const updatedPrefs = { ...prefs, security: true };
-        await this.prisma.user.update({
-            where: { id: userId },
-            data: { notificationPrefs: JSON.stringify(updatedPrefs) }
+        await this.prisma.$transaction(async tx=>{
+            await tx.user.update({where:{id:userId},data:{notificationPrefs:JSON.stringify(updatedPrefs)}});
+            if(typeof prefs.email==='boolean'){
+                const preferences={marketing:prefs.email,daily:prefs.email,weekly:prefs.email,analysis:prefs.email,product:prefs.email};
+                await tx.emailPreference.upsert({where:{userId},create:{userId,...preferences},update:preferences});
+            }
         });
         return updatedPrefs;
     }

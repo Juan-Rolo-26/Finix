@@ -164,7 +164,10 @@ export class EmailMarketingService {
     async unsubscribe(userId: string, signature: string) {
         if (!z.string().uuid().safeParse(userId).success || !/^[a-f0-9]{64}$/.test(signature || '') || !timingSafeEqual(Buffer.from(signature), Buffer.from(this.signature(userId)))) throw new BadRequestException('Enlace invalido.');
         await this.prisma.$transaction(async tx => {
-            await tx.user.updateMany({ where: { id: userId }, data: { investmentEmailNotifications: false } });
+            const user=await tx.user.findUnique({where:{id:userId},select:{notificationPrefs:true}});
+            let preferences:any={};try{preferences=JSON.parse(user?.notificationPrefs||'{}');}catch{}
+            if(!preferences||typeof preferences!=='object'||Array.isArray(preferences))preferences={};
+            await tx.user.updateMany({ where: { id: userId }, data: { investmentEmailNotifications: false,notificationPrefs:JSON.stringify({...preferences,email:false}) } });
             await tx.emailPreference.upsert({ where: { userId }, create: { userId, marketing: false, product: false }, update: { marketing: false, product: false } });
         });
         return 'Suscripcion a comunicaciones de inversion cancelada.';
