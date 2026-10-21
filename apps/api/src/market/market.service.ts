@@ -30,6 +30,7 @@ export interface NewsItem {
 }
 
 export interface MarketQuote {
+    marketCap?: number | null;
     inputSymbol: string;
     symbol: string;
     price: number | null;
@@ -41,6 +42,7 @@ export interface MarketQuote {
 }
 
 interface ScannerQuote {
+    marketCap?: number | null;
     price: number;
     change: number | null;
     premarketPrice?: number | null;
@@ -2068,7 +2070,7 @@ export class MarketService {
                         tickers: dedupedTickers,
                         query: { types: [] },
                     },
-                    columns: ['close', 'change', 'change_abs', 'volume', 'Recommend.All', 'premarket_close', 'premarket_change'],
+                    columns: ['close', 'change', 'change_abs', 'volume', 'Recommend.All', 'premarket_close', 'premarket_change', 'market_cap_basic'],
                 }),
                 signal: controller.signal,
             });
@@ -2091,9 +2093,11 @@ export class MarketService {
                 const change = typeof values[1] === 'number' && Number.isFinite(values[1]) ? values[1] : null;
                 const premarketPrice = typeof values[5] === 'number' && Number.isFinite(values[5]) ? values[5] : null;
                 const premarketChange = typeof values[6] === 'number' && Number.isFinite(values[6]) ? values[6] : null;
+                const marketCap = typeof values[7] === 'number' && Number.isFinite(values[7]) && values[7] > 0 ? values[7] : null;
                 if (price === null && premarketPrice === null) return;
 
                 quoteMap.set(symbol, {
+                    marketCap,
                     price: price ?? premarketPrice ?? 0,
                     change,
                     premarketPrice,
@@ -2161,6 +2165,7 @@ export class MarketService {
 
             return {
                 inputSymbol,
+                marketCap: match?.marketCap ?? null,
                 symbol: matchedSymbol,
                 price: match?.price ?? null,
                 change: match?.change ?? null,

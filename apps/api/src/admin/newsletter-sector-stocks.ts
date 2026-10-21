@@ -46,9 +46,22 @@ export async function newsletterSectorStocks(market:Pick<MarketService,'getQuote
  try{
   const holdings=await loadSectorHoldings(etf),quotes=await market.getQuotes(holdings.items.map(item=>item.ticker));
   const byTicker=new Map(quotes.map(quote=>[quote.inputSymbol.split(':').pop()!,quote]));
-  const lines=['ACCIONES DEL SECTOR · '+NEWSLETTER_SECTOR_ETFS[etf],holdings.items.length+' acciones del ETF '+etf+' · composición oficial '+holdings.date];
+  const selected=holdings.items.map(item=>({...item,quote:byTicker.get(item.ticker)}))
+   .filter(item=>number(item.quote?.marketCap)!==null&&item.quote!.marketCap!>0)
+   .sort((a,b)=>b.quote!.marketCap!-a.quote!.marketCap!||a.ticker.localeCompare(b.ticker)).slice(0,6);
+  if(!selected.length)return {count:0,text:'No hay capitalizaciones disponibles para seleccionar las principales empresas del sector.',html:'<p class="nl-note">No hay capitalizaciones disponibles para seleccionar las principales empresas del sector.</p>'};
+  const summary=selected.length+' empresas de mayor capitalización con datos disponibles del sector '+NEWSLETTER_SECTOR_ETFS[etf]+' representado por '+etf;
+  const lines=['PRINCIPALES EMPRESAS DEL SECTOR · '+NEWSLETTER_SECTOR_ETFS[etf],summary+' · composición oficial '+holdings.date];
   let up=0,down=0,available=0;
-  const rows=holdings.items.map(item=>{const quote=byTicker.get(item.ticker);const valid=quote&&!quote.unavailable&&number(quote.price)!==null&&quote.price!>0;const price=valid?new Intl.NumberFormat('es-AR',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(quote.price!):'Sin dato';const change=valid?number(quote.change):null;if(change!==null){available++;if(change>0)up++;if(change<0)down++;}const variation=change===null?'Sin dato':(change>0?'+':'')+change.toLocaleString('es-AR',{maximumFractionDigits:2})+'%';lines.push(item.name+' ('+item.ticker+'): '+price+' · '+variation);return '<tr><td><b>'+esc(item.ticker)+'</b><br><small>'+esc(item.name)+'</small></td><td>'+esc(price)+'</td><td class="'+(change!==null&&change<0?'loss':'gain')+'">'+esc(variation)+'</td></tr>';}).join('');
-  return {count:holdings.items.length,text:lines.join('\n')+'\nFuente: '+holdings.source,html:'<p class="nl-note">'+holdings.items.length+' acciones del sector '+esc(NEWSLETTER_SECTOR_ETFS[etf])+' representado por '+etf+'. Composición oficial: '+holdings.date+'. '+up+' suben · '+down+' bajan · '+available+' con variación disponible.</p><table class="nl-data" role="presentation" width="100%"><thead><tr><th>Empresa</th><th>Precio USD</th><th>Variación diaria</th></tr></thead><tbody>'+rows+'</tbody></table><p class="nl-note">Cotizaciones de la rueda regular consultadas al preparar el informe; pueden tener demora. Se incluyen todas las acciones de la composición publicada del ETF sectorial, sin efectivo ni derivados. <a href="'+holdings.source+'">Composición oficial de State Street</a>.</p>'};
- }catch{return {count:0,text:'Composición completa del sector no disponible en la fuente oficial.',html:'<p class="nl-note">No se pudo obtener la composición completa del sector en la fuente oficial. No se reemplaza por una lista parcial.</p>'};}
+  const rows=selected.map(item=>{
+   const quote=item.quote;const valid=quote&&!quote.unavailable&&number(quote.price)!==null&&quote.price!>0;
+   const price=valid?new Intl.NumberFormat('es-AR',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(quote.price!):'Sin dato';
+   const change=valid?number(quote.change):null;
+   if(change!==null){available++;if(change>0)up++;if(change<0)down++;}
+   const variation=change===null?'Sin dato':(change>0?'+':'')+change.toLocaleString('es-AR',{maximumFractionDigits:2})+'%';
+   lines.push(item.name+' ('+item.ticker+'): '+price+' · '+variation);
+   return '<tr><td><b>'+esc(item.ticker)+'</b><br><small>'+esc(item.name)+'</small></td><td>'+esc(price)+'</td><td class="'+(change!==null&&change<0?'loss':'gain')+'">'+esc(variation)+'</td></tr>';
+  }).join('');
+  return {count:selected.length,text:lines.join('\n')+'\nFuente: '+holdings.source,html:'<p class="nl-note">'+esc(summary)+'. Composición oficial: '+holdings.date+'. En esta selección: '+up+' suben · '+down+' bajan · '+available+' con variación disponible.</p><table class="nl-data" role="presentation" width="100%"><thead><tr><th>Empresa</th><th>Precio USD</th><th>Variación diaria</th></tr></thead><tbody>'+rows+'</tbody></table><p class="nl-note">Hasta 6 empresas, ordenadas por capitalización de mercado informada por TradingView. Cotizaciones de la rueda regular consultadas al preparar el informe; pueden tener demora. <a href="'+holdings.source+'">Composición oficial de State Street</a>.</p>'};
+ }catch{return {count:0,text:'Selección de empresas del sector no disponible.',html:'<p class="nl-note">No se pudo obtener la composición oficial o las cotizaciones para seleccionar las principales empresas del sector.</p>'};}
 }
