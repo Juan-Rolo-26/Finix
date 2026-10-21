@@ -1,7 +1,7 @@
 import { emailUrl, escapeEmail } from '../admin/email-content';
 
 export function isOfficialPublisher(author: { id: string; username: string; role: string; isVerified: boolean; status: string } | null) {
-    if (!author || author.status !== 'ACTIVE' || !author.isVerified || !['ADMIN', 'SUPER_ADMIN'].includes(author.role)) return false;
+    if (!author || author.status !== 'ACTIVE' || !author.isVerified || !['ADMIN', 'SUPER_ADMIN', 'CREATOR'].includes(author.role)) return false;
     const pinned = process.env.FINIX_OFFICIAL_USER_ID?.trim();
     return pinned ? author.id === pinned : author.username.toLowerCase() === 'finixarg';
 }

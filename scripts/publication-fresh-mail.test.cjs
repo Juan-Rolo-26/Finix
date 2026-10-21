@@ -7,7 +7,7 @@ const { MarketService } = require('../apps/api/dist/market/market.service');
 const author = { id:'official', username:'finixarg', role:'ADMIN', isVerified:true, status:'ACTIVE' };
 test('only the active, verified official admin account can announce publications',()=>{
  process.env.FINIX_OFFICIAL_USER_ID='official';
- assert.equal(isOfficialPublisher(author),true);
+ assert.equal(isOfficialPublisher(author),true);assert.equal(isOfficialPublisher({...author,role:'CREATOR'}),true);
  for(const patch of [{id:'other'},{isVerified:false},{role:'USER'},{status:'SUSPENDED'}]) assert.equal(isOfficialPublisher({...author,...patch}),false);
  delete process.env.FINIX_OFFICIAL_USER_ID;
  assert.equal(isOfficialPublisher({...author,username:'finix_oficial'}),false);
