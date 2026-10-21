@@ -106,10 +106,12 @@ export class NewsletterScheduler {
         const mood = marketData?.pulse ? '<p style="margin:0 0 8px;color:#415c4e;font-size:13px"><b>'+esc(marketData.pulse.label)+':</b> '+esc(marketData.pulse.summary)+'</p>' : '';
         const message = articles.slice(0,12).map(a => a.title+': '+(a.description || '')+' ('+(a.url)+')').join('\n\n') + '\n\n' + tomorrow.text + '\n\n' + sectorStocks.text + '\n\n' + premarket.text;
         const html = layout('AFTER MARKET · CIERRE DE MERCADO',title,day+' · Resumen de la rueda argentina y global, después del cierre.',
-            quotes + sectorHighlight +
+            quotes +
+            storyPanel('Noticias nacionales · Argentina',local,'No se encontraron cuatro noticias argentinas recientes con fuente verificable.') +
+            storyPanel('Noticias internacionales · Estados Unidos',global,'No se encontraron cuatro noticias recientes de EE. UU. con fuente verificable.') +
+            sectorHighlight +
             panel('El pulso de la rueda',mood+'<p style="margin:0;color:#60766b;font-size:12px">Cierre diario · noticias y variaciones observadas durante la rueda.</p>') +
-            storyPanel('Noticias destacadas · Argentina',local,'No se encontraron cuatro noticias argentinas recientes con fuente verificable.') +
-            movers + storyPanel('Noticias destacadas · Estados Unidos',global,'No se encontraron cuatro noticias recientes de EE. UU. con fuente verificable.') +
+            movers +
             agenda + investmentPanel + premarket.html +
             '<p style="margin:16px 0 0"><a style="display:inline-block;padding:11px 16px;background:#087747;border-radius:8px;color:white;text-decoration:none;font-weight:bold;font-size:13px" href="'+app+'/market">Ver mercados en Finix</a></p>');
         return { day, title, message, html };
@@ -224,6 +226,7 @@ export class NewsletterScheduler {
         const normalized = String(email || '').trim().toLowerCase();
         if (normalized !== testRecipient) throw new BadRequestException('Las pruebas solo se pueden enviar al correo de administración autorizado.');
         const now = new Date();
+        const previewTime = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(now) + ' ART';
         const daily = await this.dailyBrief(now);
         let weekly = await this.weeklyBrief(now);
         if (!weekly) {
@@ -244,8 +247,8 @@ export class NewsletterScheduler {
             .replace('Cierre diario ·', 'Vista previa ·')
             .replace(' · cierre del ', ' · muestra del ');
         const results = await Promise.all([
-            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | After Market · ' + daily.day, text: daily.message, html: dailyHtml.replace('{{unsubscribe_url}}', app + '/settings') }),
-            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | Balances · semana ' + weekly.weekStart + ' al ' + weekly.weekEnd, text: weekly.message, html: weekly.html.replace('{{unsubscribe_url}}', app + '/settings') }),
+            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | After Market · ' + daily.day + ' · ' + previewTime, text: daily.message, html: dailyHtml.replace('{{unsubscribe_url}}', app + '/settings') }),
+            this.mail.sendEmail({ to: normalized, subject: '[PRUEBA] Finix | Balances · semana ' + weekly.weekStart + ' al ' + weekly.weekEnd + ' · ' + previewTime, text: weekly.message, html: weekly.html.replace('{{unsubscribe_url}}', app + '/settings') }),
         ]);
         return { sent: results.length === 2, recipient: normalized };
     }

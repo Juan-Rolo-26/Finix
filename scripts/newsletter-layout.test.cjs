@@ -33,6 +33,14 @@ test('daily newsletter renders both quote groups and four news items per market'
     assert.match(daily.html, /@media only screen and \(max-width:640px\)/);
     assert.match(daily.html, /width:32%/);
     assert.equal((daily.html.match(/Fuente original<\/a>/g) || []).length, 8);
+    const argentina=daily.html.indexOf('Noticias nacionales · Argentina');
+    const unitedStates=daily.html.indexOf('Noticias internacionales · Estados Unidos');
+    const sector=daily.html.indexOf('Sector destacado del día');
+    assert.ok(argentina>daily.html.indexOf('Cotizaciones al cierre'));
+    assert.ok(unitedStates>argentina&&sector>unitedStates,'both news blocks precede the sector, with no market panels between them');
+    assert.equal((daily.html.slice(argentina,unitedStates).match(/Fuente original<\/a>/g)||[]).length,4);
+    assert.equal((daily.html.slice(unitedStates,sector).match(/Fuente original<\/a>/g)||[]).length,4);
+
 });
 
 test('weekly newsletter includes a PNG logo for each of the four selected companies', async () => {
@@ -63,6 +71,7 @@ test('previews use the official mail service, label live data, and never create 
     assert.match(sent[0].html, /VISTA PREVIA DE DISEÑO/);
     assert.doesNotMatch(sent[0].html, /Cotizaciones al cierre/);
     assert.match(sent[1].subject, /semana/);
+    assert.ok(sent.every(mail=>/· \d{2}:\d{2}:\d{2} ART$/.test(mail.subject)),'preview time separates Gmail conversations from earlier samples');
     await assert.rejects(engine.sendTestBriefings('someone@example.com'));
 });
 
