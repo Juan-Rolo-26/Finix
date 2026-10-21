@@ -21,6 +21,20 @@ test('both highlight blocks have four distinct Spanish stories; false Spanish ca
  assert.ok(updates.length>=4);
  assert.ok(!JSON.stringify(data).includes('The shares and earnings'));
 });
+
+test('US block excludes foreign-only headlines even when syndicated descriptions mention US markets',async()=>{
+ const now=new Date('2026-10-20T19:00:00Z');
+ const story=(title,i,description='ES: La noticia explica el movimiento de mercado.')=>({id:String(i),title,titleEs:title,description,descriptionEs:description,sourceName:'Bloomberg',url:'https://example.com/region-'+i,publishedAt:now});
+ const ar=Array.from({length:4},(_,i)=>({...story('ES: Acciones argentinas '+i,'ar'+i),sourceName:'Ámbito Financiero'}));
+ const foreign=[story('ES: Las acciones de CATL en Hong Kong baten un récord','cn','ES: Wall Street: Bloomberg es su fuente definitiva de noticias.'),story('ES: FTSE 100: los futuros del Reino Unido se mantienen estables','uk')];
+ const us=[story('ES: Tesla sube tras sus resultados',1),story('ES: Wall Street: la bolsa avanza',2),story('ES: NVIDIA presenta nuevos productos',3),story('ES: La Reserva Federal analiza la inflación',4)];
+ const prisma={newsArticle:{findMany:async args=>JSON.stringify(args.where.OR).includes('Ámbito')?ar:[...foreign,...us],update:async()=>{}}};
+ const translator={isSpanish:text=>String(text).startsWith('ES:'),translateToSpanish:async()=>''};
+ const result=await new NewsletterNewsService(prisma,translator).getHighlights(now);
+ assert.deepEqual(result.unitedStates.map(s=>s.url),us.map(s=>s.url));
+ assert.equal(result.unitedStates[0].title,us[0].title);
+});
+
 test('a shortfall or failed translation cannot produce an incomplete or English bulletin',async()=>{
  const original=Parser.prototype.parseURL;Parser.prototype.parseURL=async()=>({items:[]});
  try{for(const options of [{missing:true},{failTranslation:true},{duplicate:true}])await assert.rejects(newsFixture(options).service.getHighlights(now),/boletín se reintentará/);}

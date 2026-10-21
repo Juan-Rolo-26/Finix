@@ -6,7 +6,10 @@ import { NewsTranslationService } from '../news/news-translation.service';
 const SOURCE_AR = /ámbito|ambito|cronista|infobae|la nación|la nacion|clarín|clarin|iprofesional|perfil|bcra|indec/i;
 const SOURCE_US = /reuters|associated press|ap news|bloomberg|cnbc|marketwatch|nasdaq|yahoo finance|wall street journal|financial times|nyt economy|bbc business|investing/i;
 const AR_TOPIC = /argentin|merval|bcra|indec|byma|buenos aires|dólar|dolar|milei|caputo|cepo|riesgo pa[ií]s|lecap|ypf|galicia|pampa/i;
-const US_TOPIC = /wall street|s&p|nasdaq|dow jones|united states|estados unidos|\bu\.s\.|federal reserve|\bfed\b|treasury|tesoro|apple|microsoft|nvidia|amazon|alphabet|google|meta|tesla|earnings|stocks|shares|acciones|balances|mercados|markets|bank|banco/i;
+// Match the headline itself. Generic words such as stocks, bank or markets,
+// and syndicated show descriptions, do not establish a US market connection.
+const US_TOPIC = /wall street|s&p\s*500|nasdaq|dow jones|russell\s*2000|united states|estados unidos|\bu\.s\.|\bus\s+(?:stocks|markets|economy)|\bee\.?\s*uu\b|estadounidens|federal reserve|reserva federal|\bfed\b|\bnyse\b|apple|microsoft|nvidia|amazon|alphabet|\bgoogle\b|\bmeta\b|tesla|spacex|jpmorgan|goldman sachs|morgan stanley|bank of america|wells fargo|citigroup|berkshire|walmart|costco|home depot|procter|coca.cola|pepsico|mcdonald|netflix|disney|broadcom|qualcomm|micron|\bintel\b|\bamd\b|oracle|adobe|salesforce|palantir|cisco|ibm|exxon|chevron|boeing|caterpillar|johnson.{0,5}johnson|eli lilly|pfizer|merck|unitedhealth|general motors|\bford\b|\bvisa\b|mastercard|american express|blackrock/i;
+const SHOW_DESCRIPTION = /is your (?:definitive )?source|es su fuente definitiva|es tu fuente|le ofrece todo lo que necesita saber|bring you (?:insights|the latest)|te (?:traemos|ofrecemos) (?:las \u00faltimas|noticias)|bloomberg.{0,30}(?:the china show|the asia trade)/i;
 const clean = (value: unknown) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const normalized = (value: string) => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 export type NewsletterStory = { title: string; description: string; sourceName: string; url: string; publishedAt: Date };
@@ -31,7 +34,8 @@ export class NewsletterNewsService {
                 if (selected.length >= 4) break;
                 const source = clean(article.sourceName || article.source);
                 const topic = clean([article.title, article.titleEs, article.description, article.descriptionEs].join(' '));
-                if (!(region === 'AR' ? SOURCE_AR.test(source) && AR_TOPIC.test(topic) : SOURCE_US.test(source) && US_TOPIC.test(topic))) continue;
+                const headline = clean([article.title, article.titleEs].join(' '));
+                if (!(region === 'AR' ? SOURCE_AR.test(source) && AR_TOPIC.test(topic) : SOURCE_US.test(source) && US_TOPIC.test(headline))) continue;
                 let url: URL;
                 try { url = new URL(article.url || article.sourceUrl); if (url.protocol !== 'https:') continue; } catch { continue; }
                 ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(key => url.searchParams.delete(key));
@@ -47,7 +51,7 @@ export class NewsletterNewsService {
                 let description = clean(article.descriptionEs);
                 if (!this.translator.isSpanish(description)) description = clean(article.description);
                 if (description && !this.translator.isSpanish(description)) description = await this.translator.translateToSpanish(description.slice(0, 700));
-                if (!this.translator.isSpanish(description)) description = 'Consultá la noticia completa en la fuente original.';
+                if (!this.translator.isSpanish(description) || SHOW_DESCRIPTION.test(description)) description = 'Consultá la noticia completa en la fuente original.';
                 usedUrls.add(url.href); usedTitles.add(key);
                 selected.push({ title, description: description.slice(0, 400), sourceName: source, url: url.href, publishedAt: date });
                 // Persist only verified Spanish translations for later sends.
