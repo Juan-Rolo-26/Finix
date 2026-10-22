@@ -137,7 +137,7 @@ export default function WatchlistHero({ items, isPro, showWelcome, onDismissWelc
                         {isPro ? <Target size={22} /> : <Crown size={22} />}
                         <h3>{isPro ? 'Tu estrategia empieza acá' : 'Dale más espacio a tus ideas'}</h3>
                         <p>{freeAccess ? `Durante el acceso bonificado tenés los límites de Creador: ${WATCHLIST_PLAN_LIMITS.CREATOR.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.CREATOR.maxItemsPerList} activos por lista. Necesitás una cuenta.` : `Límites habituales: Gratis, ${WATCHLIST_PLAN_LIMITS.FREE.maxWatchlists} lista y ${WATCHLIST_PLAN_LIMITS.FREE.maxItemsPerList} activos; PRO, ${WATCHLIST_PLAN_LIMITS.PRO.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.PRO.maxItemsPerList} activos por lista; Creador, ${WATCHLIST_PLAN_LIMITS.CREATOR.maxWatchlists} listas y ${WATCHLIST_PLAN_LIMITS.CREATOR.maxItemsPerList} activos por lista.`}</p>
-                        <button type="button" className="watchlist-hero__tip-action" onClick={() => isPro ? inputRef.current?.focus() : navigate('/settings/plan')}>
+                        <button type="button" className="watchlist-hero__tip-action" onClick={() => isPro ? inputRef.current?.focus() : navigate('/settings?tab=planes')}>
                             {isPro ? 'Buscar un activo' : 'Conocer Finix PRO'}<ArrowUpRight size={16} />
                         </button>
                     </div>

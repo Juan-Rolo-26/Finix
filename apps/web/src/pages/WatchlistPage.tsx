@@ -91,7 +91,9 @@ export default function WatchlistPage() {
     const [loadingLists, setLoadingLists] = useState(true);
     const [loadingDetail, setLoadingDetail] = useState(false);
 
-    const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+    const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => { const saved = localStorage.getItem('finix_watchlist_view'); return saved === 'cards' || (!saved && window.matchMedia('(max-width: 767px)').matches) ? 'cards' : 'table'; });
+    const [sortBy, setSortBy] = useState('manual');
+    useEffect(() => { localStorage.setItem('finix_watchlist_view', viewMode); }, [viewMode]);
     const [activeTab, setActiveTab] = useState<'dashboard' | 'list'>('dashboard');
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -279,8 +281,19 @@ export default function WatchlistPage() {
                 (portfolioFilter === 'NOT_IN_PORTFOLIO' && !item.isInPortfolio);
 
             return matchesQuery && matchesStatus && matchesPortfolio;
+        }).sort((a: any, b: any) => {
+            if (sortBy === 'symbol') return a.symbol.localeCompare(b.symbol);
+            const value = (item: any) => {
+                const raw = sortBy === 'target' ? item.distancePct : item.changePercent;
+                return !item.isUnavailable && typeof raw === 'number' && Number.isFinite(raw) ? (sortBy === 'target' ? Math.abs(raw) : raw) : null;
+            };
+            if (sortBy === 'manual') return 0;
+            const av = value(a), bv = value(b);
+            if (av === null) return bv === null ? 0 : 1;
+            if (bv === null) return -1;
+            return sortBy === 'gainers' ? bv - av : av - bv;
         });
-    }, [activeListDetail, searchQuery, statusFilter, portfolioFilter]);
+    }, [activeListDetail, searchQuery, statusFilter, portfolioFilter, sortBy]);
 
     const activeList = watchlists.find((w) => w.id === activeListId);
 
@@ -482,6 +495,10 @@ export default function WatchlistPage() {
                                         </button>
                                     )}
                                 </div>
+
+                                <select aria-label="Ordenar seguimiento" value={sortBy} onChange={event => setSortBy(event.target.value)} className="market-control h-10 max-w-full rounded-xl border border-border px-3 text-sm">
+                                    <option value="manual">Orden de la lista</option><option value="symbol">Nombre / símbolo</option><option value="gainers">Mayor suba diaria</option><option value="losers">Mayor baja diaria</option><option value="target">Más cerca del objetivo</option>
+                                </select>
 
                                 <Button
                                     variant="outline"
@@ -732,7 +749,7 @@ export default function WatchlistPage() {
 
                                                 {/* Distancia */}
                                                 <td className="p-4">
-                                                    {distance !== null ? (
+                                                    {typeof distance === 'number' && Number.isFinite(distance) ? (
                                                         <MarketChange value={distance} suffix="%" />
                                                     ) : (
                                                         <span className="text-muted-foreground/60 text-sm">—</span>
@@ -808,11 +825,13 @@ export default function WatchlistPage() {
                             return (
                                 <article
                                     key={item.id}
+                                    role="button" tabIndex={0} aria-label={`Ver seguimiento de ${item.symbol}`}
+                                    onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setSelectedItemForDrawer(item); } }}
                                     onClick={() => setSelectedItemForDrawer(item)}
                                     className="group relative flex flex-col justify-between p-5 rounded-2xl border border-border/75 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-200 cursor-pointer min-h-[220px]"
                                 >
                                     {/* Header: Logo, Ticker, Name, Status Pill */}
-                                    <div className="flex items-start justify-between gap-3">
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
                                         <div className="flex items-center gap-3 min-w-0">
                                             <SymbolLogo symbol={item.symbol} size={40} className="rounded-xl shrink-0" />
                                             <div className="min-w-0">
@@ -867,7 +886,7 @@ export default function WatchlistPage() {
                                         <div className="flex flex-col text-right">
                                             <span className="text-muted-foreground font-medium">{""}<FinixUiText text={"Distancia"} />{""}</span>
                                             <span className="font-semibold tabular-nums">
-                                                {distance !== null ? (
+                                                {typeof distance === 'number' && Number.isFinite(distance) ? (
                                                     <span className={distance >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-rose-600 dark:text-rose-400 font-bold'}>
                                                         {distance >= 0 ? '+' : ''}{distance.toFixed(1)}%
                                                     </span>

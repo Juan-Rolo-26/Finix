@@ -63,6 +63,7 @@ const translateSignal = (sig?: string) => {
 
 const translateSeverity = (sev?: string) => {
     if (!sev) return '';
+    if (sev === 'MONITORING') return 'Seguimiento';
     const upper = sev.toUpperCase().trim();
     if (upper === 'CRITICAL') return 'CRÍTICO';
     if (upper === 'HIGH') return 'ALTO';
@@ -742,12 +743,14 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
     tooltip?: string;
 }) {
     const [isOpen, setIsOpen] = useState(false);
-    if (value === null || value === undefined || value === '') return null;
+    const missing = value === null || value === undefined || value === '';
 
     const guide = getMetricGuide(label);
 
     return (
         <div
+            role="button" tabIndex={0} aria-expanded={isOpen} aria-label={`${label}: ${formatAnalysisMetric(value)}`}
+            onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setIsOpen(prev => !prev); } }}
             onClick={() => setIsOpen(prev => !prev)}
             className={`relative rounded-2xl transition-all duration-300 overflow-hidden cursor-pointer group select-none ${
                 isOpen
@@ -786,13 +789,13 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                         </div>
 
                         {/* ── Main value ── */}
-                        <div className={`text-2xl sm:text-3xl font-black tracking-tight leading-none ${
+                        <div className={`${missing ? 'text-sm sm:text-base' : 'text-2xl sm:text-3xl'} break-words font-black tracking-tight leading-none ${
                             highlight
                                 ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400'
                                 : 'text-foreground'
                         }`}>
                             {formatAnalysisMetric(value)}
-                            {unit && (
+                            {unit && !missing && (
                                 <span className="text-sm sm:text-base font-bold text-muted-foreground/70 ml-1">
                                     {unit}
                                 </span>
@@ -1217,6 +1220,11 @@ export default function Analysis() {
     const businessModel = a.businessModel || [];
     const competitors = a.competitorsData || [];
     const series = a.historicalSeries || {};
+    const financialCurrency = series.meta?.currency || 'USD';
+    const financialMoney = (value: number | null | undefined, compact = false) => {
+        if (value == null) return null;
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: financialCurrency, maximumFractionDigits: 2, ...(compact ? { notation: 'compact' as const } : {}) }).format(value);
+    };
     const tech = a.technicalData || {};
     const risks = a.risksData || [];
     const catalysts = a.catalystsData || [];
@@ -1239,17 +1247,17 @@ export default function Analysis() {
             {/* 1. HEADER PRINCIPAL */}
             <div className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm shadow-sm space-y-9">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
+                    <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
                         {a.logoUrl ? (
-                            <img src={a.logoUrl} alt="" className="w-22 h-22 rounded-2xl object-contain bg-white/5 border border-border/50 p-3 shrink-0" />
+                            <img src={a.logoUrl} alt="" className="w-16 h-16 sm:w-22 sm:h-22 rounded-2xl object-contain bg-white/5 border border-border/50 p-3 shrink-0" />
                         ) : (
-                            <div className="w-22 h-22 rounded-2xl bg-primary/10 text-primary font-black flex items-center justify-center text-3xl border border-primary/20 shrink-0">
+                            <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-2xl bg-primary/10 text-primary font-black flex items-center justify-center text-3xl border border-primary/20 shrink-0">
                                 {a.ticker || 'STK'}
                             </div>
                         )}
-                        <div>
+                        <div className="min-w-0 w-full">
                             <div className="flex items-center gap-3.5 mb-2 flex-wrap">
-                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground tracking-tight">{a.companyName || a.symbol}</h1>
+                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground tracking-tight break-words">{a.companyName || a.symbol}</h1>
                                 <span className="text-base sm:text-lg font-black text-muted-foreground bg-muted px-4 py-1 rounded-xl border border-border/50">
                                     {a.ticker}
                                 </span>
@@ -1268,7 +1276,7 @@ export default function Analysis() {
                             <div className="text-5xl sm:text-7xl font-black text-foreground">${Number(a.currentPrice).toFixed(2)}</div>
                             <div className={`text-lg sm:text-xl font-black flex items-center sm:justify-end gap-1.5 mt-1.5 ${Number(a.dailyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {Number(a.dailyChange) >= 0 ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
-                                {Number(a.dailyChange) >= 0 ? '+' : ''}{Number(a.dailyChange || 0).toFixed(2)}% hoy
+                                {a.dailyChange == null ? 'No informado' : `${Number(a.dailyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.dailyChange)}%`} hoy
                             </div>
                         </div>
                     )}
@@ -1280,25 +1288,25 @@ export default function Analysis() {
                         <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
                             <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Día</span>
                             <span className={`text-lg sm:text-xl font-black ${Number(a.dailyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {Number(a.dailyChange) >= 0 ? '+' : ''}{Number(a.dailyChange || 0).toFixed(2)}%
+                                {a.dailyChange == null ? 'No informado' : `${Number(a.dailyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.dailyChange)}%`}
                             </span>
                         </div>
                         <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
                             <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Semana</span>
                             <span className={`text-lg sm:text-xl font-black ${Number(a.weeklyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {Number(a.weeklyChange) >= 0 ? '+' : ''}{Number(a.weeklyChange || 0).toFixed(2)}%
+                                {a.weeklyChange == null ? 'No informado' : `${Number(a.weeklyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.weeklyChange)}%`}
                             </span>
                         </div>
                         <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
                             <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Mes</span>
                             <span className={`text-lg sm:text-xl font-black ${Number(a.monthlyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {Number(a.monthlyChange) >= 0 ? '+' : ''}{Number(a.monthlyChange || 0).toFixed(2)}%
+                                {a.monthlyChange == null ? 'No informado' : `${Number(a.monthlyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.monthlyChange)}%`}
                             </span>
                         </div>
                         <div className="p-4 sm:p-5 rounded-2xl bg-muted/20 border border-border/40 flex flex-col gap-1">
                             <span className="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-wider">1 Año</span>
                             <span className={`text-lg sm:text-xl font-black ${Number(a.yearlyChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {Number(a.yearlyChange) >= 0 ? '+' : ''}{Number(a.yearlyChange || 0).toFixed(2)}%
+                                {a.yearlyChange == null ? 'No informado' : `${Number(a.yearlyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.yearlyChange)}%`}
                             </span>
                         </div>
                     </div>
@@ -1313,7 +1321,7 @@ export default function Analysis() {
                     />
                     <MetricBox
                         label="P/E Ratio"
-                        value={a.peRatio ? Number(a.peRatio).toFixed(1) : null}
+                        value={a.peRatio != null ? Number(a.peRatio).toFixed(1) : null}
                         unit="x"
                         highlight
                         tooltip="Precio sobre Beneficios"
@@ -1330,14 +1338,14 @@ export default function Analysis() {
                     />
                     <MetricBox
                         label="Vol. Relativo"
-                        value={a.relativeVolume ? Number(a.relativeVolume).toFixed(2) : null}
+                        value={a.relativeVolume != null ? Number(a.relativeVolume).toFixed(2) : null}
                         unit="x"
                         highlight
                         tooltip="Volumen actual respecto al promedio"
                     />
                     <MetricBox
                         label="Beta (1A)"
-                        value={a.beta ? Number(a.beta).toFixed(2) : null}
+                        value={a.beta != null ? Number(a.beta).toFixed(2) : null}
                         tooltip="Sensibilidad y volatilidad frente al mercado"
                     />
                 </div>
@@ -1349,7 +1357,7 @@ export default function Analysis() {
                             <div>
                                 <span className="text-muted-foreground font-black block text-xs sm:text-sm uppercase tracking-wider">Mínimo 52S</span>
                                 <span className="text-xl sm:text-2xl font-black text-foreground">${Number(a.low52w).toFixed(2)}</span>
-                                {a.distanceToLow && <span className="text-xs sm:text-sm text-emerald-400 ml-1.5 font-black">(+{a.distanceToLow}%)</span>}
+                                {a.distanceToLow && <span className="text-xs sm:text-sm text-emerald-400 ml-1.5 font-black">(+{formatAnalysisMetric(a.distanceToLow)}%)</span>}
                             </div>
                             <div className="text-center">
                                 <span className="text-muted-foreground font-black text-xs sm:text-sm uppercase tracking-wider block">Rango 52 Semanas</span>
@@ -1360,7 +1368,7 @@ export default function Analysis() {
                             <div className="text-right">
                                 <span className="text-muted-foreground font-black block text-xs sm:text-sm uppercase tracking-wider">Máximo 52S</span>
                                 <span className="text-xl sm:text-2xl font-black text-foreground">${Number(a.high52w).toFixed(2)}</span>
-                                {a.distanceToHigh && <span className="text-xs sm:text-sm text-muted-foreground ml-1.5 font-bold">({a.distanceToHigh}%)</span>}
+                                {a.distanceToHigh && <span className="text-xs sm:text-sm text-muted-foreground ml-1.5 font-bold">({formatAnalysisMetric(a.distanceToHigh)}%)</span>}
                             </div>
                         </div>
                         <div className="relative w-full h-3.5 rounded-full bg-muted overflow-hidden border border-border/40">
@@ -1375,6 +1383,9 @@ export default function Analysis() {
                 )}
             </div>
 
+            {series.meta && <div className="rounded-xl border border-border bg-card px-5 py-4 text-sm text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Períodos de la información:</strong> ingresos {series.meta.basis || 'no informados'} al {series.meta.revenue || 'no informado'} · balance al {series.meta.balance || 'no informado'} · flujo de caja {series.meta.cashFlowBasis || 'no informado'} al {series.meta.cashFlow || 'no informado'} · moneda contable {financialCurrency}. Cotización y capitalización en USD. Consultado el {new Date(series.meta.queriedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} ART. Los campos sin datos publicados se muestran como «No informado».
+            </div>}
             {/* PAYWALL PRO SI EL USUARIO NO TIENE SUSCRIPCIÓN ACTIVA */}
             {isProRestricted && (
                 <>
@@ -1484,13 +1495,13 @@ export default function Analysis() {
                     )}
 
                     {/* MÚLTIPLOS DE VALUACIÓN Y PRECIOS DE TRADINGVIEW */}
-                    {visibility.showValuation !== false && (a.peRatio || a.priceToSales || a.evToEbitda || a.priceToBook) && (
+                    {visibility.showValuation !== false && (
                         <section className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm space-y-8">
                             <div className="flex items-center gap-3.5 text-primary">
                                 <Scale className="w-7 h-7 shrink-0" />
                                 <div>
                                     <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">Múltiplos de Valuación Bursátil</h2>
-                                    <span className="text-base sm:text-lg text-muted-foreground mt-1 block">Múltiplos de precio, ventas, valor en libros y flujos calculados en tiempo real.</span>
+                                    <span className="text-base sm:text-lg text-muted-foreground mt-1 block">Múltiplos de precio, ventas, patrimonio y flujos consultados en la fecha de actualización de la ficha.</span>
                                 </div>
                             </div>
 
@@ -1538,7 +1549,7 @@ export default function Analysis() {
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                                 <MetricBox label="CEO / Liderazgo" value={a.ceo} />
                                 <MetricBox label="Año de Fundación" value={a.foundedYear} />
-                                <MetricBox label="Empleados" value={a.employeesCount ? formatNumber(a.employeesCount) : null} />
+                                <MetricBox label="Empleados" value={a.employeesCount != null ? formatNumber(a.employeesCount) : null} />
                                 <MetricBox label="Cuota de Mercado" value={a.marketShare} />
                             </div>
 
@@ -1601,14 +1612,14 @@ export default function Analysis() {
                                             <h4 className="font-black text-foreground text-xl sm:text-2xl leading-snug">{bm.product}</h4>
                                             {bm.revenuePct && (
                                                 <span className="text-sm sm:text-base font-black px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">
-                                                    {bm.revenuePct}% ingresos
+                                                    {formatAnalysisMetric(bm.revenuePct)}% ingresos
                                                 </span>
                                             )}
                                         </div>
                                         <p className="text-base sm:text-lg text-foreground/85 leading-relaxed font-normal">{bm.description}</p>
                                         <div className="pt-4 border-t border-border/40 flex items-center justify-between text-sm sm:text-base text-muted-foreground">
-                                            {bm.growth && <span>Crecimiento: <strong className="text-foreground font-black">{bm.growth}%</strong></span>}
-                                            {bm.margin && <span>Margen: <strong className="text-foreground font-black">{bm.margin}%</strong></span>}
+                                            {bm.growth && <span>Crecimiento: <strong className="text-foreground font-black">{formatAnalysisMetric(bm.growth)}%</strong></span>}
+                                            {bm.margin && <span>Margen: <strong className="text-foreground font-black">{formatAnalysisMetric(bm.margin)}%</strong></span>}
                                         </div>
                                     </div>
                                 ))}
@@ -1617,7 +1628,7 @@ export default function Analysis() {
                     )}
 
                     {/* 5. INGRESOS Y CRECIMIENTO (CON GRÁFICOS RECHARTS) */}
-                    {visibility.showGrowth !== false && (a.revenue || series.revenue?.length > 0) && (
+                    {visibility.showGrowth !== false && (
                         <section className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm space-y-8">
                             <div className="flex items-center gap-3.5 text-primary">
                                 <TrendingUp className="w-7 h-7 shrink-0" />
@@ -1628,27 +1639,27 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <MetricBox label="Ingresos TTM" value={formatCurrency(a.revenue, true)} highlight />
+                                <MetricBox label={`Ingresos ${series.meta?.basis || 'TTM'}`} value={financialMoney(a.revenue, true)} highlight />
                                 <MetricBox label="Crecimiento YoY" value={a.revenueGrowthYoY} unit="%" />
                                 <MetricBox label="CAGR 3 Años" value={a.revenueCagr3y} unit="%" />
-                                <MetricBox label="ARR Anualizado" value={formatCurrency(a.arr, true)} />
+                                <MetricBox label="ARR Anualizado" value={financialMoney(a.arr, true)} />
                             </div>
 
                             {/* Gráfico Recharts: Revenue Histórico */}
                             {series.revenue?.length > 1 && (
                                 <div className="space-y-3.5 pt-4">
                                     <span className="text-base sm:text-lg font-black text-muted-foreground uppercase tracking-wider block">
-                                        Evolución Histórica de Ingresos ($M USD)
+                                        Evolución histórica de ingresos (millones {financialCurrency})
                                     </span>
                                     <div className="h-80 w-full pt-2">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <RCLineChart data={series.revenue} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke={chartGridStroke} vertical={false} />
                                                 <XAxis dataKey="period" stroke={chartAxisStroke} fontSize={14} tickLine={false} />
-                                                <YAxis stroke={chartAxisStroke} fontSize={14} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}B`} />
+                                                <YAxis stroke={chartAxisStroke} fontSize={14} tickLine={false} tickFormatter={(v) => financialMoney(v * 1e6, true) || '—'} />
                                                 <RCTooltip
                                                     contentStyle={chartTooltipStyle}
-                                                    formatter={(val: any) => [`$${val.toLocaleString()} M`, 'Ingresos']}
+                                                    formatter={(val: any) => [`${formatAnalysisMetric(val)} M ${financialCurrency}`, 'Ingresos']}
                                                 />
                                                 <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: 'hsl(var(--primary))' }} />
                                             </RCLineChart>
@@ -1666,7 +1677,7 @@ export default function Analysis() {
                     )}
 
                     {/* 6. RENTABILIDAD Y MÁRGENES (CON GRÁFICOS RECHARTS) */}
-                    {visibility.showProfitability !== false && (a.eps || series.margins?.length > 0 || a.grossMargin) && (
+                    {visibility.showProfitability !== false && (
                         <section className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm space-y-8">
                             <div className="flex items-center gap-3.5 text-primary">
                                 <DollarSign className="w-7 h-7 shrink-0" />
@@ -1677,14 +1688,14 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <MetricBox label="EPS Diluido" value={a.eps ? `$${Number(a.eps).toFixed(2)}` : null} highlight />
+                                <MetricBox label="EPS Diluido" value={a.eps != null ? `$${Number(a.eps).toFixed(2)}` : null} highlight />
                                 <MetricBox label="Crecimiento EPS" value={a.epsGrowth} unit="%" />
                                 <MetricBox label="Margen Bruto" value={a.grossMargin} unit="%" />
                                 <MetricBox label="Margen Operativo" value={a.operatingMargin} unit="%" />
                                 <MetricBox label="Margen Neto" value={a.netMargin} unit="%" highlight />
                                 <MetricBox label="Margen EBITDA" value={a.ebitdaMargin} unit="%" />
-                                <MetricBox label="EBIT Operativo" value={formatCurrency(a.ebit, true)} />
-                                <MetricBox label="EBITDA TTM" value={formatCurrency(a.ebitda, true)} />
+                                <MetricBox label="EBIT Operativo" value={financialMoney(a.ebit, true)} />
+                                <MetricBox label="EBITDA TTM" value={financialMoney(a.ebitda, true)} />
                                 <MetricBox label="ROE (Patrimonio)" value={a.roe} unit="%" tooltip="Return on Equity" />
                                 <MetricBox label="ROA (Activos)" value={a.roa} unit="%" tooltip="Return on Assets" />
                                 <MetricBox label="ROIC (Capital Inv.)" value={a.roic} unit="%" badge="Excelente" tooltip="Return on Invested Capital" />
@@ -1712,7 +1723,7 @@ export default function Analysis() {
                                                 <YAxis stroke={chartAxisStroke} fontSize={14} tickLine={false} tickFormatter={(v) => `${v}%`} />
                                                 <RCTooltip
                                                     contentStyle={chartTooltipStyle}
-                                                    formatter={(val: any) => [`${val}%`]}
+                                                    formatter={(val: any) => [`${formatAnalysisMetric(val)}%`]}
                                                 />
                                                 <Line type="monotone" dataKey="grossMargin" name="Bruto" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
                                                 <Line type="monotone" dataKey="operatingMargin" name="Operativo" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3 }} />
@@ -1727,7 +1738,7 @@ export default function Analysis() {
 
                     {/* 7. CASH FLOW & BALANCE FINANCIERO */}
                     <div className="space-y-10">
-                        {visibility.showCashFlow !== false && (a.freeCashFlow || a.operatingCashFlow) && (
+                        {visibility.showCashFlow !== false && (
                             <section className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm space-y-8">
                                 <div className="flex items-center gap-3.5 text-primary">
                                     <Activity className="w-7 h-7 shrink-0" />
@@ -1738,11 +1749,11 @@ export default function Analysis() {
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                                    <MetricBox label="Flujo de Caja Operativo" value={formatCurrency(a.operatingCashFlow, true)} />
-                                    <MetricBox label="Flujo de Caja Libre (FCF)" value={formatCurrency(a.freeCashFlow, true)} highlight />
-                                    <MetricBox label="CapEx (Inversión en Capital)" value={formatCurrency(a.capEx, true)} />
+                                    <MetricBox label="Flujo de Caja Operativo" value={financialMoney(a.operatingCashFlow, true)} />
+                                    <MetricBox label="Flujo de Caja Libre (FCF)" value={financialMoney(a.freeCashFlow, true)} highlight />
+                                    <MetricBox label="CapEx (Inversión en Capital)" value={financialMoney(a.capEx, true)} />
                                     <MetricBox label="Rendimiento FCF (Yield)" value={a.fcfYield} unit="%" />
-                                    <MetricBox label="FCF por Acción" value={a.fcfPerShare ? `$${Number(a.fcfPerShare).toFixed(2)}` : null} />
+                                    <MetricBox label="FCF por Acción" value={a.fcfPerShare != null ? `$${Number(a.fcfPerShare).toFixed(2)}` : null} />
                                     <MetricBox label="Conv. Ganancia a Caja" value={a.earningsToCashConversion} unit="%" />
                                 </div>
 
@@ -1765,17 +1776,17 @@ export default function Analysis() {
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                    <MetricBox label="Efectivo y Equivalentes" value={formatCurrency(a.cash, true)} highlight />
-                                    <MetricBox label="Deuda Total" value={formatCurrency(a.totalDebt, true)} />
-                                    <MetricBox label="Deuda Neta" value={formatCurrency(a.netDebt, true)} />
-                                    <MetricBox label="Net Debt / EBITDA" value={a.netDebtToEbitda} unit="x" badge={Number(a.netDebtToEbitda) < 1.5 ? 'Sano' : 'Atención'} />
+                                    <MetricBox label="Efectivo y Equivalentes" value={financialMoney(a.cash, true)} highlight />
+                                    <MetricBox label="Deuda Total" value={financialMoney(a.totalDebt, true)} />
+                                    <MetricBox label="Deuda Neta" value={financialMoney(a.netDebt, true)} />
+                                    <MetricBox label="Net Debt / EBITDA" value={a.netDebtToEbitda} unit="x" badge={a.netDebtToEbitda != null ? (Number(a.netDebtToEbitda) < 1.5 ? 'Sano' : 'Atención') : undefined} />
                                     <MetricBox label="Ratio Corriente" value={a.currentRatio} unit="x" tooltip="Activo Corriente / Pasivo Corriente" />
                                     <MetricBox label="Prueba Ácida" value={a.quickRatio} unit="x" tooltip="Liquidez inmediata sin inventarios" />
-                                    <MetricBox label="Activos Totales" value={formatCurrency(a.totalAssets, true)} />
-                                    <MetricBox label="Pasivos Totales" value={formatCurrency(a.totalLiabilities, true)} />
-                                    <MetricBox label="Patrimonio Neto" value={formatCurrency(a.equity, true)} />
-                                    <MetricBox label="Deuda Largo Plazo" value={formatCurrency(a.longTermDebt, true)} />
-                                    <MetricBox label="Deuda Corto Plazo" value={formatCurrency(a.shortTermDebt, true)} />
+                                    <MetricBox label="Activos Totales" value={financialMoney(a.totalAssets, true)} />
+                                    <MetricBox label="Pasivos Totales" value={financialMoney(a.totalLiabilities, true)} />
+                                    <MetricBox label="Patrimonio Neto" value={financialMoney(a.equity, true)} />
+                                    <MetricBox label="Deuda Largo Plazo" value={financialMoney(a.longTermDebt, true)} />
+                                    <MetricBox label="Deuda Corto Plazo" value={financialMoney(a.shortTermDebt, true)} />
                                     <MetricBox label="Cobertura Intereses" value={a.interestCoverageRatio} unit="x" tooltip="EBIT / Intereses pagados" />
                                 </div>
                             </section>
@@ -1783,7 +1794,7 @@ export default function Analysis() {
                     </div>
 
                     {/* ESTRUCTURA ACCIONARIA, FLOTANTE Y SENTIMIENTO */}
-                    {visibility.showOwnership !== false && (a.sharesOutstanding || a.institutionalOwnership || a.insiderOwnership || a.beta) && (
+                    {visibility.showOwnership !== false && (
                         <section className="p-7 sm:p-12 rounded-3xl border border-border/60 bg-card/70 backdrop-blur-sm space-y-8">
                             <div className="flex items-center gap-3.5 text-primary">
                                 <PieChart className="w-7 h-7 shrink-0" />
@@ -1797,7 +1808,7 @@ export default function Analysis() {
                                 <MetricBox label="Acciones en Circulación" value={formatNumber(a.sharesOutstanding, true)} tooltip="Total shares outstanding" />
                                 <MetricBox label="Tenencia Institucional" value={a.institutionalOwnership} unit="%" badge="Fondos / ETFs" />
                                 <MetricBox label="Tenencia Directivos (Insiders)" value={a.insiderOwnership} unit="%" badge="Directores" />
-                                <MetricBox label="Beta (1 Año)" value={a.beta} unit="x" badge={Number(a.beta) > 1.2 ? 'Volátil' : 'Estable'} tooltip="Volatilidad vs S&P 500" />
+                                <MetricBox label="Beta (1 Año)" value={a.beta} unit="x" badge={a.beta != null ? (Number(a.beta) > 1.2 ? 'Volátil' : 'Estable') : undefined} tooltip="Volatilidad vs S&P 500" />
                                 <MetricBox label="Posiciones Cortas (Short Interest)" value={a.shortInterest} unit="%" tooltip="Porcentaje de acciones en corto" />
                                 <MetricBox label="% Flotante en Corto" value={a.shortFloat} unit="%" tooltip="Porcentaje del flotante vendido en corto" />
                                 <MetricBox label="Dilución / Variación Neta" value={a.shareDilution} unit="%" tooltip="Variación neta anual de acciones en circulación" />
@@ -2113,7 +2124,7 @@ export default function Analysis() {
                                     <div className="space-y-4">
                                         {risks.map((r: any, idx: number) => (
                                             <div key={idx} className="p-6 rounded-2xl bg-muted/30 border border-border/40 space-y-2.5">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-wrap gap-2 items-center justify-between">
                                                     <h5 className="font-black text-foreground text-lg sm:text-xl">{r.title}</h5>
                                                     <span className={`text-xs sm:text-sm font-black px-3 py-1 rounded uppercase tracking-wider ${
                                                         r.severity === 'HIGH' || r.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'
@@ -2138,7 +2149,7 @@ export default function Analysis() {
                                     <div className="space-y-4">
                                         {catalysts.map((c: any, idx: number) => (
                                             <div key={idx} className="p-6 rounded-2xl bg-muted/30 border border-border/40 space-y-2.5">
-                                                <div className="flex items-center justify-between">
+                                                <div className="flex flex-wrap gap-2 items-center justify-between">
                                                     <h5 className="font-black text-foreground text-lg sm:text-xl">{c.title}</h5>
                                                     <span className="text-xs sm:text-sm font-black px-3 py-1 rounded bg-primary/10 text-primary border border-primary/20">
                                                         {translateHorizon(c.horizon)}

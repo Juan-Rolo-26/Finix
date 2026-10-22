@@ -509,3 +509,10 @@
  .finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;}
  .finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading h1,.finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading p{text-align:center!important;}
 }
+
+/* Seguimiento fills its available content area without a viewport breakout or the market width cap. */
+@media (min-width: 1024px) {
+    .finix-desktop-shell .desktop-page-frame:is([data-page='market'], [data-page='mercado']) > .watchlist-page {
+        width: 100%; max-width: none; margin: 0; padding: 0 0 48px;
+    }
+}

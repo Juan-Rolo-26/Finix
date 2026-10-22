@@ -87,6 +87,16 @@ async function main() {
         await search.fill('MSFT'); await page.getByRole('option', { name: /Microsoft/ }).waitFor();
         await search.press('Escape'); assert.equal(await page.getByRole('listbox').count(), 0);
         await page.getByRole('tab', { name: 'Lista de seguimiento', exact: true }).click();
+        await page.getByRole('combobox', { name: 'Ordenar seguimiento' }).selectOption('gainers');
+        assert.match(await page.locator('#watchlist-content tbody tr').first().textContent(), /AAPL/);
+        await page.getByRole('combobox', { name: 'Ordenar seguimiento' }).selectOption('losers');
+        assert.match(await page.locator('#watchlist-content tbody tr').first().textContent(), /ADBE/);
+        assert.match(await page.locator('#watchlist-content tbody tr').last().textContent(), /MISSING/);
+        await page.getByRole('combobox', { name: 'Ordenar seguimiento' }).selectOption('target');
+        assert.match(await page.locator('#watchlist-content tbody tr').first().textContent(), /AAPL/);
+        await page.getByTitle('Vista tarjetas', { exact: true }).click();
+        await page.waitForFunction(() => localStorage.getItem('finix_watchlist_view') === 'cards');
+        await page.getByTitle('Vista tabla', { exact: true }).click();
         await page.getByPlaceholder('Buscar por ticker, nombre o tag...').fill('NVDA');
         assert.equal(await page.locator('#watchlist-content tbody tr').count(), 1);
         await page.getByRole('tab', { name: 'Dashboard', exact: true }).click();
