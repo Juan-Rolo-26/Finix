@@ -16,6 +16,7 @@ import { NewsletterScheduler } from './newsletter.scheduler';
 import { MailModule } from '../mail/mail.module';
 import { NewsModule } from '../news/news.module';
 import { AnalysisModule } from '../analysis/analysis.module';
+import { AlertsModule } from '../alerts/alerts.module';
 import { MarketModule } from '../market/market.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { MarketModule } from '../market/market.module';
         NewsModule,
         AnalysisModule,
         MarketModule,
+        AlertsModule,
     ],
     controllers: [AdminController, AdminAuthController, EmailPreferencesController],
     providers: [AdminGuard, AdminPermissionsGuard, AdminAuditService, AdminAuthService, AdminManagementService, ProEmailCampaignService, EmailMarketingService, NewsletterScheduler, NewsletterNewsService],

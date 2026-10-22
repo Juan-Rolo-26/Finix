@@ -1881,3 +1881,10 @@
         transition: none !important;
     }
 }
+
+@media(min-width:1024px){
+ .finix-desktop-shell .desktop-page-frame:has(>.watchlist-page){width:100%;max-width:none;}
+ .finix-desktop-shell .watchlist-page .watchlist-hero__inner,.finix-desktop-shell .watchlist-page .watchlist-shell,.finix-desktop-shell .watchlist-page .watchlist-navigation{max-width:none;width:100%;}
+ .finix-desktop-shell .watchlist-page .watchlist-hero__inner{padding:28px;gap:32px;}
+ .finix-desktop-shell .watchlist-page .watchlist-shell{padding-inline:28px;}
+}

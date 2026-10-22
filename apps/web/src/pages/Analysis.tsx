@@ -1,3 +1,4 @@
+import { formatAnalysisMetric } from '@/lib/analysisFormatting';
 import AnalysisRequestBox from '@/components/analysis/AnalysisRequestBox';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -790,7 +791,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                                 ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-emerald-400'
                                 : 'text-foreground'
                         }`}>
-                            {value}
+                            {formatAnalysisMetric(value)}
                             {unit && (
                                 <span className="text-sm sm:text-base font-bold text-muted-foreground/70 ml-1">
                                     {unit}

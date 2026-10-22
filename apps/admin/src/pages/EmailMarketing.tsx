@@ -46,7 +46,7 @@ export interface MarketAlertItem {
 export interface CampaignItem {
     id: string;
     subject: string;
-    status: 'DRAFT' | 'SCHEDULED' | 'PROCESSING' | 'SENT' | 'FAILED' | 'CANCELLED';
+    status: 'DRAFT' | 'SCHEDULED' | 'PROCESSING' | 'SENDING' | 'SENT' | 'FAILED' | 'CANCELLED';
     sentCount: number;
     recipientCount: number;
     failedCount: number;
@@ -80,14 +80,6 @@ export interface AnalysisSummary {
 
 const inputClass = 'w-full min-w-0 rounded-xl border border-border/80 bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all';
 const labelClass = 'text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 block';
-const toEmailMediaUrl = (value?: string | null) => {
-    if (!value) return '';
-    try {
-        return new URL(value, 'https://finixarg.com').toString();
-    } catch {
-        return value;
-    }
-};
 
 export default function EmailMarketing() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -108,7 +100,12 @@ export default function EmailMarketing() {
     const [busy, setBusy] = useState(false);
     const [notice, setNotice] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sendEnabled, setSendEnabled] = useState(true);
+    const [sendEnabled, setSendEnabled] = useState(false);
+    const [dashboardLoaded, setDashboardLoaded] = useState(false);
+    const [dashboardError, setDashboardError] = useState('');
+    const [alertsError, setAlertsError] = useState('');
+    const [configuration, setConfiguration] = useState<any>(null);
+    const [historyQuery, setHistoryQuery] = useState('');
 
     // Dashboard metrics
     const [metrics, setMetrics] = useState<Record<string, any>>({});
@@ -126,13 +123,13 @@ export default function EmailMarketing() {
         analysisId: '',
         ctaLabel: 'Ver Análisis Completo en Finix',
         ctaUrl: 'https://finixarg.com',
-        audience: 'PRO',
+        audience: 'ALL',
         scheduledAt: '',
     });
 
     const [htmlPreview, setHtmlPreview] = useState('');
     const [mobilePreview, setMobilePreview] = useState(false);
-    const [testEmail, setTestEmail] = useState('juan@finixarg.com');
+    const [testEmail, setTestEmail] = useState('juanpablorolo2007@gmail.com');
     const [isLiveChartOpen, setIsLiveChartOpen] = useState(false);
 
     // Alertas
@@ -201,25 +198,30 @@ export default function EmailMarketing() {
             const res = await adminFetch('/admin/email-marketing/dashboard');
             if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'Error al cargar métricas'));
             const data = await res.json();
+            setDashboardError('');
+            setDashboardLoaded(true);
+            setConfiguration(data);
             setMetrics(data.metrics || {});
             setCampaigns(data.campaigns || []);
             setSendEnabled(data.sendEnabled ?? true);
         } catch (err: any) {
-            console.error('Error al cargar dashboard de email:', err);
+            setDashboardError(err?.message || 'No se pudo cargar el panel. Reintentá.');
         }
     };
 
     const loadAlerts = async () => {
         try {
-            const res = await adminFetch('/alerts');
-            if (res.ok) {
-                const data = await res.json();
-                setAlerts(Array.isArray(data) ? data : []);
-            }
-        } catch (err) {
-            console.error('Error al cargar alertas:', err);
-        }
+            const res = await adminFetch('/admin/email-marketing/alerts');
+            if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'No se pudieron cargar las alertas'));
+            setAlerts(await res.json());
+            setAlertsError('');
+        } catch (err: any) { setAlertsError(err?.message || 'No se pudieron cargar las alertas.'); }
     };
+
+    useEffect(() => {
+        const timer = window.setInterval(() => { if (document.visibilityState === 'visible') { void loadDashboard(); void loadAlerts(); } }, 30000);
+        return () => window.clearInterval(timer);
+    }, []);
 
     // Búsqueda de activos en tiempo real
     const searchAssets = async (query: string) => {
@@ -279,7 +281,7 @@ export default function EmailMarketing() {
                 const res = await adminFetch('/admin/analysis?limit=100');
                 if (res.ok) {
                     const data = await res.json();
-                    const list = (data.data || data || []).map((x: any) => ({
+                    const list = (data.items || data.data || data || []).filter((x: any) => x.status === 'PUBLISHED' && x.isActive !== false).map((x: any) => ({
                         id: x.id,
                         companyName: x.companyName || x.name || x.symbol,
                         ticker: x.ticker || x.symbol,
@@ -296,7 +298,7 @@ export default function EmailMarketing() {
                     setAnalysesList(list);
                 }
             } catch (err) {
-                console.error('Error cargando análisis:', err);
+                setError('No se pudo cargar la lista de análisis. Reintentá.');
             } finally {
                 setLoadingAnalyses(false);
             }
@@ -308,18 +310,13 @@ export default function EmailMarketing() {
             const res = await adminFetch(`/admin/email-marketing/analysis-details/${id}`);
             if (res.ok) {
                 const data = await res.json();
-                const analysis = data.analysis;
+                const analysis = data.analysis || data;
                 const ticker = analysis.ticker || analysis.symbol || fallbackTicker || 'AAPL';
                 const name = analysis.companyName || ticker;
                 const publicUrl = `https://finixarg.com/analysis/${encodeURIComponent(analysis.slug || analysis.id)}`;
-                let technicalData: Record<string, any> = {};
-                try {
-                    technicalData = typeof analysis.technicalData === 'string'
-                        ? JSON.parse(analysis.technicalData)
-                        : (analysis.technicalData || {});
-                } catch {
-                    technicalData = {};
-                }
+                let summary = analysis.executiveSummary;
+                try { if (typeof summary === 'string') summary = JSON.parse(summary); } catch { /* Legacy summary may be plain text. */ }
+                const introduction = typeof summary === 'string' ? summary : summary?.thesis || summary?.overview || summary?.summary;
 
                 setForm(f => ({
                     ...f,
@@ -328,17 +325,17 @@ export default function EmailMarketing() {
                     companyName: name,
                     subject: `Análisis PRO: ${name} (${ticker.toUpperCase()}) — Tesis y Métricas Clave`,
                     title: `Tesis Institucional: ${name} (${ticker.toUpperCase()})`,
-                    message: analysis.thesis || analysis.summary || `Te presentamos el análisis fundamental y técnico completo de ${name}. Evaluamos métricas de valoración, perspectivas de crecimiento y riesgos principales.`,
+                    message: introduction || analysis.thesis || analysis.summary || `Te presentamos el análisis fundamental completo de ${name}. Evaluamos métricas de valoración, perspectivas de crecimiento y riesgos principales.`,
                     ctaLabel: 'Ver Análisis Completo en Finix PRO',
                     ctaUrl: publicUrl,
                     imageUrl: analysis.logoUrl || f.imageUrl,
-                    chartUrl: toEmailMediaUrl(technicalData.chartSnapshotUrl) || f.chartUrl,
+                    chartUrl: f.chartUrl,
                 }));
                 setNotice(`Análisis de ${name} adjuntado exitosamente.`);
                 setHtmlPreview('');
             }
         } catch (err: any) {
-            console.error('Error al precargar análisis:', err);
+            setError(err?.message || 'No se pudo adjuntar el análisis.');
         }
     };
 
@@ -423,9 +420,9 @@ export default function EmailMarketing() {
 
     const handleUploadChartImage = (file?: File) => {
         if (!file) return;
-        const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
-            setError('La captura del gráfico debe ser JPG, PNG, WEBP o GIF.');
+            setError('La captura del gráfico debe ser JPG, PNG o WEBP.');
             return;
         }
         setBusy(true);
@@ -449,7 +446,7 @@ export default function EmailMarketing() {
     const handleCreateAlert = (e: React.FormEvent) => {
         e.preventDefault();
         runAsync(async () => {
-            const res = await adminFetch('/alerts', {
+            const res = await adminFetch('/admin/email-marketing/alerts', {
                 method: 'POST',
                 body: JSON.stringify({
                     ticker: alertForm.ticker.trim().toUpperCase(),
@@ -470,7 +467,7 @@ export default function EmailMarketing() {
     };
 
     const handleToggleAlert = (id: string) => runAsync(async () => {
-        const res = await adminFetch(`/alerts/${id}/toggle`, { method: 'PATCH' });
+        const res = await adminFetch(`/admin/email-marketing/alerts/${id}/toggle`, { method: 'PATCH' });
         if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'Error al cambiar estado de la alerta'));
         await loadAlerts();
         await loadDashboard();
@@ -479,7 +476,7 @@ export default function EmailMarketing() {
     const handleDeleteAlert = (id: string, ticker: string) => {
         if (!window.confirm(`¿Seguro que deseas eliminar la alerta para ${ticker}?`)) return;
         runAsync(async () => {
-            const res = await adminFetch(`/alerts/${id}`, { method: 'DELETE' });
+            const res = await adminFetch(`/admin/email-marketing/alerts/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'Error al eliminar alerta'));
             setNotice(`Alerta para ${ticker} eliminada.`);
             await loadAlerts();
@@ -488,7 +485,7 @@ export default function EmailMarketing() {
     };
 
     const handleCheckAlertsNow = () => runAsync(async () => {
-        const res = await adminFetch('/alerts/check', { method: 'POST' });
+        const res = await adminFetch('/admin/email-marketing/alerts/check', { method: 'POST' });
         if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'Error al ejecutar comprobación'));
         const result = await res.json();
         setNotice(`Comprobación completada: ${result.checked} verificadas, ${result.triggered} disparadas.`);
@@ -501,16 +498,27 @@ export default function EmailMarketing() {
         const res = await adminFetch(`/admin/email-marketing/campaigns/${id}`);
         if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'No se pudo cargar el detalle'));
         const data = await res.json();
-        setSelectedCampaignDetail(data.campaign);
+        setSelectedCampaignDetail(data.campaign || data);
+    });
+
+    const refreshDelivery = (id: string) => runAsync(async () => {
+        const res = await adminFetch(`/admin/email-marketing/campaigns/${id}/delivery`, { method: 'POST' });
+        if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'No se pudo consultar la entrega'));
+        const result = await res.json();
+        const detail = await adminFetch(`/admin/email-marketing/campaigns/${id}`);
+        if (detail.ok) setSelectedCampaignDetail(await detail.json());
+        await loadDashboard();
+        setNotice(`${result.checked} envíos consultados; ${result.delivered} entregas confirmadas y ${result.bounced} rechazos. Si quedan pendientes, podés volver a actualizar.`);
     });
 
     const handleRetryCampaign = (id: string) => runAsync(async () => {
         const res = await adminFetch(`/admin/email-marketing/campaigns/${id}/retry`, { method: 'POST' });
         if (!res.ok) throw new Error(await readAdminErrorMessage(res, 'Error al reintentar envíos'));
         const data = await res.json();
-        setNotice(`Reintento iniciado para ${data.retriedCount} destinatarios.`);
+        setNotice(`Reintento iniciado para ${data.retried} destinatarios.`);
         if (selectedCampaignDetail?.id === id) {
-            await openCampaignDetail(id);
+            const detail = await adminFetch(`/admin/email-marketing/campaigns/${id}`);
+            if (detail.ok) setSelectedCampaignDetail(await detail.json());
         }
         await loadDashboard();
     });
@@ -533,7 +541,7 @@ export default function EmailMarketing() {
     }, [analysesList, analysisSearch]);
 
     return (
-        <div className="space-y-6 text-foreground max-w-7xl mx-auto pb-16">
+        <div className="space-y-6 text-foreground w-full min-w-0 max-w-7xl mx-auto pb-16">
             {/* Header principal */}
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
                 <div>
@@ -545,7 +553,7 @@ export default function EmailMarketing() {
                             <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
                                 Emails & Alertas de Finix
                                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                    PRO Suite
+                                    Administración
                                 </span>
                             </h1>
                             <p className="text-xs text-muted-foreground mt-0.5">
@@ -573,7 +581,7 @@ export default function EmailMarketing() {
                         className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
                     >
                         <Send className="w-4 h-4" />
-                        Redactar Email PRO
+                        Redactar email
                     </button>
                 </div>
             </header>
@@ -599,7 +607,10 @@ export default function EmailMarketing() {
                 </div>
             )}
 
-            {!sendEnabled && (
+            {(dashboardError || alertsError) && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800">
+                {dashboardError || alertsError} <button type="button" className="font-semibold underline ml-3" onClick={() => { void loadDashboard(); void loadAlerts(); }}>Reintentar</button>
+            </div>}
+            {!sendEnabled && dashboardLoaded && (
                 <div className="flex items-center gap-3 p-3.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs">
                     <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
                     <span>Los envíos reales se encuentran en pausa en este entorno. Las campañas y alertas creadas se conservarán registradas en la cola.</span>
@@ -607,7 +618,7 @@ export default function EmailMarketing() {
             )}
 
             {/* Navegación por pestañas */}
-            <nav className="flex items-center gap-2 border-b border-border/60 overflow-x-auto pb-1 text-sm scrollbar-none">
+            <nav aria-label="Secciones de emails" className="flex flex-wrap items-center gap-2 border-b border-border/60 pb-2 text-sm">
                 {[
                     { id: 'overview', label: 'Resumen & KPIs', icon: BarChart2 },
                     { id: 'alerts', label: 'Alertas de Mercado', icon: Bell, badge: alerts.filter(a => a.status === 'ACTIVE').length },
@@ -650,13 +661,14 @@ export default function EmailMarketing() {
                     {/* Stat Cards */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
                         {[
-                            { label: 'Destinatarios (Todos)', value: metrics.allCount ?? 0, icon: Users, color: 'text-emerald-400' },
-                            { label: 'Destinatarios PRO', value: metrics.recipientCount ?? 0, icon: Shield, color: 'text-blue-400' },
-                            { label: 'Emails Enviados', value: metrics.sent ?? 0, icon: CheckCircle2, color: 'text-emerald-400' },
-                            { label: 'Envíos Fallidos', value: metrics.failed ?? 0, icon: AlertTriangle, color: 'text-rose-400' },
-                            { label: 'Campañas Totales', value: campaigns.length, icon: Mail, color: 'text-amber-400' },
-                            { label: 'Alertas Activas', value: alerts.filter(a => a.status === 'ACTIVE').length, icon: Bell, color: 'text-purple-400' },
-                            { label: 'Alertas Disparadas', value: alerts.filter(a => a.status === 'TRIGGERED').length, icon: TrendingUp, color: 'text-cyan-400' },
+                            { label: 'Destinatarios (Todos)', value: metrics.allCount ?? '—', icon: Users, color: 'text-emerald-400' },
+                            { label: 'Destinatarios PRO', value: metrics.recipientCount ?? '—', icon: Shield, color: 'text-blue-400' },
+                            { label: 'Emails Enviados', value: metrics.sent ?? '—', icon: CheckCircle2, color: 'text-emerald-400' },
+                            { label: 'Emails Entregados', value: metrics.delivered ?? '—', icon: CheckCircle2, color: 'text-emerald-400' },
+                            { label: 'Envíos Fallidos', value: metrics.failed ?? '—', icon: AlertTriangle, color: 'text-rose-400' },
+                            { label: 'Campañas Totales', value: metrics.totalCampaigns ?? '—', icon: Mail, color: 'text-amber-400' },
+                            { label: 'Alertas Activas', value: metrics.activeAlerts ?? '—', icon: Bell, color: 'text-purple-400' },
+                            { label: 'Alertas Disparadas', value: metrics.triggeredAlerts ?? '—', icon: TrendingUp, color: 'text-cyan-400' },
                         ].map((stat, idx) => {
                             const Icon = stat.icon;
                             return (
@@ -666,7 +678,7 @@ export default function EmailMarketing() {
                                         <Icon className={`w-4 h-4 ${stat.color}`} />
                                     </div>
                                     <p className="text-2xl font-black tracking-tight text-foreground">
-                                        {stat.value}
+                                        {dashboardLoaded ? stat.value : '—'}
                                     </p>
                                 </div>
                             );
@@ -737,7 +749,7 @@ export default function EmailMarketing() {
                                     <Mail className="w-5 h-5 text-primary" />
                                     <div>
                                         <h3 className="font-bold text-sm text-foreground">Campañas de Email Recientes</h3>
-                                        <p className="text-xs text-muted-foreground">Despachos institucionales a usuarios PRO</p>
+                                        <p className="text-xs text-muted-foreground">Correos diarios, semanales y publicaciones de Finix</p>
                                     </div>
                                 </div>
                                 <button
@@ -756,12 +768,12 @@ export default function EmailMarketing() {
                                         <div className="truncate max-w-[240px]">
                                             <p className="font-medium text-foreground truncate">{c.subject}</p>
                                             <p className="text-[10px] text-muted-foreground">
-                                                {new Date(c.createdAt).toLocaleDateString()} · {c.sentCount}/{c.recipientCount} entregados
+                                                {new Date(c.createdAt).toLocaleDateString()} · {c.sentCount}/{c.recipientCount} enviados
                                             </p>
                                         </div>
                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                                             c.status === 'SENT' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                            c.status === 'PROCESSING' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                                            (c.status === 'PROCESSING' || c.status === 'SENDING') ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
                                             c.status === 'FAILED' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
                                             'bg-muted text-muted-foreground'
                                         }`}>
@@ -913,13 +925,13 @@ export default function EmailMarketing() {
                                         <label className={labelClass}>Tipo de Alerta</label>
                                         <select
                                             value={alertForm.alertType}
-                                            onChange={e => setAlertForm(a => ({ ...a, alertType: e.target.value as any }))}
+                                            onChange={e => setAlertForm(a => ({ ...a, alertType: e.target.value as any, condition: e.target.value === 'PERCENT_CHANGE' ? 'CHANGE_PCT_UP' : 'GREATER_THAN' }))}
                                             className={inputClass}
                                         >
                                             <option value="PRICE_TARGET">Precio Objetivo</option>
                                             <option value="PERCENT_CHANGE">Variación Diaria %</option>
-                                            <option value="52W_HIGH">Máximo 52 Semanas</option>
-                                            <option value="52W_LOW">Mínimo 52 Semanas</option>
+
+
                                         </select>
                                     </div>
 
@@ -931,10 +943,10 @@ export default function EmailMarketing() {
                                             onChange={e => setAlertForm(a => ({ ...a, condition: e.target.value as any }))}
                                             className={inputClass}
                                         >
-                                            <option value="GREATER_THAN">Supera o igual a (≥)</option>
-                                            <option value="LESS_THAN">Cae por debajo de (≤)</option>
-                                            <option value="CHANGE_PCT_UP">Sube más de % diario</option>
-                                            <option value="CHANGE_PCT_DOWN">Cae más de % diario</option>
+                                            <option disabled={alertForm.alertType === 'PERCENT_CHANGE'} value="GREATER_THAN">Supera o igual a (≥)</option>
+                                            <option disabled={alertForm.alertType === 'PERCENT_CHANGE'} value="LESS_THAN">Cae por debajo de (≤)</option>
+                                            <option disabled={alertForm.alertType !== 'PERCENT_CHANGE'} value="CHANGE_PCT_UP">Sube más de % diario</option>
+                                            <option disabled={alertForm.alertType !== 'PERCENT_CHANGE'} value="CHANGE_PCT_DOWN">Cae más de % diario</option>
                                         </select>
                                     </div>
 
@@ -1231,7 +1243,7 @@ export default function EmailMarketing() {
                                         {form.chartUrl ? 'Reemplazar captura' : 'Subir captura del gráfico'}
                                         <input
                                             type="file"
-                                            accept="image/png,image/jpeg,image/webp,image/gif"
+                                            accept="image/png,image/jpeg,image/webp"
                                             className="hidden"
                                             onChange={e => handleUploadChartImage(e.target.files?.[0])}
                                         />
@@ -1436,7 +1448,7 @@ export default function EmailMarketing() {
                                             Solo Usuarios PRO
                                         </div>
                                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                                            {metrics.recipientCount ?? 0} usuarios PRO
+                                            {metrics.allCount ?? '—'} usuarios PRO
                                         </div>
                                     </button>
                                 </div>
@@ -1546,7 +1558,7 @@ export default function EmailMarketing() {
                                         srcDoc={htmlPreview}
                                         style={{ height: '700px' }}
                                         className={`rounded-xl border border-border bg-white transition-all duration-300 ${
-                                            mobilePreview ? 'w-[375px]' : 'w-full'
+                                            mobilePreview ? 'w-[375px] max-w-full' : 'w-full'
                                         }`}
                                     />
                                 ) : (
@@ -1589,6 +1601,7 @@ export default function EmailMarketing() {
                             </button>
                         </div>
 
+                        <div className="px-4 py-3"><input aria-label="Buscar campañas" placeholder="Buscar por asunto…" className={inputClass} value={historyQuery} onChange={e => setHistoryQuery(e.target.value)} /><p className="text-xs text-muted-foreground mt-2">Últimas 100 campañas. «Enviados» indica aceptación del proveedor; las entregas confirmadas figuran en el detalle.</p></div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs">
                                 <thead className="border-b border-border/60 bg-muted/20 text-muted-foreground font-semibold">
@@ -1596,14 +1609,14 @@ export default function EmailMarketing() {
                                         <th className="p-3.5">Asunto de Campaña</th>
                                         <th className="p-3.5">Fecha / Programación</th>
                                         <th className="p-3.5">Destinatarios</th>
-                                        <th className="p-3.5">Entregados</th>
+                                        <th className="p-3.5">Enviados</th>
                                         <th className="p-3.5">Fallidos</th>
                                         <th className="p-3.5">Estado</th>
                                         <th className="p-3.5 text-right">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/40">
-                                    {campaigns.map(camp => (
+                                    {campaigns.filter(c => c.subject.toLocaleLowerCase().includes(historyQuery.toLocaleLowerCase())).map(camp => (
                                         <tr key={camp.id} className="hover:bg-muted/30 transition-colors">
                                             <td className="p-3.5">
                                                 <p className="font-bold text-foreground max-w-sm truncate">{camp.subject}</p>
@@ -1628,7 +1641,7 @@ export default function EmailMarketing() {
                                             <td className="p-3.5">
                                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                                                     camp.status === 'SENT' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                                                    camp.status === 'PROCESSING' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                                                    (camp.status === 'PROCESSING' || camp.status === 'SENDING') ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
                                                     camp.status === 'FAILED' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
                                                     'bg-muted text-muted-foreground'
                                                 }`}>
@@ -1709,16 +1722,31 @@ export default function EmailMarketing() {
                             <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/20 border border-border/40">
                                 <div>
                                     <h4 className="text-sm font-semibold text-foreground">Audiencia Elegible</h4>
-                                    <p className="text-xs text-muted-foreground mt-0.5">Usuarios suscritos a Finix PRO con consentimiento activo.</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">Usuarios activos con email verificado y notificaciones autorizadas.</p>
                                 </div>
                                 <span className="font-mono text-xs font-bold text-primary px-3 py-1 rounded-lg bg-primary/10 border border-primary/20">
-                                    {metrics.recipientCount ?? 0} usuarios
+                                    {metrics.allCount ?? '—'} usuarios
                                 </span>
                             </div>
                         </div>
                     </div>
                 </section>
             )}
+
+            {tab === 'config' && <section className="grid sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-3"><h3 className="font-bold">Boletines automáticos</h3>
+                    <p className="text-sm">After Market: días hábiles a las 17:00 ART · {metrics.dailyCount ?? '—'} destinatarios.</p>
+                    <p className="text-sm">Balances semanales: viernes a las 17:00 ART · {metrics.weeklyCount ?? '—'} destinatarios.</p>
+                    <p className="text-xs text-muted-foreground">Disponibles para todos los planes, respetando las preferencias de cada usuario. Publicaciones por email: únicamente la cuenta oficial de Finix.</p>
+                    {configuration?.jobs?.map((job: any) => { let state: any; try { state = JSON.parse(job.value); } catch { return null; } return <div key={job.key} className="text-xs border-t border-border pt-2"><strong>{state.kind === 'daily' ? 'After Market' : 'Balances'}: {state.status}</strong><p>{state.message}</p><p>{new Date(state.attemptedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} ART</p></div>; })}
+                    <p className="text-xs">Automatización: {configuration?.automation?.daily ? 'activa' : 'deshabilitada'}</p>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-3"><h3 className="font-bold">Cuota de Resend</h3>
+                    {configuration?.quota ? <><p>Diaria: {configuration.quota.daily.used} / {configuration.quota.daily.limit ?? 'sin límite'}</p><p>Mensual: {configuration.quota.monthly.used} / {configuration.quota.monthly.limit ?? 'sin límite'}</p></> : <p>No se pudo consultar la cuota. Actualizá para reintentar.</p>}
+                    <p className="text-xs text-muted-foreground">Los avisos de cuota se envían únicamente a juanpablorolo2007@gmail.com. Se reservan 3 envíos para avisos y correos de acceso.</p>
+                    <button type="button" onClick={loadDashboard} className="font-semibold text-primary text-sm">Actualizar estado</button>
+                </div>
+            </section>}
 
             {/* MODAL: SELECTOR DE ANÁLISIS EXISTENTES */}
             {isAnalysisModalOpen && (
@@ -1812,7 +1840,7 @@ export default function EmailMarketing() {
                                 <span className="font-bold text-foreground text-sm">{selectedCampaignDetail.recipientCount}</span>
                             </div>
                             <div>
-                                <span className="text-muted-foreground block text-[10px]">Entregados</span>
+                                <span className="text-muted-foreground block text-[10px]">Enviados</span>
                                 <span className="font-bold text-emerald-400 text-sm">{selectedCampaignDetail.sentCount}</span>
                             </div>
                             <div>
@@ -1821,6 +1849,7 @@ export default function EmailMarketing() {
                             </div>
                         </div>
 
+                        <p className="text-xs text-muted-foreground">Entregas confirmadas: {(selectedCampaignDetail as any).deliveredCount ?? 0}. Se muestran los últimos 50 destinatarios; los totales incluyen la campaña completa.</p>
                         {/* Listado de destinatarios */}
                         <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 text-xs">
                             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
@@ -1842,7 +1871,8 @@ export default function EmailMarketing() {
                             ))}
                         </div>
 
-                        <div className="flex justify-end gap-2.5 pt-3 border-t border-border/60">
+                        <div className="flex flex-wrap justify-end gap-2.5 pt-3 border-t border-border/60">
+                            <button type="button" disabled={busy} onClick={() => refreshDelivery(selectedCampaignDetail.id)} className="px-4 py-2 text-xs font-semibold rounded-xl border border-border">Consultar entregas</button>
                             {selectedCampaignDetail.failedCount > 0 && (
                                 <button
                                     onClick={() => handleRetryCampaign(selectedCampaignDetail.id)}

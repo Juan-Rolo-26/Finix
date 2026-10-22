@@ -27,6 +27,20 @@ export class NewsletterScheduler implements OnModuleInit {
 
     onModuleInit() {
         this.campaigns.setDailyBriefRenderer(async now => this.dailyBrief(now));
+        const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+        const day = parts.find(p => p.type === 'weekday')?.value;
+        const hour = Number(parts.find(p => p.type === 'hour')?.value);
+        if (day && !['Sat', 'Sun'].includes(day) && hour >= 17 && hour < 22) {
+            // A restart after 17:00 catches up immediately; the unique daily keys prevent duplicate campaigns.
+            void Promise.allSettled([this.daily(), ...(day === 'Fri' ? [this.friday()] : [])]);
+        }
+    }
+
+    private async recordJob(kind: 'daily' | 'weekly', status: string, message: string) {
+        const key = 'newsletter.job.' + kind;
+        const value = JSON.stringify({ kind, status, message, attemptedAt: new Date().toISOString() });
+        try { await this.prisma.platformSetting?.upsert({ where: { key }, create: { key, value, description: 'Estado del boletín automático' }, update: { value } }); }
+        catch { this.logger.warn('No se pudo registrar el estado del boletín.'); }
     }
 
     private async ownerId() {
@@ -203,10 +217,12 @@ export class NewsletterScheduler implements OnModuleInit {
         try {
             const key = 'finix-approved:daily:' + dateKey(new Date());
             if (await this.prisma.proEmailCampaign.findUnique({ where: { sourceKey: key }, select: { id: true } })) return;
+            await this.recordJob('daily', 'PREPARING', 'Preparando After Market con datos actuales.');
             const brief = await this.dailyBrief(new Date());
-            if (!brief) { this.logger.warn('Boletín diario omitido: faltan noticias recientes.'); return; }
+            if (!brief) { await this.recordJob('daily', 'WAITING', 'Faltan noticias recientes. Se reintentará cada 10 minutos hasta las 21:50 ART.'); return; }
             await this.queue('finix-approved:daily:' + brief.day, 'DAILY', 'Finix | Cierre del mercado · ' + brief.day, brief.title, brief.message, brief.html);
-        } catch { this.logger.error('No se pudo preparar el boletín diario.'); }
+            await this.recordJob('daily', 'QUEUED', 'After Market preparado para todos los destinatarios habilitados.');
+        } catch { await this.recordJob('daily', 'ERROR', 'No se pudo preparar After Market. Se reintentará cada 10 minutos hasta las 21:50 ART.'); this.logger.error('No se pudo preparar el boletín diario.'); }
     }
 
     @Cron('*/10 17-21 * * 5', { timeZone: 'America/Argentina/Buenos_Aires' })
@@ -215,10 +231,12 @@ export class NewsletterScheduler implements OnModuleInit {
         try {
             const key = 'finix-approved:weekly:' + dateKey(new Date());
             if (await this.prisma.proEmailCampaign.findUnique({ where: { sourceKey: key }, select: { id: true } })) return;
+            await this.recordJob('weekly', 'PREPARING', 'Preparando los cuatro balances semanales.');
             const brief = await this.weeklyBrief(new Date());
-            if (!brief) { this.logger.warn('Informe semanal omitido: no hay cuatro resultados recientes con fuente verificable.'); return; }
+            if (!brief) { await this.recordJob('weekly', 'WAITING', 'Faltan cuatro resultados verificables de sectores distintos. Se reintentará cada 10 minutos hasta las 21:50 ART.'); return; }
             await this.queue('finix-approved:weekly:' + brief.day, 'WEEKLY', 'Finix | 4 resultados · ' + brief.day, brief.title, brief.message, brief.html);
-        } catch { this.logger.error('No se pudo preparar el boletín semanal.'); }
+            await this.recordJob('weekly', 'QUEUED', 'Balances semanales preparados para todos los destinatarios habilitados.');
+        } catch { await this.recordJob('weekly', 'ERROR', 'No se pudieron preparar los balances. Se reintentará cada 10 minutos hasta las 21:50 ART.'); this.logger.error('No se pudo preparar el boletín semanal.'); }
     }
 
     /** Sends both samples only to the requested Gmail; never creates a campaign or recipient list. */

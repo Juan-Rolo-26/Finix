@@ -41,14 +41,9 @@ export class AlertsController {
         return this.alertsService.createAlert(userId, body);
     }
 
-    @Get('admin/overview')
-    async getAdminOverview() {
-        return this.alertsService.getAdminOverview();
-    }
-
     @Post('check')
-    async triggerCheck() {
-        return this.alertsService.checkActiveAlerts();
+    async triggerCheck(@Req() req: any) {
+        return this.alertsService.checkActiveAlerts(await this.resolveUserId(req));
     }
 
     @Get(':id')

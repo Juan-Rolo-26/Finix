@@ -1,3 +1,4 @@
+import { isCurrentDailyCampaign } from './newsletter-day';
 import { isOfficialPublisher } from '../posts/publication-email';
 import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
@@ -39,25 +40,33 @@ export class EmailMarketingService {
         const base = {
             status: 'ACTIVE',
             emailVerified: true,
-            investmentEmailNotifications: true,
             ...notTest,
             OR: [{ emailPreferences: { is: null } }, { emailPreferences: { is: { marketing: true, analysis: true } } }],
         };
         return audience === 'ALL' ? base : { ...base, plan: 'PRO', subscriptionStatus: 'ACTIVE' };
     }
     async dashboard() {
-        const [campaigns, recipientCount, allCount, sent, failed, activeAlerts] = await Promise.all([
-            this.prisma.proEmailCampaign.findMany({ take: 30, orderBy: { createdAt: 'desc' } }),
+        const [campaigns, recipientCount, allCount, dailyCount, weeklyCount, sent, delivered, failed, skipped, activeAlerts, triggeredAlerts, totalCampaigns] = await Promise.all([
+            this.prisma.proEmailCampaign.findMany({ take: 100, orderBy: { createdAt: 'desc' } }),
             this.prisma.user.count({ where: this.recipientWhere('PRO') }),
             this.prisma.user.count({ where: this.recipientWhere('ALL') }),
-            this.prisma.emailCampaignRecipient.count({ where: { status: 'SENT' } }),
-            this.prisma.emailCampaignRecipient.count({ where: { status: 'FAILED' } }),
-            (this.prisma as any).marketAlert?.count({ where: { status: 'ACTIVE' } }) ?? 0,
+            this.prisma.user.count({ where: this.recipientWhere('DAILY') }),
+            this.prisma.user.count({ where: this.recipientWhere('WEEKLY') }),
+            this.prisma.emailCampaignRecipient.count({ where: { status: { in: ['SENT', 'BOUNCED'] } } }),
+            this.prisma.emailCampaignRecipient.count({ where: { deliveredAt: { not: null } } }),
+            this.prisma.emailCampaignRecipient.count({ where: { status: { in: ['FAILED', 'BOUNCED'] } } }),
+            this.prisma.emailCampaignRecipient.count({ where: { status: 'SKIPPED' } }),
+            this.prisma.marketAlert.count({ where: { status: 'ACTIVE' } }),
+            this.prisma.marketAlert.count({ where: { status: 'TRIGGERED' } }),
+            this.prisma.proEmailCampaign.count(),
         ]);
         return {
-            metrics: { recipientCount, allCount, sent, failed, activeAlerts },
+            metrics: { recipientCount, allCount, dailyCount, weeklyCount, sent, delivered, failed, skipped, activeAlerts, triggeredAlerts, totalCampaigns },
             campaigns,
-            sendEnabled: process.env.EMAIL_SEND_ENABLED === 'true',
+            sendEnabled: process.env.EMAIL_SEND_ENABLED === 'true' || process.env.FINIX_APPROVED_EMAILS_ENABLED === 'true',
+            automation: { daily: process.env.FINIX_APPROVED_EMAILS_ENABLED === 'true', weekly: process.env.FINIX_APPROVED_EMAILS_ENABLED === 'true', official: process.env.FINIX_OFFICIAL_POST_EMAILS_ENABLED === 'true' },
+            jobs: await this.prisma.platformSetting.findMany({ where: { key: { startsWith: 'newsletter.job.' } }, select: { key: true, value: true } }),
+            quota: (this.quota?.enabled() ? await this.quota.usage().catch(() => null) : null),
         };
     }
 
@@ -103,12 +112,55 @@ export class EmailMarketingService {
                 createdBy: { select: { username: true, email: true } },
             },
         });
-        return campaign;
+        if (!campaign) throw new BadRequestException('Campaña no encontrada.');
+        const statuses = await this.prisma.emailCampaignRecipient.groupBy({ by: ['status'], where: { campaignId: id }, _count: true });
+        const delivered = await this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, deliveredAt: { not: null } } });
+        return { ...campaign, statuses, deliveredCount: delivered };
+    }
+
+    private reconciling = false;
+    @Interval(60000)
+    async reconcileRecentDeliveries() {
+        if (this.reconciling || !process.env.RESEND_API_KEY || process.env.FINIX_LOCAL_MODE === 'true') return;
+        this.reconciling = true;
+        try { await this.refreshDelivery(); }
+        catch { this.logger.warn('Se reintentará la consulta de entregas de Resend.'); }
+        finally { this.reconciling = false; }
+    }
+    async refreshDelivery(campaignId?: string) {
+        if (!process.env.RESEND_API_KEY) throw new BadRequestException('Resend no está configurado en este entorno.');
+        const rows = await this.prisma.emailCampaignRecipient.findMany({ where: {
+            ...(campaignId ? { campaignId } : {}), status: 'SENT', providerId: { not: null }, deliveredAt: null,
+            sentAt: { gte: new Date(Date.now() - 7 * 86400000) },
+        }, take: 10, orderBy: { updatedAt: 'asc' } });
+        let delivered = 0, bounced = 0;
+        for (const row of rows) {
+            const response = await fetch('https://api.resend.com/emails/' + encodeURIComponent(row.providerId!), {
+                headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY }, signal: AbortSignal.timeout(8000),
+            });
+            if (!response.ok) throw new BadRequestException('No se pudo consultar la entrega en Resend. Reintentá.');
+            const mail = await response.json();
+            const event = mail.last_event;
+            await this.prisma.$transaction(async tx => {
+                const result = await tx.emailCampaignRecipient.updateMany({ where: { id: row.id, status: 'SENT', deliveredAt: null }, data: {
+                    updatedAt: new Date(),
+                    ...(['delivered', 'opened', 'clicked'].includes(event) ? { deliveredAt: new Date() } : {}),
+                    ...(['bounced', 'complained', 'failed'].includes(event) ? { status: 'BOUNCED', error: 'Resend: ' + event } : {}),
+                } });
+                if (result.count && ['delivered', 'opened', 'clicked', 'bounced', 'complained', 'failed'].includes(event)) {
+                    const success = ['delivered', 'opened', 'clicked'].includes(event);
+                    if (success) delivered++; else bounced++;
+                    await tx.emailEvent.create({ data: { type: success ? 'DELIVERED' : 'BOUNCED', campaignId: row.campaignId, recipientId: row.id, userId: row.userId, providerId: row.providerId } });
+                }
+            });
+            await new Promise(resolve => setTimeout(resolve, 550));
+        }
+        return { checked: rows.length, delivered, bounced };
     }
 
     async retryFailedRecipients(id: string) {
         const result = await this.prisma.emailCampaignRecipient.updateMany({
-            where: { campaignId: id, status: 'FAILED' },
+            where: { campaignId: id, status: 'FAILED', OR: [{ firstAttemptAt: null }, { firstAttemptAt: { gte: new Date(Date.now() - 23 * 60 * 60 * 1000) } }] },
             data: { status: 'QUEUED', error: null, attempts: 0, nextAttemptAt: new Date() },
         });
         if (result.count > 0) {
@@ -140,7 +192,7 @@ export class EmailMarketingService {
         return { html: html.replace('{{unsubscribe_url}}', escapeEmail((process.env.FRONTEND_URL || 'https://finixarg.com') + '/settings')) };
     }
     async test(raw: unknown, address: unknown) {
-        if (process.env.EMAIL_SEND_ENABLED !== 'true') throw new BadRequestException('Envio deshabilitado en este entorno.');
+        if (!this.canSendCampaign({ sourceKey: 'finix-approved:manual:test' })) throw new BadRequestException('Envio deshabilitado en este entorno.');
         const email = z.string().email().safeParse(address);
         if (!email.success) throw new BadRequestException('Email de prueba invalido.');
         const { input } = await this.prepare(raw);
@@ -153,7 +205,7 @@ export class EmailMarketingService {
         if (input.scheduledAt && new Date(input.scheduledAt).getTime() <= Date.now()) throw new BadRequestException('La fecha debe ser futura.');
         const recipientCount = await this.prisma.user.count({ where: this.recipientWhere(input.audience) });
         if (!recipientCount) throw new BadRequestException('No hay destinatarios con consentimiento.');
-        return this.prisma.proEmailCampaign.create({ data: { subject: input.subject, title: input.title, message: input.message, imageUrl: input.imageUrl || null, ctaUrl: input.ctaUrl || null, ctaLabel: input.ctaLabel, contentHtml: html, previewText: input.previewText, audience: input.audience, createdById: adminId, status: input.scheduledAt ? 'SCHEDULED' : 'SENDING', scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, recipientCount } });
+        return this.prisma.proEmailCampaign.create({ data: { sourceKey: 'finix-approved:manual:' + randomUUID(), subject: input.subject, title: input.title, message: input.message, imageUrl: input.imageUrl || null, ctaUrl: input.ctaUrl || null, ctaLabel: input.ctaLabel, contentHtml: html, previewText: input.previewText, audience: input.audience, createdById: adminId, status: input.scheduledAt ? 'SCHEDULED' : 'SENDING', scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, recipientCount } });
     }
     async upload(adminId: string, buffer: Buffer) {
         if (!buffer?.length || buffer.length > 5 * 1024 * 1024) throw new BadRequestException('Imagen requerida; maximo 5 MB.');
@@ -250,8 +302,7 @@ export class EmailMarketingService {
                     // Legacy uncertain attempts retain the original campaign payload.
                     let html = campaign.contentHtml || renderCampaign(campaign), message = campaign.message;
                     if (!row.firstAttemptAt && campaign.sourceKey?.startsWith('finix-approved:daily:')) {
-                        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-                        if (!campaign.sourceKey.endsWith(today)) {
+                        if (!isCurrentDailyCampaign(campaign.sourceKey)) {
                             await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SKIPPED', error: 'La rueda del informe ya finalizó; se espera el próximo informe diario.', lockedUntil: null } });
                             continue;
                         }
@@ -275,8 +326,8 @@ export class EmailMarketingService {
         }
         const [remaining, sentCount, failedCount, recipientCount] = await Promise.all([
             this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: { in: ['QUEUED', 'PROCESSING'] } } }),
-            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: 'SENT' } }),
-            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: 'FAILED' } }),
+            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: { in: ['SENT', 'BOUNCED'] } } }),
+            this.prisma.emailCampaignRecipient.count({ where: { campaignId: id, status: { in: ['FAILED', 'BOUNCED'] } } }),
             this.prisma.emailCampaignRecipient.count({ where: { campaignId: id } }),
         ]);
         await this.prisma.proEmailCampaign.update({ where: { id }, data: { sentCount, failedCount, recipientCount, status: remaining ? 'SENDING' : failedCount ? 'FAILED' : 'SENT', sentAt: remaining ? null : new Date() } });

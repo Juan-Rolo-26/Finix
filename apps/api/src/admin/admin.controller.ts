@@ -44,6 +44,7 @@ import { AnalysisRequestsService } from '../analysis/analysis-requests.service';
 import { AnalysisService } from '../analysis/analysis.service';
 import { ProEmailCampaignService } from './pro-email-campaign.service';
 import { ValueCreationService } from '../market/value-creation.service';
+import { AlertsService, CreateAlertDto } from '../alerts/alerts.service';
 import { EmailMarketingService } from './email-marketing.service';
 import { NewsletterScheduler } from './newsletter.scheduler';
 import { buildUploadPublicPath, getUploadFolder, getUploadsRootDir } from '../uploads/upload-url.util';
@@ -91,11 +92,56 @@ export class AdminController {
         private readonly valueCreationService: ValueCreationService,
         private readonly emailMarketingService: EmailMarketingService,
         private readonly newsletterScheduler: NewsletterScheduler,
+        private readonly alertsService: AlertsService,
     ) { }
 
     @Get('email-marketing/dashboard')
     @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
     async getEmailMarketingDashboard() { return this.emailMarketingService.dashboard(); }
+
+    @Get('email-marketing/alerts')
+    @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
+    async emailAlerts() {
+        return this.prisma.marketAlert.findMany({ orderBy: { createdAt: 'desc' }, take: 500, include: { asset: true, user: { select: { id: true, email: true, username: true } } } });
+    }
+
+    @Post('email-marketing/alerts')
+    @RequireAdminPermissions(AdminPermission.EMAIL_CREATE)
+    async createEmailAlert(@Req() req: AdminRequest, @Body() body: CreateAlertDto) {
+        if (!['PRICE_TARGET', 'PERCENT_CHANGE'].includes(body.alertType || 'PRICE_TARGET')) throw new BadRequestException('Usá una alerta de precio o variación porcentual.');
+        const result = await this.alertsService.createAlert(req.user!.id, body);
+        await this.adminAuditService.logFromRequest(req, { action: 'CREATE_MARKET_ALERT', targetId: result.id });
+        return result;
+    }
+
+    @Patch('email-marketing/alerts/:id/toggle')
+    @RequireAdminPermissions(AdminPermission.EMAIL_CREATE)
+    async toggleEmailAlert(@Req() req: AdminRequest, @Param('id') id: string) {
+        const alert = await this.prisma.marketAlert.findUnique({ where: { id } });
+        if (!alert) throw new NotFoundException('Alerta no encontrada.');
+        const result = await this.alertsService.toggleAlert(alert.userId, id);
+        await this.adminAuditService.logFromRequest(req, { action: 'TOGGLE_MARKET_ALERT', targetId: id });
+        return result;
+    }
+
+    @Delete('email-marketing/alerts/:id')
+    @RequireAdminPermissions(AdminPermission.EMAIL_CREATE)
+    async deleteEmailAlert(@Req() req: AdminRequest, @Param('id') id: string) {
+        const alert = await this.prisma.marketAlert.findUnique({ where: { id } });
+        if (!alert) throw new NotFoundException('Alerta no encontrada.');
+        const result = await this.alertsService.deleteAlert(alert.userId, id);
+        await this.adminAuditService.logFromRequest(req, { action: 'DELETE_MARKET_ALERT', targetId: id });
+        return result;
+    }
+
+    @Post('email-marketing/alerts/check')
+    @Throttle({ default: { limit: 2, ttl: 60000 } })
+    @RequireAdminPermissions(AdminPermission.EMAIL_SEND)
+    async checkEmailAlerts(@Req() req: AdminRequest) {
+        const result = await this.alertsService.checkActiveAlerts();
+        await this.adminAuditService.logFromRequest(req, { action: 'CHECK_MARKET_ALERTS', metadata: result });
+        return result;
+    }
 
     @Get('email-marketing/templates')
     @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
@@ -140,6 +186,11 @@ export class AdminController {
     async getEmailCampaignDetail(@Param('id') id: string) {
         return this.emailMarketingService.getCampaignDetail(id);
     }
+
+    @Post('email-marketing/campaigns/:id/delivery')
+    @Throttle({ default: { limit: 3, ttl: 60000 } })
+    @RequireAdminPermissions(AdminPermission.EMAIL_VIEW)
+    async refreshEmailDelivery(@Param('id') id: string) { return this.emailMarketingService.refreshDelivery(id); }
 
     @Post('email-marketing/campaigns/:id/retry')
     @RequireAdminPermissions(AdminPermission.EMAIL_SEND)

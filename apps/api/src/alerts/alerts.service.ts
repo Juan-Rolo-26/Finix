@@ -61,7 +61,7 @@ export class AlertsService {
     async createAlert(userId: string, dto: CreateAlertDto) {
         const ticker = (dto.ticker || '').trim().toUpperCase();
         if (!/^[A-Z0-9:!._/-]{1,64}$/.test(ticker)) throw new BadRequestException('El ticker no es válido.');
-        if (typeof dto.targetValue !== 'number' || !Number.isFinite(dto.targetValue)) {
+        if (typeof dto.targetValue !== 'number' || !Number.isFinite(dto.targetValue) || dto.targetValue <= 0) {
             throw new BadRequestException('El valor objetivo debe ser un número válido.');
         }
 
@@ -70,24 +70,19 @@ export class AlertsService {
             throw new BadRequestException(`Condición inválida. Debe ser una de: ${validConditions.join(', ')}`);
         }
 
-        // Upsert canonical Asset record if not exists
-        let asset = await (this.prisma as any).asset.findUnique({ where: { ticker } });
-        if (!asset) {
-            const canonicalSymbol = this.resolveCanonicalSymbol(ticker);
-            const exchange = canonicalSymbol.split(':')[0] || 'US';
-            asset = await (this.prisma as any).asset.create({
-                data: {
-                    ticker,
-                    name: dto.name || ticker,
-                    type: canonicalSymbol.startsWith('BINANCE') ? 'CRYPTO' : (canonicalSymbol.startsWith('BCBA') ? 'CEDEAR' : 'STOCK'),
-                    currency: canonicalSymbol.startsWith('BCBA') ? 'ARS' : 'USD',
-                    symbol: canonicalSymbol,
-                    exchange,
-                    tradingViewSymbol: canonicalSymbol,
-                    active: true,
-                } as any,
-            });
-        }
+        const alertType = dto.alertType || (dto.condition.startsWith('CHANGE_PCT') ? 'PERCENT_CHANGE' : 'PRICE_TARGET');
+        if (!['PRICE_TARGET', 'PERCENT_CHANGE'].includes(alertType)) throw new BadRequestException('Tipo de alerta no disponible. Usá precio o variación porcentual.');
+        if (!['EMAIL', 'PUSH', 'ALL'].includes(dto.notificationChannel || 'EMAIL')) throw new BadRequestException('Canal de notificación inválido.');
+        if (dto.destinationEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dto.destinationEmail.trim())) throw new BadRequestException('Email de destino inválido.');
+        const percentage = alertType === 'PERCENT_CHANGE';
+        if (percentage !== dto.condition.startsWith('CHANGE_PCT')) throw new BadRequestException('La condición debe corresponder al tipo de alerta.');
+        const quote = (await this.marketService.getQuotes([ticker]).catch(() => []))[0];
+        const canonicalSymbol = quote && !quote.unavailable ? quote.symbol : this.resolveCanonicalSymbol(ticker);
+        const exchange = canonicalSymbol.split(':')[0] || 'US';
+        const asset = await this.assetModel.upsert({ where: { ticker }, update: {}, create: {
+            ticker, name: dto.name || ticker, type: canonicalSymbol.startsWith('BINANCE:') ? 'CRYPTO' : canonicalSymbol.startsWith('BCBA:') ? 'CEDEAR' : 'STOCK',
+            currency: canonicalSymbol.startsWith('BCBA:') ? 'ARS' : 'USD', symbol: canonicalSymbol, exchange, tradingViewSymbol: canonicalSymbol, active: true,
+        } });
 
         // Check for duplicates (same user, ticker, condition, targetValue, status ACTIVE)
         const duplicate = await (this.prisma as any).marketAlert.findFirst({
@@ -116,7 +111,7 @@ export class AlertsService {
                 assetId: asset.id,
                 ticker,
                 name: dto.name || asset.name || ticker,
-                alertType: dto.alertType || 'PRICE_TARGET',
+                alertType,
                 targetValue: dto.targetValue,
                 condition: dto.condition,
                 status: 'ACTIVE',
@@ -209,9 +204,9 @@ export class AlertsService {
         }
     }
 
-    async checkActiveAlerts(): Promise<{ checked: number; triggered: number; errors: number }> {
+    async checkActiveAlerts(userId?: string): Promise<{ checked: number; triggered: number; errors: number }> {
         const activeAlerts = await this.alertModel.findMany({
-            where: { status: 'ACTIVE' },
+            where: { status: 'ACTIVE', ...(userId ? { userId } : {}) },
             include: { user: { select: { id: true, email: true, username: true } }, asset: true },
             take: 200,
             orderBy: {lastCheckedAt:{sort:'asc',nulls:'first'}},
