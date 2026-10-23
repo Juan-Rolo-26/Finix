@@ -134,7 +134,8 @@ export class StripeService {
 
     /** Verify credentials without creating a payment or exposing account data. */
     async isCheckoutReady(): Promise<boolean> {
-        if (!this.isConfigured() || (process.env.NODE_ENV === 'production' && !process.env.STRIPE_WEBHOOK_SECRET?.trim())) return false;
+        if (process.env.STRIPE_CHECKOUT_ENABLED === 'false' || !this.isConfigured()
+            || (process.env.NODE_ENV === 'production' && !process.env.STRIPE_WEBHOOK_SECRET?.trim())) return false;
         if (this.readiness && this.readiness.until > Date.now()) return this.readiness.available;
         if (this.readinessPending) return this.readinessPending;
         this.readinessPending = (async () => {

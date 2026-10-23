@@ -68,7 +68,7 @@ export default function CommunityPaymentModal({ isOpen, onClose, community, init
                         {(community.plans || []).map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {freeAccess ? 'Gratis durante esta etapa' : `${Number(plan.price).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })} ARS`}</option>)}
                     </select>
                 </label>
-                {selected && !freeAccess && <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Acceso por"} />{" "}{['year', 'yearly'].includes(selected.interval || '') ? 'un año' : 'un mes'}{""}<FinixUiText text={". Mercado Pago: pago por período, sin renovación automática. Stripe: renovación automática, cancelable desde la comunidad."} />{""}</p>}
+                {selected && !freeAccess && <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Acceso por"} />{" "}{['year', 'yearly'].includes(selected.interval || '') ? 'un año' : 'un mes'}{""}<FinixUiText text={". El importe y las condiciones de renovación se confirman antes de pagar."} />{""}</p>}
                 {!freeAccess && <p className="flex gap-2 text-sm"><Lock className="h-4 w-4 shrink-0 mt-0.5" />{""}<FinixUiText text={"Ingresás tus datos de pago únicamente en la página de la pasarela."} />{""}</p>}
                 {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
                 {!selected && <p className="text-sm text-muted-foreground">{""}<FinixUiText text={"Esta comunidad todavía no tiene planes disponibles."} />{""}</p>}

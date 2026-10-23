@@ -6,7 +6,7 @@ const { StripeService } = require('../apps/api/dist/stripe/stripe.service');
 const saved = { ...process.env }, realFetch = global.fetch;
 afterEach(() => {
     global.fetch = realFetch;
-    for (const key of ['MP_ACCESS_TOKEN','MP_PUBLIC_KEY','MP_WEBHOOK_SECRET','MP_ENVIRONMENT','NODE_ENV','FINIX_FREE_ACCESS_ENABLED','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET']) {
+    for (const key of ['MP_ACCESS_TOKEN','MP_PUBLIC_KEY','MP_WEBHOOK_SECRET','MP_ENVIRONMENT','NODE_ENV','FINIX_FREE_ACCESS_ENABLED','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_CHECKOUT_ENABLED']) {
         if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key];
     }
 });
@@ -80,4 +80,12 @@ test('incomplete, expired or nontrial sessions do not grant access',async()=>{
 test('Stripe trials cannot activate another account subscription',async()=>{
     const state=stripeTrial({subscription:{metadata:{userId:'other',type:'plan_subscription'}}});
     await assert.rejects(state.service.checkoutStatus('user','session'),/Pago no encontrado/);assert.equal(state.activated(),0);
+});
+
+test('explicit Mercado Pago-only configuration disables new Stripe purchases without probing or database writes',async()=>{
+    process.env.STRIPE_CHECKOUT_ENABLED='false';process.env.FINIX_FREE_ACCESS_ENABLED='false';
+    const service=new StripeService({},{});service.isConfigured=()=>true;service.stripe={};
+    assert.equal(await service.isCheckoutReady(),false);
+    await assert.rejects(service.createSubscription('user','pro_investor'),/no está disponible/);
+    await assert.rejects(service.createCommunityPayment('user','community','plan'),/no está disponible/);
 });
