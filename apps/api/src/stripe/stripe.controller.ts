@@ -17,6 +17,7 @@ export class StripeController {
             credentialsConfigured: this.stripeService.isConfigured(),
             communityCurrency: 'ARS',
             proPriceUsd: await this.stripeService.getProMonthlyPriceUsd(),
+            creatorPriceUsd: await this.stripeService.getCreatorMonthlyPriceUsd(),
         };
     }
 

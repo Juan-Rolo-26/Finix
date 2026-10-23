@@ -25,11 +25,15 @@ export default function CommunityPaymentModal({ isOpen, onClose, community, init
         let active = true;
         setPlanId(initialPlan?.id || community.plans?.[0]?.id || '');
         setError(''); setAvailable(null);
-        Promise.all(['mercadopago', 'stripe'].map(async provider => {
+        Promise.allSettled(['mercadopago', 'stripe'].map(async provider => {
             const response = await apiFetch(`/${provider}/config`);
             if (!response.ok) throw new Error('No pudimos consultar los medios de pago. Cerrá y volvé a intentar.');
-            return (await response.json()).configured === true;
-        })).then(([mercadopago, stripe]) => { if (active) setAvailable({ mercadopago, stripe }); })
+            const config = await response.json();
+            return config.configured === true && config.purchasesPaused !== true;
+        })).then(([mp, stripe]) => { if (active) {
+            if (mp.status === 'rejected' && stripe.status === 'rejected') setError('No pudimos consultar los medios de pago. Cerrá y volvé a intentar.');
+            else setAvailable({ mercadopago: mp.status === 'fulfilled' && mp.value, stripe: stripe.status === 'fulfilled' && stripe.value });
+        } })
             .catch(err => { if (active) setError(err.message); });
         return () => { active = false; };
     }, [isOpen, initialPlan?.id, community.id, community.plans]);

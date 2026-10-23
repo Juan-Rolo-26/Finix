@@ -11,7 +11,7 @@ export function PlanCheckoutDialog({ checkout }: { checkout: ReturnType<typeof u
         error={checkout.error}
         mercadoPagoAvailable={checkout.catalog?.mercadoPagoAvailable === true && checkout.selectedPrice != null}
         stripeAvailable={checkout.catalog?.stripeAvailable === true}
-        stripeMonthlyPrice={checkout.selectedPlan === 'PRO' ? checkout.catalog?.proPriceUsd : null}
+        stripeMonthlyPrice={checkout.selectedPlan === 'PRO' ? checkout.catalog?.proPriceUsd : checkout.catalog?.creatorPriceUsd}
         onClose={checkout.close}
         onConfirm={() => { void checkout.confirm('mercadopago'); }}
         onConfirmStripe={() => { void checkout.confirm('stripe'); }}

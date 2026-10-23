@@ -32,14 +32,14 @@ test('Invalid Stripe credentials disable checkout and permit recovery after the 
 });
 test('Paused free access never probes Stripe or offers checkout', async () => {
     process.env.FINIX_FREE_ACCESS_ENABLED = 'true';
-    const controller = new StripeController({ isConfigured: () => true, isCheckoutReady: () => { throw new Error('No request expected'); }, getProMonthlyPriceUsd: async () => 4 });
+    const controller = new StripeController({ isConfigured: () => true, isCheckoutReady: () => { throw new Error('No request expected'); }, getProMonthlyPriceUsd: async () => 4, getCreatorMonthlyPriceUsd: async () => 19 });
     const config = await controller.getConfig();
     assert.equal(config.configured, false);
     assert.equal(config.purchasesPaused, true);
 });
 test('Public payment config reports a credential failure without exposing provider errors', async () => {
     process.env.FINIX_FREE_ACCESS_ENABLED = 'false';
-    const controller = new StripeController({ isConfigured: () => true, isCheckoutReady: async () => false, getProMonthlyPriceUsd: async () => 4 });
+    const controller = new StripeController({ isConfigured: () => true, isCheckoutReady: async () => false, getProMonthlyPriceUsd: async () => 4, getCreatorMonthlyPriceUsd: async () => 19 });
     const config = await controller.getConfig();
     assert.equal(config.configured, false);
     assert.equal(config.credentialsConfigured, true);

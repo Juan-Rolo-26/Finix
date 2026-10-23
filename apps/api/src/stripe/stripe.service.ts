@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
 import Stripe from 'stripe';
@@ -34,7 +34,7 @@ export class StripeService {
 
     async createSubscription(userId: string, planType: 'pro_investor' | 'pro_creator') {
         assertPurchasesEnabled();
-        this.ensureStripeConfigured();
+        if (!await this.isCheckoutReady()) throw new ServiceUnavailableException('Stripe no está disponible en este momento. Elegí otro medio de pago o contactá al soporte de Finix.');
 
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -62,18 +62,13 @@ export class StripeService {
         const customerId = await this.getOrCreateCustomer(user.id, user.email);
         const planPrice = await this.getPlanMonthlyPrice(planType);
         const planLabel = planType === 'pro_creator' ? 'Pro Creator' : 'Pro Investor';
-        // Pro Investor pricing is controlled by the platform setting so the
-        // checkout always reflects the advertised USD amount. An old Stripe
-        // Price ID may still point to the previous price and must not win here.
-        const priceId = planType === 'pro_investor' ? '' : this.getPlanPriceId(planType);
+        // Both checkouts use the current advertised platform price.
 
         const session = await this.stripe.checkout.sessions.create({
             customer: customerId,
             mode: 'subscription',
             payment_method_types: ['card'],
-            line_items: priceId
-                ? [{ price: priceId, quantity: 1 }]
-                : [{
+            line_items: [{
                     price_data: {
                         currency: 'usd',
                         unit_amount: Math.round(planPrice * 100),
@@ -133,19 +128,21 @@ export class StripeService {
     }
 
     isConfigured() {
-        return /^sk_(test|live)_/.test(this.stripeSecretKey) && !/placeholder|xxx|\.\.\./i.test(this.stripeSecretKey);
+        return /^sk_(test|live)_/.test(this.stripeSecretKey) && !/placeholder|xxx|\.\.\./i.test(this.stripeSecretKey)
+            && (process.env.NODE_ENV !== 'production' || this.stripeSecretKey.startsWith('sk_live_'));
     }
 
     /** Verify credentials without creating a payment or exposing account data. */
     async isCheckoutReady(): Promise<boolean> {
-        if (!this.isConfigured()) return false;
+        if (!this.isConfigured() || (process.env.NODE_ENV === 'production' && !process.env.STRIPE_WEBHOOK_SECRET?.trim())) return false;
         if (this.readiness && this.readiness.until > Date.now()) return this.readiness.available;
         if (this.readinessPending) return this.readinessPending;
         this.readinessPending = (async () => {
             let available = false;
             try {
                 await this.stripe.balance.retrieve({}, { timeout: 5000, maxNetworkRetries: 0 });
-                available = true;
+                available = process.env.NODE_ENV !== 'production'
+                    || (await this.stripe.accounts.retrieve({ timeout: 5000, maxNetworkRetries: 0 })).charges_enabled === true;
             } catch {
                 this.logger.warn('Stripe no está disponible: revisá sus credenciales y la conexión.');
             }
@@ -160,10 +157,17 @@ export class StripeService {
         this.ensureStripeConfigured();
         const session = await this.stripe.checkout.sessions.retrieve(sessionId);
         if (session.metadata?.userId !== userId) throw new NotFoundException('Pago no encontrado.');
-        if (session.payment_status !== 'paid') return { status: session.status === 'expired' ? 'cancelled' : 'pending' };
+        if (session.status !== 'complete' || !['paid', 'no_payment_required'].includes(session.payment_status)) return { status: session.status === 'expired' ? 'cancelled' : 'pending' };
         const subscriptionId = this.asString(session.subscription);
         if (!subscriptionId) return { status: 'pending' };
         const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+        if (subscription.metadata?.userId !== userId) throw new NotFoundException('Pago no encontrado.');
+        if (session.payment_status === 'no_payment_required') {
+            if (session.metadata?.type !== 'plan_subscription' || subscription.metadata?.type !== 'plan_subscription'
+                || subscription.status !== 'trialing' || !subscription.trial_end || subscription.trial_end * 1000 <= Date.now()) return { status: 'pending' };
+            await this.handleCustomerSubscriptionEvent(subscription, 'customer.subscription.updated');
+            return { status: 'approved' };
+        }
         const invoiceId = this.asString(subscription.latest_invoice);
         if (!invoiceId) return { status: 'pending' };
         const invoice = await this.stripe.invoices.retrieve(invoiceId);
@@ -224,7 +228,7 @@ export class StripeService {
 
     async createCommunityPayment(userId: string, communityId: string, planId: string) {
         assertPurchasesEnabled();
-        this.ensureStripeConfigured();
+        if (!await this.isCheckoutReady()) throw new ServiceUnavailableException('Stripe no está disponible en este momento. Elegí otro medio de pago o contactá al soporte de Finix.');
 
         const [user, community, plan] = await Promise.all([
             this.prisma.user.findUnique({
@@ -808,12 +812,7 @@ export class StripeService {
         return customer.id;
     }
 
-    private getPlanPriceId(planType: 'pro_investor' | 'pro_creator') {
-        if (planType === 'pro_creator') {
-            return process.env.STRIPE_PRO_CREATOR_PRICE_ID || '';
-        }
-        return process.env.STRIPE_PRO_INVESTOR_PRICE_ID || '';
-    }
+
 
     private async getCommissionRate() {
         const key = 'COMMUNITY_COMMISSION_RATE';
@@ -842,6 +841,10 @@ export class StripeService {
 
     async getProMonthlyPriceUsd() {
         return this.getPlanMonthlyPrice('pro_investor');
+    }
+
+    async getCreatorMonthlyPriceUsd() {
+        return this.getPlanMonthlyPrice('pro_creator');
     }
 
     private async getPlanMonthlyPrice(planType: 'pro_investor' | 'pro_creator') {

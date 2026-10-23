@@ -67,9 +67,9 @@ test('Stripe cancellation accepts both legacy and canonical plan names', async (
     for (const name of ['PRO', 'pro_investor', 'CREATOR', 'PRO_CREATOR', 'pro_creator']) assert.ok(query.where.planType.in.includes(name));
     assert.deepEqual(providerCall, ['stripe-sub', { cancel_at_period_end: true }]);
 });
-test('public catalog exposes configured prices and actual watchlist limits', () => {
+test('public catalog exposes configured prices and actual watchlist limits', async () => {
     const controller = new MercadoPagoController({ isCheckoutReady: () => false, isConfigured: () => true, isProductionCredential: () => true, getProPrice: () => 8500, getCreatorPrice: () => 29900 });
-    const catalog = controller.getConfig();
+    const catalog = await controller.getConfig();
     assert.equal(catalog.proPriceArs, 8500);
     assert.equal(catalog.creatorPriceArs, 29900);
     for (const plan of ['FREE', 'PRO', 'CREATOR']) for (const [key, value] of Object.entries(WATCHLIST_CONFIG[plan])) assert.equal(catalog.planLimits[plan][key], value);

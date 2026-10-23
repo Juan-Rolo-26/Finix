@@ -17,6 +17,9 @@ export class MercadoPagoService {
         ? 'sandbox'
         : (process.env.MP_ENVIRONMENT || (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox')).toLowerCase();
 
+    private readiness: { available: boolean; until: number } | null = null;
+    private readinessPending: Promise<boolean> | null = null;
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly mailService: MailService,
@@ -26,26 +29,22 @@ export class MercadoPagoService {
         const validToken = /^(APP_USR|TEST)-/.test(this.accessToken)
             && !this.accessToken.includes('...')
             && this.accessToken.length > 20;
-        const expectedPrefix = this.environment === 'production' ? 'APP_USR-' : 'TEST-';
-        const matchingPublicKey = this.publicKey.startsWith(expectedPrefix)
-            && !this.publicKey.includes('...')
-            && this.publicKey.length > 20;
-        const environmentMatches = this.environment === 'production'
-            ? this.isProductionCredential()
-            : this.isSandboxCredential();
-        return validToken && matchingPublicKey && environmentMatches;
+        const validPublicKey = /^(APP_USR|TEST)-/.test(this.publicKey)
+            && !this.publicKey.includes('...') && this.publicKey.length > 20;
+        // Test sellers may also have APP_USR credentials. The account itself
+        // must be checked; the token prefix does not establish its environment.
+        return validToken && validPublicKey && ['production', 'sandbox'].includes(this.environment)
+            && (this.environment !== 'production' || (this.isProductionCredential() && this.publicKey.startsWith('APP_USR-')));
     }
 
     public isProductionCredential(): boolean {
         return this.accessToken.startsWith('APP_USR-');
     }
 
-    private isSandboxCredential(): boolean {
-        return this.accessToken.startsWith('TEST-');
-    }
-
     private checkoutUrl(data: any): string {
-        const url = this.environment === 'sandbox' ? data?.sandbox_init_point : data?.init_point;
+        // Subscriptions expose init_point even for test sellers; Checkout Pro
+        // additionally exposes the dedicated sandbox_init_point.
+        const url = this.environment === 'sandbox' ? (data?.sandbox_init_point || data?.init_point) : data?.init_point;
         if (typeof url !== 'string' || !url.startsWith('https://')) {
             throw new ServiceUnavailableException('Mercado Pago no devolvió el enlace de checkout del entorno configurado. Revisá las credenciales de la cuenta Finix.');
         }
@@ -63,25 +62,44 @@ export class MercadoPagoService {
 
         if (/both payer and collector must be real or test users/i.test(rawMessage)) {
             return this.environment === 'production'
-                ? 'Mercado Pago detectó una mezcla entre una cuenta real y una cuenta de prueba. Para pagar en producción, iniciá sesión con una cuenta real de Mercado Pago. Para probar el checkout, configurá credenciales TEST y usá un comprador y un vendedor de prueba.'
+                ? 'No pudimos iniciar el pago con Mercado Pago. Contactá al soporte de Finix para revisar la cuenta de cobros.'
                 : 'Mercado Pago detectó una mezcla entre cuentas reales y de prueba. En modo prueba, tanto el vendedor como el comprador deben ser usuarios de prueba creados desde la misma aplicación.';
         }
 
         return rawMessage || fallback;
     }
 
-    public isCheckoutReady(): boolean {
-        return !isFreeAccessEnabled() && this.isConfigured()
-            && (process.env.NODE_ENV !== 'production' || Boolean(process.env.MP_WEBHOOK_SECRET?.trim()));
+    public async isCheckoutReady(): Promise<boolean> {
+        if (isFreeAccessEnabled() || !this.isConfigured()
+            || (process.env.NODE_ENV === 'production' && !process.env.MP_WEBHOOK_SECRET?.trim())) return false;
+        if (this.readiness && this.readiness.until > Date.now()) return this.readiness.available;
+        if (this.readinessPending) return this.readinessPending;
+        this.readinessPending = (async () => {
+            let available = false;
+            try {
+                const response = await fetch('https://api.mercadopago.com/users/me', {
+                    headers: { Authorization: `Bearer ${this.accessToken}` }, signal: AbortSignal.timeout(5000),
+                });
+                if (!response.ok) throw new Error('seller_unavailable');
+                const seller = await response.json();
+                const testSeller = seller.tags?.includes('test_user') || /@testuser\.com$/i.test(seller.email || '');
+                available = Boolean(seller.id) && seller.site_id === 'MLA' && seller.status?.site_status === 'active'
+                    && (this.environment === 'sandbox' ? testSeller : !testSeller);
+                if (!available) this.logger.warn('Mercado Pago: la cuenta vendedora no está activa en Argentina o no corresponde al entorno configurado. Revisá sus credenciales en el servidor.');
+            } catch {
+                this.logger.warn('No se pudo verificar la cuenta vendedora de Mercado Pago.');
+            }
+            this.readiness = { available, until: Date.now() + (available ? 300000 : 30000) };
+            return available;
+        })();
+        try { return await this.readinessPending; }
+        finally { this.readinessPending = null; }
     }
 
-    private ensureCheckoutReady() {
+    private async ensureCheckoutReady() {
         assertPurchasesEnabled();
-        if (!this.isConfigured()) {
-            throw new ServiceUnavailableException('Mercado Pago no está configurado con credenciales válidas para este entorno.');
-        }
-        if (!this.isCheckoutReady()) {
-            throw new ServiceUnavailableException('Mercado Pago requiere MP_WEBHOOK_SECRET en producción para acreditar los pagos automáticamente.');
+        if (!await this.isCheckoutReady()) {
+            throw new ServiceUnavailableException('Mercado Pago no está disponible en este momento. Contactá al soporte de Finix o elegí otro medio de pago.');
         }
     }
 
@@ -134,7 +152,7 @@ export class MercadoPagoService {
     async createPreference(userId: string, planType: 'pro' | 'creator', autoRenew = false) {
         // Pro and Creator always start with a trial-backed recurring subscription.
         autoRenew = true;
-        this.ensureCheckoutReady();
+        await this.ensureCheckoutReady();
 
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -287,7 +305,7 @@ export class MercadoPagoService {
     }
 
     async createCommunityPreference(userId: string, communityId: string, planId: string) {
-        this.ensureCheckoutReady();
+        await this.ensureCheckoutReady();
         const community = await this.prisma.community.findUnique({ where: { id: communityId }, include: { plans: true, creator: { select: { email: true } } } });
         const plan = community?.plans.find(item => item.id === planId);
         const buyer = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, username: true } });

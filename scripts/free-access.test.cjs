@@ -46,7 +46,7 @@ test('both providers refuse new purchases before any provider or database call',
     process.env.FINIX_FREE_ACCESS_ENABLED = 'true';
     const mp = new MercadoPagoService({}, {});
     const stripe = new StripeService({}, {});
-    assert.equal(mp.isCheckoutReady(), false);
+    assert.equal(await mp.isCheckoutReady(), false);
     for (const purchase of [
         () => mp.createPreference('basic', 'pro'),
         () => mp.createPreference('basic', 'creator', true),

@@ -22,6 +22,7 @@ interface Catalog {
     mercadoPagoAvailable: boolean;
     stripeAvailable: boolean;
     proPriceUsd: number | null;
+    creatorPriceUsd: number | null;
     planLimits?: Record<'FREE' | PaidPlan, PlanLimits>;
 }
 const positivePrice = (value: unknown) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
@@ -46,19 +47,20 @@ export function usePlanCheckout() {
             }));
             const mp = results[0].status === 'fulfilled' ? results[0].value : null;
             const stripe = results[1].status === 'fulfilled' ? results[1].value : null;
-            if (!mp || typeof mp.freeAccessEnabled !== 'boolean' || typeof mp.purchasesPaused !== 'boolean') {
+            const access = mp || stripe;
+            if (!access || typeof access.freeAccessEnabled !== 'boolean' || typeof access.purchasesPaused !== 'boolean') {
                 setCatalog(null);
                 setConfigError('No pudimos consultar los precios y la disponibilidad. Reintentá en unos momentos.');
             } else {
-                const paused = mp.freeAccessEnabled || mp.purchasesPaused;
+                const paused = access.freeAccessEnabled || access.purchasesPaused || stripe?.purchasesPaused === true;
                 setCatalog({
-                    freeAccessEnabled: mp.freeAccessEnabled, purchasesPaused: paused,
-                    proPriceArs: positivePrice(mp.proPriceArs), creatorPriceArs: positivePrice(mp.creatorPriceArs),
-                    mercadoPagoAvailable: !paused && (mp.checkoutReady === true || mp.configured === true),
+                    freeAccessEnabled: access.freeAccessEnabled, purchasesPaused: paused,
+                    proPriceArs: positivePrice(mp?.proPriceArs), creatorPriceArs: positivePrice(mp?.creatorPriceArs),
+                    mercadoPagoAvailable: !paused && (mp?.checkoutReady === true || mp?.configured === true),
                     stripeAvailable: !paused && stripe?.configured === true && stripe?.purchasesPaused !== true,
-                    proPriceUsd: positivePrice(stripe?.proPriceUsd), planLimits: mp.planLimits,
+                    proPriceUsd: positivePrice(stripe?.proPriceUsd), creatorPriceUsd: positivePrice(stripe?.creatorPriceUsd), planLimits: mp?.planLimits,
                 });
-                usePlatformAccessStore.setState({ loaded: true, freeAccessEnabled: mp.freeAccessEnabled, purchasesPaused: paused });
+                usePlatformAccessStore.setState({ loaded: true, freeAccessEnabled: access.freeAccessEnabled, purchasesPaused: paused });
             }
         } catch {
             setCatalog(null);

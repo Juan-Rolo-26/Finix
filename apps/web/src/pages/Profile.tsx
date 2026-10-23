@@ -1035,7 +1035,7 @@ export default function Profile() {
     ];
 
     return (
-        <div className="profile-page mx-auto flex-1 w-full max-w-[1160px] pb-20 bg-background text-foreground relative">
+        <div className="profile-page mx-auto flex-1 w-full max-w-[1160px] pb-20 bg-transparent text-foreground relative">
             {/* Toast feedback */}
             <AnimatePresence>
                 {toast && (
@@ -1062,25 +1062,12 @@ export default function Profile() {
             {/* ── BANNER ─────────────────────────────────────────── */}
             <div className="relative">
                 <div
-                    className="w-full h-52 relative overflow-hidden"
-                    style={{
-                        background: profile.bannerUrl
-                            ? undefined
-                            : 'linear-gradient(135deg, hsl(158 100% 8% / 0.5) 0%, hsl(200 80% 8% / 0.4) 40%, hsl(var(--background)) 100%)',
-                    }}
+                    className="w-full h-52 relative overflow-hidden bg-transparent"
                 >
                     {profile.bannerUrl && (
                         <img src={resolveMediaUrl(profile.bannerUrl)} alt={`Banner de ${profile.username}`} className="w-full h-full object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
                     )}
-                    {/* Overlay gradient */}
-                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, hsl(var(--background) / 0.92) 100%)' }} />
-
-                    {/* Grid pattern overlay */}
-                    <div className="absolute inset-0 opacity-[0.04]"
-                        style={{
-                            backgroundImage: 'repeating-linear-gradient(0deg, #00e676 0px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #00e676 0px, transparent 1px, transparent 40px)',
-                        }}
-                    />
+                    {profile.bannerUrl && <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, hsl(var(--background) / 0.92) 100%)' }} />}
 
                     {isOwnProfile && (
                         <button
