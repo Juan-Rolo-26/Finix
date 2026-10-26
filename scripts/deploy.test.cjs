@@ -86,7 +86,7 @@ test('Bash orchestration: failed build preserves old release; public health fail
       const scripts = {
         npm: '#!/bin/bash\nset -eu\nif [[ "$FINIX_TEST_FAILURE" == build && "$*" == "run build -w api" ]]; then exit 72; fi\nif [[ "$1" == ci ]]; then ln -s "$FINIX_TEST_NODE_MODULES" node_modules; fi\nmkdir -p apps/api/dist apps/web/dist apps/admin/dist\n',
         npx: '#!/bin/bash\nset -eu\nif [[ "$*" == *"migrate deploy"* ]]; then echo migrate >> "$FINIX_TEST_EVENTS"; fi\n',
-        pm2: '#!/bin/bash\nset -eu\nif [[ "$1" == jlist ]]; then echo "[]"; else [[ "$1" == startOrReload && "$3" == --only && "$4" == finix-api ]] || exit 71; echo restart >> "$FINIX_TEST_EVENTS"; printf \'{"commit":"%s"}\\n\' "$FINIX_COMMIT" > "$FINIX_TEST_STATE"; fi\n',
+        pm2: '#!/bin/bash\nset -eu\nif [[ "$1" == save ]]; then echo save >> "$FINIX_TEST_EVENTS"; elif [[ "$1" == jlist ]]; then echo "[]"; else [[ "$1" == startOrReload && "$3" == --only && "$4" == finix-api ]] || exit 71; echo restart >> "$FINIX_TEST_EVENTS"; printf \'{"commit":"%s"}\\n\' "$FINIX_COMMIT" > "$FINIX_TEST_STATE"; fi\n',
         curl: '#!/bin/bash\nset -eu\nif [[ "$*" == *https://* && "$FINIX_TEST_FAILURE" == public-health ]]; then exit 22; fi\ncat "$FINIX_TEST_STATE"\n',
       };
       for (const [name, body] of Object.entries(scripts)) fs.writeFileSync(path.join(bin, name), body, { mode: 0o700 });
@@ -103,7 +103,8 @@ test('Bash orchestration: failed build preserves old release; public health fail
       else {
         assert.ok(fs.existsSync(env.FINIX_TEST_EVENTS), result.stdout + result.stderr);
         const events = fs.readFileSync(env.FINIX_TEST_EVENTS, 'utf8').trim().split('\n'); assert.deepEqual(events.slice(0, 3), ['backup', 'migrate', 'restart']);
-        if (failure === 'public-health') { assert.equal(events.at(-1), 'restart'); assert.equal(JSON.parse(fs.readFileSync(env.FINIX_TEST_STATE)).commit, 'before'); assert.match(result.stdout, /Rollback/); }
+        if (failure === 'none') assert.equal(events.at(-1), 'save');
+        if (failure === 'public-health') { assert.deepEqual(events.slice(-2), ['restart', 'save']); assert.equal(JSON.parse(fs.readFileSync(env.FINIX_TEST_STATE)).commit, 'before'); assert.match(result.stdout, /Rollback/); }
       }
     } finally { fs.rmSync(temp, { recursive: true, force: true }); }
   }

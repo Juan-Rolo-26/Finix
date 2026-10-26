@@ -92,6 +92,7 @@ finish() {
         [[ -d $FINIX_PREVIOUS_ADMIN ]] && pointer "$FINIX_PREVIOUS_ADMIN" "$FINIX_ADMIN_CURRENT" || true
         restart_finix "$FINIX_PREVIOUS_API" "$FINIX_PREVIOUS_COMMIT" || true
         if curl --silent --fail --max-time 5 http://127.0.0.1:3010/ready >/dev/null; then
+          pm2 save || echo 'No se pudo guardar el proceso restaurado para el próximo arranque.'
           echo 'Rollback de código: /ready respondió. Las migraciones no se revierten automáticamente.'
         else
           echo 'Rollback solicitado, pero /ready no respondió: requiere comprobación del operador.'
@@ -209,6 +210,8 @@ for FINIX_URL in "${FINIX_WEB_HEALTH_URL:-}" "${FINIX_ADMIN_HEALTH_URL:-}"; do
  [[ $FINIX_URL == https://* ]] || fail 'Health público requiere HTTPS'
  curl --silent --fail --max-time 15 --header 'Cache-Control: no-cache' "$FINIX_URL?deploy=$FINIX_COMMIT" | node -e 'let s="";process.stdin.on("data",x=>s+=x);process.stdin.on("end",()=>{try{if(JSON.parse(s).commit!==process.argv[1])process.exit(1)}catch{process.exit(1)}})' "$FINIX_COMMIT"
 done
+FINIX_STAGE=persist
+pm2 save
 FINIX_SUCCESS=1
 echo "Deploy completo: $FINIX_COMMIT; respaldo: $FINIX_BACKUP_ROOT/pre-deploy-$FINIX_STAMP"
 echo 'Un único proceso puede tener una interrupción breve. Se conservan releases anteriores; no se modifica Nginx ni otros servicios.'
