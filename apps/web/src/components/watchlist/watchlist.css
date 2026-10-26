@@ -1,7 +1,7 @@
 .watchlist-page {
     min-width: 0;
     width: 100%;
-    padding-bottom: 48px;
+    padding: 16px 12px 40px;
     --watchlist-positive: #34d399;
     --watchlist-negative: #fb7185;
 }

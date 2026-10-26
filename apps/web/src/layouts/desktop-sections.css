@@ -513,6 +513,6 @@
 /* Seguimiento fills its available content area without a viewport breakout or the market width cap. */
 @media (min-width: 1024px) {
     .finix-desktop-shell .desktop-page-frame:is([data-page='market'], [data-page='mercado']) > .watchlist-page {
-        width: 100%; max-width: none; margin: 0; padding: 0 0 48px;
+        width: 100%; max-width: none; margin: 0; padding: 20px 20px 48px;
     }
 }
