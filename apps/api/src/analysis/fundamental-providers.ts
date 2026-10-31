@@ -61,9 +61,17 @@ export function marketObservation(collected: CollectedFundamentals) {
     const last = rows.at(-1), previous = rows.slice(0, -1).slice(-30);
     const avg = previous.length === 30 ? previous.reduce((n: number, r: any) => n + r.volume, 0) / 30 : null;
     const volume = last ? last.volume : number(p.volume);
-    const previousClose = rows.at(-2)?.close; const change = last && previousClose > 0 ? (last.close / previousClose - 1) * 100 : number(p.changePercentage);
+    const previousClose = rows.at(-2)?.close;
+    let monthBase: any = null;
+    if (last) {
+        const target = new Date(last.at), day = target.getUTCDate(); target.setUTCDate(1); target.setUTCMonth(target.getUTCMonth() - 1);
+        target.setUTCDate(Math.min(day, new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0)).getUTCDate()));
+        monthBase = rows.filter((row: any) => row.at.slice(0, 10) <= target.toISOString().slice(0, 10)).at(-1);
+    }
+    const monthlyChange = last && monthBase?.close > 0 ? (last.close / monthBase.close - 1) * 100 : null;
+    const change = last && previousClose > 0 ? (last.close / previousClose - 1) * 100 : number(p.changePercentage);
     // A generic provider average is not relabelled as 30 sessions.
-    return { values: { currentPrice: last?.close ?? number(p.price), dailyChange: change, marketCap: number(p.marketCap), volume, avgVolume: avg, relativeVolume: volume !== null && avg !== null && avg > 0 ? volume / avg : null },
+    return { values: { currentPrice: last?.close ?? number(p.price), dailyChange: change, marketCap: number(p.marketCap), monthlyChange, volume, avgVolume: avg, relativeVolume: volume !== null && avg !== null && avg > 0 ? volume / avg : null },
         meta: { source: last ? 'Yahoo Finance' : 'FMP perfil', sessionAt: last?.at || null, queriedAt: collected.inputs.queriedAt, averageSessions: previous.length === 30 ? 30 : null, averageExcludesCurrentSession: true } };
 }
 export function supplementFundamentals(data: Record<string, any>, c: CollectedFundamentals) {
