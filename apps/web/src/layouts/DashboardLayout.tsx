@@ -3,7 +3,6 @@ import { prefetchRoute } from '@/lib/routePrefetch';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { DesktopNavigation } from '../components/DesktopNavigation';
 import { BottomNav, FinanceMobileNav } from '../components/BottomNav';
-import { MobileTopBar } from '../components/MobileTopBar';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { useGlobalSearchState } from '@/hooks/useGlobalSearchState';
@@ -19,7 +18,6 @@ export default function DashboardLayout() {
 
     const location = useLocation();
     const navigate = useNavigate();
-    const isMessages = location.pathname.startsWith('/messages');
     const isFinance = location.pathname.startsWith('/finanzas');
     const page = location.pathname.split('/')[1];
     const desktopLayout = ['dashboard', 'social', 'market', 'mercado', 'portfolio', 'news'].includes(page)
@@ -36,15 +34,12 @@ export default function DashboardLayout() {
         }} onFocus={event => {
             const link = (event.target as Element).closest<HTMLAnchorElement>('a[href]');
             if (link?.origin === window.location.origin) prefetchRoute(link.pathname);
-        }} className="finix-desktop-shell min-h-screen w-full max-w-[100vw] overflow-x-clip bg-background text-foreground flex" data-section={location.pathname.split('/')[1]}>
+        }} className="finix-desktop-shell min-h-screen w-full max-w-[100vw] overflow-x-clip bg-background text-foreground flex flex-col" data-section={location.pathname.split('/')[1]}>
             <DesktopNavigation onOpenSearch={openSearch} />
-
-            {/* Top Bar — mobile only (hidden on /messages) */}
-            <MobileTopBar />
 
             {/* Preserve the mobile bars and their safe-area spacing. */}
             <div
-                className={`desktop-content flex-1 min-w-0 flex flex-col min-h-screen lg:pb-0 ${isMessages ? 'pt-0' : 'pt-[var(--finix-mobile-header-height,calc(52px+env(safe-area-inset-top)))]'} pb-[var(--finix-mobile-nav-height,calc(60px+env(safe-area-inset-bottom)))]`}
+                className={`desktop-content flex-1 min-w-0 flex flex-col min-h-screen pb-[var(--finix-mobile-nav-height,calc(60px+env(safe-area-inset-bottom)))] lg:pb-0`}
             >
                 <main
                     className="desktop-main flex-1 min-w-0 flex flex-col w-full max-w-full overflow-x-clip"

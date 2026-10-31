@@ -15,6 +15,17 @@ function ToolIcon({ id }: { id: ToolId }) { const Icon = TOOL_ICONS[id] || Calcu
 const formatNumber = (v: number, percent = false, locale = 'es-AR') => `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2, notation: Math.abs(v) >= 1e15 ? 'scientific' : 'standard' }).format(v)}${percent ? ' %' : ''}`;
 const compactNumber = (v: number, locale = 'es-AR') => new Intl.NumberFormat(locale, { notation: Math.abs(v) >= 1e15 ? 'scientific' : 'compact', maximumFractionDigits: 1 }).format(v);
 const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function safeRandomUUID(): string {
+ if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  try { return crypto.randomUUID(); } catch {}
+ }
+ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  const r = (Math.random() * 16) | 0;
+  const v = c === 'x' ? r : (r & 0x3) | 0x8;
+  return v.toString(16);
+ });
+}
+
 function readSaved(): Snapshot[] {
  try { const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE) || '[]'); if (!Array.isArray(parsed)) return []; return parsed.filter((s): s is Snapshot => Boolean(s && typeof s.id === 'string' && typeof s.name === 'string' && typeof s.date === 'string' && ['ARS', 'USD'].includes(s.currency) && TOOLS.some(t => t.id === s.tool && s.values && Object.keys(validate(t, s.values)).length === 0))).slice(0, 6); } catch { return []; }
 }
@@ -89,7 +100,7 @@ export default function FinancialLaboratory() {
  const select = (id: ToolId) => { setParams({ herramienta: id }); setPage(0); setStatus(ui('')); if (window.innerWidth < 900) requestAnimationFrame(() => panel.current?.scrollIntoView({ block: 'start' })); };
  const update = (key: string, value: string) => { setInputs(prev => ({ ...prev, [current.id]: { ...raw, [key]: value } })); setPage(0); setStatus(ui('')); };
  const persist = (next: Snapshot[]) => { try { localStorage.setItem(STORAGE, JSON.stringify(next)); setSaved(next); return true; } catch { setStatus(ui('No se pudo guardar en este navegador. Podés descargar el CSV.')); return false; } };
- const save = () => { if (!result) return; if (saved.length >= 6) { setStatus(ui('Podés guardar hasta 6 simulaciones. Eliminá una para agregar otra.')); return; } const snapshot: Snapshot = { id: crypto.randomUUID(), name: name.trim().slice(0, 80) || ui(current.title), tool: current.id, values, currency, exchangeRate: Number.isFinite(exchangeRate) && exchangeRate > 0 ? exchangeRate : undefined, date: new Date().toISOString() }; if (persist([...saved, snapshot])) { setName(''); setStatus(ui('Simulación guardada en este navegador.')); } };
+ const save = () => { if (!result) return; if (saved.length >= 6) { setStatus(ui('Podés guardar hasta 6 simulaciones. Eliminá una para agregar otra.')); return; } const snapshot: Snapshot = { id: safeRandomUUID(), name: name.trim().slice(0, 80) || ui(current.title), tool: current.id, values, currency, exchangeRate: Number.isFinite(exchangeRate) && exchangeRate > 0 ? exchangeRate : undefined, date: new Date().toISOString() }; if (persist([...saved, snapshot])) { setName(''); setStatus(ui('Simulación guardada en este navegador.')); } };
  const load = (snapshot: Snapshot) => {
   // A saved simulation is a standalone plan. Rebuild other examples in its denomination,
   // instead of silently relabelling drafts that were entered in another currency.

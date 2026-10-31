@@ -36,9 +36,35 @@
       window.__finix_deferred_prompt = e;
       window.dispatchEvent(new CustomEvent('finix:deferred-prompt-ready'));
     });
+
+    // Auto-recovery for stale chunks or unhandled module errors
+    window.addEventListener('error', function(e) {
+      var msg = (e && e.message) ? String(e.message) : '';
+      var isStale = /failed to fetch dynamically imported module|importing a module script failed|error loading dynamically imported module|chunkloaderror/i.test(msg);
+      if (isStale) {
+        var key = 'finix:stale-reload';
+        var last = Number(sessionStorage.getItem(key) || 0);
+        if (!last || Date.now() - last > 15000) {
+          sessionStorage.setItem(key, String(Date.now()));
+          window.location.reload();
+        }
+      }
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      var reason = e.reason;
+      var msg = reason ? (reason.stack || reason.message || String(reason)) : '';
+      var isStale = /failed to fetch dynamically imported module|importing a module script failed|error loading dynamically imported module|chunkloaderror/i.test(msg);
+      if (isStale) {
+        window.location.reload();
+      }
+    });
   </script>
 
   <link rel="preload" href="/fonts/inter-latin-2c295d99e26d.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />

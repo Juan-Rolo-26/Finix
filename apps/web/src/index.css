@@ -21,12 +21,13 @@
 
 @layer base {
 
-    /* ─── DARK MODE (default) ─── */
+    /* ─── DARK MODE (default) — Finix Emerald ─── */
     :root {
-        --finix-font-family: Inter, system-ui, sans-serif;
+        --finix-font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
         font-size: 16px;
 
-        /* ── Core palette ── */
+        /* ── Core palette — Finix Dark ── */
         --background: 222 28% 7%;
         --foreground: 210 40% 97%;
 
@@ -36,7 +37,7 @@
         --popover: 222 26% 9%;
         --popover-foreground: 210 40% 97%;
 
-        /* Green primary — Finix brand */
+        /* Finix signature Emerald green */
         --primary: 152 80% 42%;
         --primary-foreground: 222 28% 7%;
         --primary-hover: 152 80% 48%;
@@ -50,11 +51,11 @@
         --muted: 222 16% 17%;
         --muted-foreground: 215 10% 60%;
 
-        /* Electric blue accent */
-        --brand: 215 90% 65%;
+        /* Finix brand accent */
+        --brand: 152 80% 42%;
         --brand-foreground: 222 42% 10%;
 
-        --accent: 215 28% 18%;
+        --accent: 152 40% 15%;
         --accent-foreground: 210 36% 95%;
 
         /* Semantic */
@@ -162,7 +163,7 @@
         --auth-footer-bg: transparent;
     }
 
-    /* ─── LIGHT MODE ─── */
+    /* ─── LIGHT MODE — Finix Emerald ─── */
     .light {
         --background: 210 38% 98%;
         --foreground: 222 26% 12%;
@@ -173,7 +174,8 @@
         --popover: 0 0% 100%;
         --popover-foreground: 222 26% 12%;
 
-        --primary: 152 75% 25%;
+        /* Finix signature Emerald green for light mode */
+        --primary: 152 75% 28%;
         --primary-foreground: 0 0% 100%;
         --primary-hover: 152 75% 24%;
         --primary-active: 152 75% 20%;
@@ -186,11 +188,12 @@
         --muted: 214 22% 93%;
         --muted-foreground: 222 14% 42%;
 
-        --brand: 215 68% 44%;
+        /* Finix brand */
+        --brand: 152 75% 28%;
         --brand-foreground: 0 0% 100%;
 
-        --accent: 214 72% 94%;
-        --accent-foreground: 222 30% 24%;
+        --accent: 152 60% 94%;
+        --accent-foreground: 152 75% 20%;
 
         --success: 145 65% 28%;
         --success-foreground: 0 0% 100%;
@@ -210,7 +213,7 @@
         --border: 214 22% 88%;
         --border-strong: 214 22% 76%;
         --input: 214 22% 88%;
-        --ring: 152 75% 29%;
+        --ring: 152 75% 28%;
 
         --gradient-hero: linear-gradient(135deg, hsl(210 38% 98%) 0%, hsl(0 0% 100%) 44%, hsl(215 65% 92%) 76%, hsl(152 38% 92%) 100%);
         --gradient-card: linear-gradient(155deg, hsl(0 0% 100% / 0.98) 0%, hsl(210 28% 98% / 0.96) 64%, hsl(215 68% 44% / 0.05) 100%);
@@ -700,18 +703,163 @@ body {
     background-color: hsl(0 0% 95%) !important;
 }
 
-.light .text-white:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *) {
+.light .text-white:not(
+    .keep-white,
+    .keep-white *,
+    [data-theme-ignore],
+    [data-theme-ignore] *,
+    [data-keep-contrast],
+    [data-keep-contrast] *,
+    .text-white-force,
+    [class*="bg-emerald"],
+    [class*="bg-emerald"] *,
+    [class*="bg-green"],
+    [class*="bg-green"] *,
+    [class*="bg-primary"],
+    [class*="bg-primary"] *,
+    [class*="bg-blue"],
+    [class*="bg-blue"] *,
+    [class*="bg-indigo"],
+    [class*="bg-indigo"] *,
+    [class*="bg-violet"],
+    [class*="bg-violet"] *,
+    [class*="bg-rose"],
+    [class*="bg-rose"] *,
+    [class*="bg-red"],
+    [class*="bg-red"] *,
+    [class*="bg-amber"],
+    [class*="bg-amber"] *,
+    [class*="bg-slate-800"],
+    [class*="bg-slate-800"] *,
+    [class*="bg-slate-900"],
+    [class*="bg-slate-900"] *,
+    [class*="bg-slate-950"],
+    [class*="bg-slate-950"] *,
+    [class*="bg-zinc-800"],
+    [class*="bg-zinc-800"] *,
+    [class*="bg-zinc-900"],
+    [class*="bg-zinc-900"] *,
+    [class*="bg-zinc-950"],
+    [class*="bg-zinc-950"] *,
+    [class*="bg-black"],
+    [class*="bg-black"] *
+) {
     color: hsl(222 15% 10%) !important;
 }
 
-.light .text-gray-100:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *),
-.light .text-gray-200:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *),
-.light .text-gray-300:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *) {
+.light .text-gray-100:not(
+    .keep-white,
+    .keep-white *,
+    [data-theme-ignore],
+    [data-theme-ignore] *,
+    [data-keep-contrast],
+    [data-keep-contrast] *,
+    [class*="bg-emerald"],
+    [class*="bg-emerald"] *,
+    [class*="bg-green"],
+    [class*="bg-green"] *,
+    [class*="bg-primary"],
+    [class*="bg-primary"] *,
+    [class*="bg-slate-800"],
+    [class*="bg-slate-800"] *,
+    [class*="bg-slate-900"],
+    [class*="bg-slate-900"] *,
+    [class*="bg-slate-950"],
+    [class*="bg-slate-950"] *,
+    [class*="bg-black"],
+    [class*="bg-black"] *
+),
+.light .text-gray-200:not(
+    .keep-white,
+    .keep-white *,
+    [data-theme-ignore],
+    [data-theme-ignore] *,
+    [data-keep-contrast],
+    [data-keep-contrast] *,
+    [class*="bg-emerald"],
+    [class*="bg-emerald"] *,
+    [class*="bg-green"],
+    [class*="bg-green"] *,
+    [class*="bg-primary"],
+    [class*="bg-primary"] *,
+    [class*="bg-slate-800"],
+    [class*="bg-slate-800"] *,
+    [class*="bg-slate-900"],
+    [class*="bg-slate-900"] *,
+    [class*="bg-slate-950"],
+    [class*="bg-slate-950"] *,
+    [class*="bg-black"],
+    [class*="bg-black"] *
+),
+.light .text-gray-300:not(
+    .keep-white,
+    .keep-white *,
+    [data-theme-ignore],
+    [data-theme-ignore] *,
+    [data-keep-contrast],
+    [data-keep-contrast] *,
+    [class*="bg-emerald"],
+    [class*="bg-emerald"] *,
+    [class*="bg-green"],
+    [class*="bg-green"] *,
+    [class*="bg-primary"],
+    [class*="bg-primary"] *,
+    [class*="bg-slate-800"],
+    [class*="bg-slate-800"] *,
+    [class*="bg-slate-900"],
+    [class*="bg-slate-900"] *,
+    [class*="bg-slate-950"],
+    [class*="bg-slate-950"] *,
+    [class*="bg-black"],
+    [class*="bg-black"] *
+) {
     color: hsl(222 15% 20%) !important;
 }
 
-.light .text-gray-400:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *),
-.light .text-gray-500:not(.keep-white, .keep-white *, [data-theme-ignore], [data-theme-ignore] *) {
+.light .text-gray-400:not(
+    .keep-white,
+    .keep-white *,
+    [data-theme-ignore],
+    [data-theme-ignore] *,
+    [data-keep-contrast],
+    [data-keep-contrast] *,
+    [class*="bg-emerald"],
+    [class*="bg-emerald"] *,
+    [class*="bg-green"],
+    [class*="bg-green"] *,
+    [class*="bg-primary"],
+    [class*="bg-primary"] *,
+    [class*="bg-slate-800"],
+    [class*="bg-slate-800"] *,
+    [class*="bg-slate-900"],
+    [class*="bg-slate-900"] *,
+    [class*="bg-slate-950"],
+    [class*="bg-slate-950"] *,
+    [class*="bg-black"],
+    [class*="bg-black"] *
+),
+.light .text-gray-500:not(
+    .keep-white,
+    .keep-white *,
+    [data-theme-ignore],
+    [data-theme-ignore] *,
+    [data-keep-contrast],
+    [data-keep-contrast] *,
+    [class*="bg-emerald"],
+    [class*="bg-emerald"] *,
+    [class*="bg-green"],
+    [class*="bg-green"] *,
+    [class*="bg-primary"],
+    [class*="bg-primary"] *,
+    [class*="bg-slate-800"],
+    [class*="bg-slate-800"] *,
+    [class*="bg-slate-900"],
+    [class*="bg-slate-900"] *,
+    [class*="bg-slate-950"],
+    [class*="bg-slate-950"] *,
+    [class*="bg-black"],
+    [class*="bg-black"] *
+) {
     color: hsl(222 10% 40%) !important;
 }
 
@@ -725,6 +873,9 @@ body {
 }
 .keep-white .text-white-muted {
     color: rgba(255, 255, 255, 0.72) !important;
+}
+.text-white-force {
+    color: #ffffff !important;
 }
 
 .light .border-border-dark {

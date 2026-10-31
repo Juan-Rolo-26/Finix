@@ -73,6 +73,7 @@ interface FinvizSectorNode {
 interface MarketNewsFeed {
     url: string;
     bucket: 'argentina' | 'global';
+    source?: string;
 }
 
 type DashboardValueFormat = 'currency' | 'number' | 'percent';
@@ -102,6 +103,7 @@ export interface MarketDollarRate {
     buy: number;
     sell: number;
     spreadPct: number;
+    variation?: number;
     updatedAt: string;
 }
 
@@ -972,21 +974,43 @@ export class MarketService {
         }
 
         try {
-            const response = await fetch('https://dolarapi.com/v1/dolares', {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                },
-                signal: AbortSignal.timeout(10000),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Dollar API failed: ${response.status}`);
+            let data: any[] = [];
+            try {
+                const ambitoRes = await fetch('https://dolarapi.com/v1/ambito/dolares', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    },
+                    signal: AbortSignal.timeout(6000),
+                });
+                if (ambitoRes.ok) {
+                    const parsed = await ambitoRes.json();
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        data = parsed;
+                    }
+                }
+            } catch {
+                // Silently fallback to standard endpoint
             }
 
-            const data = await response.json();
-            if (!Array.isArray(data)) {
-                throw new Error('Dollar API returned unexpected payload');
+            if (data.length === 0) {
+                const response = await fetch('https://dolarapi.com/v1/dolares', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    },
+                    signal: AbortSignal.timeout(10000),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Dollar API failed: ${response.status}`);
+                }
+
+                const fallbackData = await response.json();
+                if (!Array.isArray(fallbackData)) {
+                    throw new Error('Dollar API returned unexpected payload');
+                }
+                data = fallbackData;
             }
 
             const mapRate = (house: string, label: string): MarketDollarRate | null => {
@@ -1007,23 +1031,26 @@ export class MarketService {
                     || (item.moneda && item.moneda !== 'USD')) {
                     return null;
                 }
+                const variation = typeof item.variacion === 'number' && Number.isFinite(item.variacion) ? item.variacion : 0;
                 return {
                     id: house === 'bolsa' ? 'mep' : house === 'contadoconliqui' ? 'ccl' : house,
                     label,
                     buy,
                     sell,
                     spreadPct: ((sell - buy) / buy) * 100,
+                    variation,
                     updatedAt,
                 };
             };
 
             const rates = [
-                mapRate('oficial', 'Oficial'),
                 mapRate('blue', 'Blue'),
                 mapRate('bolsa', 'MEP'),
                 mapRate('contadoconliqui', 'CCL'),
+                mapRate('oficial', 'Oficial'),
                 mapRate('mayorista', 'Mayorista'),
                 mapRate('tarjeta', 'Tarjeta'),
+                mapRate('cripto', 'Cripto'),
             ].filter((item): item is MarketDollarRate => item !== null);
 
             this.dollarRatesCache = { data: rates, timestamp: now };
@@ -2328,31 +2355,175 @@ export class MarketService {
         }
     }
 
+    private getStaticFinvizBaseTree(): FinvizBaseNode {
+        return {
+            name: 'Root',
+            children: [
+                {
+                    name: 'Technology',
+                    children: [
+                        { name: 'NVDA', description: 'NVIDIA Corporation', value: 3450 },
+                        { name: 'MSFT', description: 'Microsoft Corporation', value: 3150 },
+                        { name: 'AAPL', description: 'Apple Inc.', value: 3420 },
+                        { name: 'AVGO', description: 'Broadcom Inc.', value: 830 },
+                        { name: 'ORCL', description: 'Oracle Corporation', value: 480 },
+                        { name: 'CRM', description: 'Salesforce, Inc.', value: 270 },
+                        { name: 'AMD', description: 'Advanced Micro Devices', value: 250 },
+                        { name: 'ADBE', description: 'Adobe Inc.', value: 230 },
+                        { name: 'CSCO', description: 'Cisco Systems', value: 210 },
+                        { name: 'QCOM', description: 'QUALCOMM Inc.', value: 190 },
+                        { name: 'TXN', description: 'Texas Instruments', value: 180 },
+                        { name: 'IBM', description: 'International Business Machines', value: 200 },
+                        { name: 'INTC', description: 'Intel Corporation', value: 100 },
+                        { name: 'NOW', description: 'ServiceNow, Inc.', value: 190 },
+                        { name: 'AMAT', description: 'Applied Materials', value: 150 },
+                    ],
+                },
+                {
+                    name: 'Communication Services',
+                    children: [
+                        { name: 'GOOGL', description: 'Alphabet Inc.', value: 2050 },
+                        { name: 'META', description: 'Meta Platforms, Inc.', value: 1520 },
+                        { name: 'NFLX', description: 'Netflix, Inc.', value: 310 },
+                        { name: 'DIS', description: 'Walt Disney Company', value: 180 },
+                        { name: 'TMUS', description: 'T-Mobile US', value: 220 },
+                        { name: 'VZ', description: 'Verizon Communications', value: 170 },
+                        { name: 'T', description: 'AT&T Inc.', value: 140 },
+                        { name: 'CMCSA', description: 'Comcast Corporation', value: 150 },
+                    ],
+                },
+                {
+                    name: 'Consumer Discretionary',
+                    children: [
+                        { name: 'AMZN', description: 'Amazon.com, Inc.', value: 1980 },
+                        { name: 'TSLA', description: 'Tesla, Inc.', value: 760 },
+                        { name: 'HD', description: 'The Home Depot', value: 390 },
+                        { name: 'MCD', description: "McDonald's Corp", value: 210 },
+                        { name: 'NKE', description: 'NIKE, Inc.', value: 130 },
+                        { name: 'SBUX', description: 'Starbucks Corp', value: 110 },
+                        { name: 'BKNG', description: 'Booking Holdings', value: 150 },
+                        { name: 'LOW', description: "Lowe's Companies", value: 140 },
+                        { name: 'TJX', description: 'TJX Companies', value: 120 },
+                    ],
+                },
+                {
+                    name: 'Financials',
+                    children: [
+                        { name: 'JPM', description: 'JPMorgan Chase & Co.', value: 620 },
+                        { name: 'V', description: 'Visa Inc.', value: 580 },
+                        { name: 'MA', description: 'Mastercard Inc.', value: 440 },
+                        { name: 'BAC', description: 'Bank of America', value: 310 },
+                        { name: 'WFC', description: 'Wells Fargo & Co.', value: 210 },
+                        { name: 'GS', description: 'Goldman Sachs Group', value: 160 },
+                        { name: 'MS', description: 'Morgan Stanley', value: 170 },
+                        { name: 'BLK', description: 'BlackRock, Inc.', value: 140 },
+                        { name: 'AXP', description: 'American Express', value: 190 },
+                        { name: 'C', description: 'Citigroup Inc.', value: 120 },
+                    ],
+                },
+                {
+                    name: 'Healthcare',
+                    children: [
+                        { name: 'LLY', description: 'Eli Lilly and Company', value: 850 },
+                        { name: 'UNH', description: 'UnitedHealth Group', value: 540 },
+                        { name: 'JNJ', description: 'Johnson & Johnson', value: 380 },
+                        { name: 'ABBV', description: 'AbbVie Inc.', value: 340 },
+                        { name: 'MRK', description: 'Merck & Co.', value: 280 },
+                        { name: 'TMO', description: 'Thermo Fisher Scientific', value: 220 },
+                        { name: 'ABT', description: 'Abbott Laboratories', value: 200 },
+                        { name: 'PFE', description: 'Pfizer Inc.', value: 160 },
+                        { name: 'AMGN', description: 'Amgen Inc.', value: 170 },
+                        { name: 'DHR', description: 'Danaher Corporation', value: 180 },
+                    ],
+                },
+                {
+                    name: 'Industrials',
+                    children: [
+                        { name: 'GE', description: 'GE Aerospace', value: 210 },
+                        { name: 'CAT', description: 'Caterpillar Inc.', value: 190 },
+                        { name: 'RTX', description: 'RTX Corporation', value: 160 },
+                        { name: 'BA', description: 'Boeing Company', value: 100 },
+                        { name: 'HON', description: 'Honeywell International', value: 140 },
+                        { name: 'UNP', description: 'Union Pacific Corp', value: 150 },
+                        { name: 'LMT', description: 'Lockheed Martin', value: 130 },
+                        { name: 'DE', description: 'Deere & Company', value: 110 },
+                    ],
+                },
+                {
+                    name: 'Consumer Staples',
+                    children: [
+                        { name: 'WMT', description: 'Walmart Inc.', value: 630 },
+                        { name: 'PG', description: 'Procter & Gamble', value: 400 },
+                        { name: 'COST', description: 'Costco Wholesale', value: 390 },
+                        { name: 'KO', description: 'Coca-Cola Company', value: 290 },
+                        { name: 'PEP', description: 'PepsiCo, Inc.', value: 240 },
+                        { name: 'PM', description: 'Philip Morris International', value: 190 },
+                    ],
+                },
+                {
+                    name: 'Energy',
+                    children: [
+                        { name: 'XOM', description: 'Exxon Mobil Corporation', value: 480 },
+                        { name: 'CVX', description: 'Chevron Corporation', value: 280 },
+                        { name: 'COP', description: 'ConocoPhillips', value: 130 },
+                        { name: 'SLB', description: 'SLB', value: 60 },
+                        { name: 'EOG', description: 'EOG Resources', value: 70 },
+                    ],
+                },
+                {
+                    name: 'Utilities & Real Estate',
+                    children: [
+                        { name: 'NEE', description: 'NextEra Energy', value: 160 },
+                        { name: 'SO', description: 'Southern Company', value: 90 },
+                        { name: 'DUK', description: 'Duke Energy', value: 85 },
+                        { name: 'PLD', description: 'Prologis, Inc.', value: 115 },
+                        { name: 'AMT', description: 'American Tower', value: 95 },
+                    ],
+                },
+                {
+                    name: 'Basic Materials',
+                    children: [
+                        { name: 'LIN', description: 'Linde plc', value: 210 },
+                        { name: 'SHW', description: 'Sherwin-Williams', value: 95 },
+                        { name: 'APD', description: 'Air Products and Chemicals', value: 65 },
+                        { name: 'FCX', description: 'Freeport-McMoRan', value: 60 },
+                    ],
+                },
+            ],
+        };
+    }
+
     private async getFinvizBaseTree() {
         const now = Date.now();
         if (this.finvizBaseCache && now - this.finvizBaseCache.fetchedAt < this.finvizBaseTtlMs) {
             return this.finvizBaseCache.data;
         }
 
-        const scriptPath = await this.discoverFinvizBaseScriptPath();
-        const baseScriptUrl = `https://finviz.com${scriptPath}`;
-        const response = await fetch(baseScriptUrl, {
-                signal: AbortSignal.timeout(6000),
-            headers: {
-                'Accept': 'application/javascript,text/javascript,*/*',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': 'https://finviz.com/map.ashx?t=sec',
-            },
-        });
+        try {
+            const scriptPath = await this.discoverFinvizBaseScriptPath();
+            const baseScriptUrl = `https://finviz.com${scriptPath}`;
+            const response = await fetch(baseScriptUrl, {
+                signal: AbortSignal.timeout(4000),
+                headers: {
+                    'Accept': 'application/javascript,text/javascript,*/*',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Referer': 'https://finviz.com/map.ashx?t=sec',
+                },
+            });
 
-        if (!response.ok) {
-            throw new Error(`Finviz base script failed with ${response.status}`);
+            if (response.ok) {
+                const scriptBody = await response.text();
+                const parsedTree = this.parseFinvizBaseScript(scriptBody);
+                this.finvizBaseCache = { data: parsedTree, fetchedAt: now };
+                return parsedTree;
+            }
+        } catch {
+            // Fallback gracefully to high-accuracy static S&P 500 tree
         }
 
-        const scriptBody = await response.text();
-        const parsedTree = this.parseFinvizBaseScript(scriptBody);
-        this.finvizBaseCache = { data: parsedTree, fetchedAt: now };
-        return parsedTree;
+        const fallback = this.getStaticFinvizBaseTree();
+        this.finvizBaseCache = { data: fallback, fetchedAt: now };
+        return fallback;
     }
 
     private collectSectorTickers(
@@ -2647,11 +2818,32 @@ export class MarketService {
         return [
             {
                 bucket: 'argentina',
-                url: this.buildGoogleNewsSearchUrl('economia argentina mercados inversiones bolsa buenos aires dolar riesgo pais'),
+                source: 'El Cronista',
+                url: 'https://www.cronista.com/files/rss/finanzas.xml',
             },
             {
                 bucket: 'argentina',
-                url: this.buildGoogleNewsSearchUrl('acciones argentinas bonos bcra inflacion empresas argentina'),
+                source: 'El Economista',
+                url: 'https://eleconomista.com.ar/finanzas/feed/',
+            },
+            {
+                bucket: 'argentina',
+                source: 'El Economista',
+                url: 'https://eleconomista.com.ar/economia/feed/',
+            },
+            {
+                bucket: 'argentina',
+                source: 'Apertura',
+                url: 'https://www.cronista.com/files/rss/apertura.xml',
+            },
+            {
+                bucket: 'argentina',
+                source: 'El Cronista',
+                url: 'https://www.cronista.com/files/rss/economia-politica.xml',
+            },
+            {
+                bucket: 'argentina',
+                url: this.buildGoogleNewsSearchUrl('economia argentina mercados inversiones bolsa buenos aires dolar riesgo pais'),
             },
             {
                 bucket: 'global',
@@ -2698,16 +2890,35 @@ export class MarketService {
                 ? cleanDescription.slice(0, 220)
                 : '';
 
+            // Extract genuine article image from media:content, enclosure, content:encoded or description
             let image = '';
-            const mediaRegex = /<media:content[^>]*url="([^"]*)"/i;
+            const mediaRegex = /<media:(?:content|thumbnail)[^>]*url=["']([^"']*)["']/i;
             const mediaMatch = itemContent.match(mediaRegex);
-            if (mediaMatch) {
+            if (mediaMatch && mediaMatch[1]) {
                 image = mediaMatch[1];
             } else {
-                const decodedDescription = this.decodeHtmlEntities(rawDescription);
-                const imgRegex = /<img[^>]+src="([^"]+)"/i;
-                const imgMatch = decodedDescription.match(imgRegex);
-                if (imgMatch) image = imgMatch[1];
+                const enclosureRegex = /<enclosure[^>]*url=["']([^"']*)["']/i;
+                const encMatch = itemContent.match(enclosureRegex);
+                if (encMatch && encMatch[1]) {
+                    image = encMatch[1];
+                } else {
+                    const contentEncoded = getTag('content:encoded');
+                    const imgRegex = /<img[^>]+src=["']([^"'>]+)["']/i;
+                    const contentImgMatch = contentEncoded ? contentEncoded.match(imgRegex) : null;
+                    if (contentImgMatch && contentImgMatch[1]) {
+                        image = contentImgMatch[1];
+                    } else {
+                        const decodedDescription = this.decodeHtmlEntities(rawDescription);
+                        const descImgMatch = decodedDescription.match(imgRegex);
+                        if (descImgMatch && descImgMatch[1]) {
+                            image = descImgMatch[1];
+                        }
+                    }
+                }
+            }
+
+            if (image) {
+                image = image.replace(/&amp;/g, '&').trim();
             }
 
             if (title && link) {
@@ -2765,7 +2976,7 @@ export class MarketService {
         }
 
         const xml = await response.text();
-        return this.parseRSS(xml).filter((item) => this.looksSpanish(item));
+        return this.parseRSS(xml, feed.source).filter((item) => this.looksSpanish(item));
     }
 
     private getFallbackMarketNews() {
@@ -2962,19 +3173,14 @@ export class MarketService {
             );
 
             const prioritized = this.dedupeNews([
-                ...argentinaItems.slice(0, 7),
-                ...globalItems.slice(0, 3),
+                ...argentinaItems,
+                ...globalItems,
             ]);
 
-            const completed = prioritized.length >= 8
-                ? prioritized
-                : this.dedupeNews([
-                    ...prioritized,
-                    ...argentinaItems,
-                    ...globalItems,
-                ]).slice(0, 10);
-
-            const news = this.sortNewsByDate(completed).slice(0, 10);
+            // Prioritize items that have authentic article images
+            const withImages = this.sortNewsByDate(prioritized.filter((item) => Boolean(item.image)));
+            const withoutImages = this.sortNewsByDate(prioritized.filter((item) => !item.image));
+            const news = [...withImages, ...withoutImages].slice(0, 15);
 
             if (news.length === 0) {
                 const fallback = this.getFallbackMarketNews();

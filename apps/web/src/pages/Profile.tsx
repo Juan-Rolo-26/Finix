@@ -18,7 +18,7 @@ import {
     User, MapPin, Briefcase, Calendar, Award, TrendingUp,
     Linkedin, Twitter, Youtube, Instagram,
     Edit, Check, X, Camera, Globe, Bookmark,
-    BarChart3, Target, MessageSquare, UserPlus,
+    BarChart3, Target, FileText, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
     ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag,
     Share2, Settings as SettingsIcon, CheckCircle2, AlertCircle, RefreshCw
@@ -1035,7 +1035,7 @@ export default function Profile() {
     ];
 
     return (
-        <div className="profile-page mx-auto flex-1 w-full max-w-[1160px] pb-20 bg-transparent text-foreground relative">
+        <div className="profile-page mx-auto flex-1 w-full max-w-[1440px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 text-foreground relative space-y-6">
             {/* Toast feedback */}
             <AnimatePresence>
                 {toast && (
@@ -1059,38 +1059,73 @@ export default function Profile() {
                 )}
             </AnimatePresence>
 
-            {/* ── BANNER ─────────────────────────────────────────── */}
-            <div className="relative">
-                <div
-                    className="w-full h-52 relative overflow-hidden bg-transparent"
-                >
-                    {profile.bannerUrl && (
-                        <img src={resolveMediaUrl(profile.bannerUrl)} alt={`Banner de ${profile.username}`} className="w-full h-full object-cover" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+            {/* ── HERO PROFILE CARD (TWITTER / INSTAGRAM REDESIGN) ── */}
+            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card text-card-foreground shadow-xs transition-colors">
+                {/* ── BANNER (3:1 Panoramic Twitter/IG style) ── */}
+                <div className="w-full h-44 sm:h-52 md:h-64 relative overflow-hidden bg-slate-950 select-none">
+                    {profile.bannerUrl ? (
+                        <>
+                            <img
+                                src={resolveMediaUrl(profile.bannerUrl)}
+                                alt={`Banner de ${profile.username}`}
+                                className="w-full h-full object-cover"
+                                onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                            />
+                            <div
+                                className="absolute inset-0"
+                                style={{ background: 'linear-gradient(to bottom, transparent 50%, hsl(var(--card) / 0.85) 100%)' }}
+                            />
+                        </>
+                    ) : (
+                        <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-slate-950 via-[#06241c] to-slate-900">
+                            {/* Subtle financial mesh grid */}
+                            <div
+                                className="absolute inset-0 opacity-15"
+                                style={{
+                                    backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+                                    backgroundSize: '20px 20px',
+                                }}
+                            />
+                            {/* Radiant ambient glow */}
+                            <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
+                            <div className="absolute top-1/2 -right-20 w-80 h-80 rounded-full bg-teal-500/15 blur-3xl pointer-events-none" />
+                            {/* Vignette fade */}
+                            <div
+                                className="absolute inset-0"
+                                style={{ background: 'linear-gradient(to bottom, transparent 50%, hsl(var(--card) / 0.85) 100%)' }}
+                            />
+                        </div>
                     )}
-                    {profile.bannerUrl && <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 40%, hsl(var(--background) / 0.92) 100%)' }} />}
 
                     {isOwnProfile && (
                         <button
+                            type="button"
                             onClick={() => handleUploadImage('banner')}
                             disabled={uploadingImage === 'banner'}
-                            className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
-                            style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', backdropFilter: 'blur(10px)' }}
+                            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md bg-black/40 border border-white/20 text-white hover:bg-black/60"
                             title={finixUi("Cambiar imagen de banner")}
                         >
-                            {uploadingImage === 'banner' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" /> : <Camera className="w-3.5 h-3.5 text-emerald-400" />}
-                            <span>{uploadingImage === 'banner' ? 'Subiendo...' : 'Cambiar banner'}</span>
+                            {uploadingImage === 'banner' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" /> : <Camera className="w-3.5 h-3.5" />}
+                            <span className="hidden sm:inline">{uploadingImage === 'banner' ? 'Subiendo...' : 'Editar portada'}</span>
                         </button>
                     )}
-                    {profile.bannerUrl && <ImagePreviewButton src={resolveMediaUrl(profile.bannerUrl)} alt={`Banner de ${profile.username}`} label="Ver banner completo" className="absolute top-20 right-4 z-20" />}
+                    {profile.bannerUrl && (
+                        <ImagePreviewButton
+                            src={resolveMediaUrl(profile.bannerUrl)}
+                            alt={`Banner de ${profile.username}`}
+                            label="Ver portada completa"
+                            className="absolute top-12 sm:top-14 right-3 sm:right-4 z-20"
+                        />
+                    )}
                 </div>
 
-                {/* Avatar + action buttons row */}
-                <div className="px-6 relative -mt-16 flex items-end justify-between flex-wrap gap-4">
+                {/* ── AVATAR + ACTION BUTTONS ROW (Twitter/IG Inline Level) ── */}
+                <div className="px-4 sm:px-6 md:px-8 relative -mt-14 sm:-mt-16 md:-mt-18 flex items-end justify-between gap-3 pb-1">
                     {/* Avatar */}
-                    <div className="relative z-10">
+                    <div className="relative z-10 shrink-0">
                         <div
                             className={cn(
-                                "relative w-28 h-28 rounded-full border-4 overflow-hidden flex items-center justify-center text-3xl font-black group",
+                                "relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full border-4 overflow-hidden flex items-center justify-center text-3xl font-black group shadow-xl",
                                 isOwnProfile && "cursor-pointer"
                             )}
                             onClick={() => {
@@ -1099,10 +1134,10 @@ export default function Profile() {
                                 }
                             }}
                             style={{
-                                borderColor: 'hsl(var(--background))',
+                                borderColor: 'hsl(var(--card))',
                                 background: 'linear-gradient(135deg, hsl(158 100% 45%) 0%, hsl(158 100% 25%) 100%)',
                                 color: '#060a07',
-                                boxShadow: `0 0 32px hsl(158 100% 45% / 0.35)`,
+                                boxShadow: `0 8px 30px hsl(158 100% 45% / 0.25)`,
                             }}
                             title={isOwnProfile ? "Clic para cambiar foto de perfil" : undefined}
                         >
@@ -1116,18 +1151,20 @@ export default function Profile() {
                                 />
                             )}
                             {isOwnProfile && (
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 z-20 text-white text-[11px] font-bold">
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 z-20 text-white text-[11px] font-bold">
                                     {uploadingImage === 'avatar' ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
                                         <>
                                             <Camera className="w-5 h-5" />
-                                            <span>{""}<FinixUiText text={"Cambiar"} />{""}</span>
+                                            <span><FinixUiText text={"Cambiar"} /></span>
                                         </>
                                     )}
                                 </div>
                             )}
                         </div>
+
+                        {/* Camera quick button for owner */}
                         {isOwnProfile && (
                             <button
                                 type="button"
@@ -1136,41 +1173,19 @@ export default function Profile() {
                                     handleUploadImage('avatar');
                                 }}
                                 disabled={uploadingImage === 'avatar'}
-                                className="absolute top-[76px] right-0 w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-colors cursor-pointer z-30"
-                                style={{ background: PRIMARY, color: '#000', border: '2px solid hsl(var(--background))' }}
+                                className="absolute bottom-1 right-1 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer z-30 bg-emerald-600 text-white border-2 border-card"
                                 title={finixUi("Cambiar foto de perfil")}
                             >
-                                {uploadingImage === 'avatar' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+                                {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
                             </button>
-                        )}
-                        {/* Verified badge */}
-                        {profile.isVerified && (
-                            <div
-                                className={`absolute ${isOwnProfile ? 'top-0 right-0' : 'top-[84px] right-1'} w-7 h-7 rounded-full flex items-center justify-center z-10 shadow-md`}
-                                style={{ background: PRIMARY, border: '2px solid hsl(var(--background))' }}
-                                title={finixUi("Usuario verificado")}
-                            >
-                                <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
-                            </div>
                         )}
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex flex-wrap items-center gap-2 pb-2">
+                    {/* Action buttons (Twitter/IG style) */}
+                    <div className="flex items-center gap-2 pb-1">
                         {isOwnProfile ? (
                             isEditing ? (
                                 <>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleUploadImage('avatar')}
-                                        disabled={uploadingImage === 'avatar'}
-                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
-                                        style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
-                                        title={finixUi("Cambiar foto de perfil")}
-                                    >
-                                        {uploadingImage === 'avatar' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                                        <span>{uploadingImage === 'avatar' ? 'Subiendo...' : 'Cambiar foto'}</span>
-                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -1178,16 +1193,15 @@ export default function Profile() {
                                             setEditForm(profile || {});
                                         }}
                                         disabled={isSavingProfile}
-                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium border"
-                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}
+                                        className="h-9 px-4 rounded-full text-xs font-semibold border border-border/80 bg-background hover:bg-muted text-foreground transition-all cursor-pointer shadow-2xs"
                                     >
-                                        <X className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Cancelar"} />{" "}</button>
+                                        <FinixUiText text={"Cancelar"} />
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={handleSaveProfile}
                                         disabled={isSavingProfile}
-                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer disabled:opacity-75"
-                                        style={{ background: PRIMARY, color: '#000' }}
+                                        className="h-9 px-5 rounded-full text-xs font-bold cursor-pointer disabled:opacity-75 transition-all hover:scale-105 active:scale-95 shadow-xs bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5"
                                     >
                                         {isSavingProfile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                                         <span>{isSavingProfile ? 'Guardando...' : 'Guardar'}</span>
@@ -1196,85 +1210,61 @@ export default function Profile() {
                             ) : (
                                 <>
                                     <button
-                                        type="button"
-                                        onClick={() => handleUploadImage('avatar')}
-                                        disabled={uploadingImage === 'avatar'}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-md"
-                                        style={{ borderColor: PRIMARY_BRD, color: PRIMARY, background: PRIMARY_DIM }}
-                                        title={finixUi("Cambiar foto de perfil")}
+                                        onClick={() => setIsEditing(true)}
+                                        className="h-9 px-4 sm:px-5 rounded-full text-xs sm:text-sm font-bold border border-border/80 bg-background hover:bg-muted/70 text-foreground transition-all active:scale-95 shadow-2xs cursor-pointer flex items-center gap-1.5"
                                     >
-                                        {uploadingImage === 'avatar' ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Camera className="w-4 h-4" />
-                                        )}
-                                        <span>{uploadingImage === 'avatar' ? 'Subiendo...' : 'Cambiar foto de perfil'}</span>
+                                        <Edit className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span><FinixUiText text={"Editar perfil"} /></span>
                                     </button>
                                     <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:scale-105 active:scale-95"
-                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))', background: 'hsl(var(--secondary)/0.6)' }}
-                                    >
-                                        <Edit className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Editar perfil"} />{" "}</button>
-                                    <button
                                         onClick={() => navigate('/settings')}
-                                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-secondary/80"
-                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                        className="w-9 h-9 rounded-full border border-border/80 bg-background hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                                         title={finixUi("Ir a Configuración")}
                                     >
-                                        <SettingsIcon className="w-3.5 h-3.5" />
-                                        <span className="hidden sm:inline">{""}<FinixUiText text={"Configuración"} />{""}</span>
+                                        <SettingsIcon className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={handleShareProfile}
-                                        className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
-                                        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                        className="w-9 h-9 rounded-full border border-border/80 bg-background hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                                         title={finixUi("Compartir perfil")}
                                     >
-                                        <Share2 className="w-3.5 h-3.5" />
+                                        <Share2 className="w-4 h-4" />
                                     </button>
                                 </>
                             )
                         ) : (
                             <>
                                 <button
-                                    onClick={() => navigate(`/messages?user=${profile.id}`)}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:bg-secondary/80"
-                                    style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
-                                >
-                                    <MessageSquare className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Mensaje"} />{" "}</button>
-                                <button
                                     onClick={handleToggleFollow}
                                     disabled={isFollowSubmitting}
-                                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
-                                    style={{
-                                        background: isFollowing ? 'hsl(var(--secondary))' : PRIMARY,
-                                        color: isFollowing ? 'hsl(var(--muted-foreground))' : '#000',
-                                        border: isFollowing ? '1px solid hsl(var(--border))' : 'none',
-                                        opacity: isFollowSubmitting ? 0.75 : 1,
-                                    }}
+                                    className={cn(
+                                        "h-9 px-5 rounded-full text-xs sm:text-sm font-bold transition-all active:scale-95 shadow-xs cursor-pointer flex items-center gap-1.5",
+                                        isFollowing
+                                            ? "border border-border/80 bg-muted/60 text-foreground hover:bg-muted"
+                                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                    )}
                                 >
-                                    {isFollowSubmitting
-                                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {" "}<FinixUiText text={"Guardando"} />{""}</>
-                                        : isFollowing
-                                            ? <><Check className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Siguiendo"} />{""}</>
-                                            : <><UserPlus className="w-3.5 h-3.5" /> {" "}<FinixUiText text={"Seguir"} />{""}</>}
+                                    {isFollowSubmitting ? (
+                                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> <FinixUiText text={"Guardando"} /></>
+                                    ) : isFollowing ? (
+                                        <><Check className="w-3.5 h-3.5" /> <FinixUiText text={"Siguiendo"} /></>
+                                    ) : (
+                                        <><UserPlus className="w-3.5 h-3.5" /> <FinixUiText text={"Seguir"} /></>
+                                    )}
                                 </button>
                                 <button
                                     onClick={handleShareProfile}
-                                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
-                                    style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                    className="w-9 h-9 rounded-full border border-border/80 bg-background hover:bg-muted/70 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                                     title={finixUi("Compartir perfil")}
                                 >
-                                    <Share2 className="w-3.5 h-3.5" />
+                                    <Share2 className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setShowReportModal(true)}
-                                    className="flex items-center justify-center w-9 h-9 rounded-xl border transition-all hover:bg-secondary/80"
-                                    style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--secondary))' }}
+                                    className="w-9 h-9 rounded-full border border-border/80 bg-background hover:bg-muted/70 text-rose-500 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                                     title={finixUi("Reportar usuario")}
                                 >
-                                    <Flag className="w-4 h-4 text-orange-500" />
+                                    <Flag className="w-4 h-4" />
                                 </button>
                             </>
                         )}
@@ -1292,7 +1282,7 @@ export default function Profile() {
                 )}
 
                 {/* ── PROFILE INFO ──────────────────────────────── */}
-                <div className="px-6 mt-4">
+                <div className="px-5 sm:px-8 mt-3 pb-6">
                     {imageUploadError ? (
                         <div className="mb-3 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
                             {imageUploadError}
@@ -1310,8 +1300,8 @@ export default function Profile() {
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-bold text-foreground">{""}<FinixUiText text={"Foto de perfil"} />{""}</p>
-                                    <p className="text-[11px] text-muted-foreground">{""}<FinixUiText text={"Tu imagen pública visible para toda la comunidad"} />{""}</p>
+                                    <p className="text-xs font-bold text-foreground"><FinixUiText text={"Foto de perfil"} /></p>
+                                    <p className="text-[11px] text-muted-foreground"><FinixUiText text={"Tu imagen pública visible para toda la comunidad"} /></p>
                                 </div>
                             </div>
                             <button
@@ -1326,24 +1316,28 @@ export default function Profile() {
                         </div>
                     )}
 
-                    <div className="flex items-center gap-2 mb-1">
-                        {isEditing ? (
-                            <Input
-                                value={editForm.username || ''}
-                                onChange={e => setEditForm(p => ({ ...p, username: e.target.value }))}
-                                className="text-2xl font-black max-w-xs bg-transparent border-border text-foreground"
-                            />
-                        ) : (
-                            <h1 className="text-2xl font-black text-foreground">{profile.username}</h1>
-                        )}
-                        {profile.isVerified && (
-                            <VerifiedBadge isVerified={profile.isVerified} isInfluencer={profile.isInfluencer} username={profile.username} size="md" />
-                        )}
-                        {profile.isInfluencer && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'hsl(47 100% 50% / 0.15)', color: '#fbbf24', border: '1px solid hsl(47 100% 50% / 0.25)' }}>
-                                <Award className="w-3 h-3 inline mr-1" />{""}<FinixUiText text={"Influencer"} />{" "}</span>
-                        )}
-                        <InvestorStreakPill />
+                    <div className="flex flex-col gap-1 mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {isEditing ? (
+                                <Input
+                                    value={editForm.username || ''}
+                                    onChange={e => setEditForm(p => ({ ...p, username: e.target.value }))}
+                                    className="text-2xl font-black max-w-xs bg-transparent border-border text-foreground"
+                                />
+                            ) : (
+                                <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">{profile.username}</h1>
+                            )}
+                            {profile.isVerified && (
+                                <VerifiedBadge isVerified={profile.isVerified} isInfluencer={profile.isInfluencer} username={profile.username} size="md" />
+                            )}
+                            {profile.isInfluencer && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: 'hsl(47 100% 50% / 0.15)', color: '#fbbf24', border: '1px solid hsl(47 100% 50% / 0.25)' }}>
+                                    <Award className="w-3 h-3 inline mr-1" /><FinixUiText text={"Influencer"} />
+                                </span>
+                            )}
+                            <InvestorStreakPill />
+                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground font-medium">@{profile.username}</p>
                     </div>
 
                     {isEditing ? (
@@ -1351,10 +1345,13 @@ export default function Profile() {
                             value={editForm.title || ''}
                             placeholder={finixUi("ej: Value Investor & Macro Strategist")}
                             onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
-                            className="mb-2 bg-transparent border-white/20 text-gray-400 text-sm"
+                            className="mb-2 bg-transparent border-border text-foreground text-sm"
                         />
                     ) : profile.title && (
-                        <p className="text-sm mb-2 text-muted-foreground">{profile.title}</p>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-2 w-fit">
+                            <Briefcase className="w-3 h-3" />
+                            <span>{profile.title}</span>
+                        </div>
                     )}
 
                     {isEditing ? (
@@ -1363,271 +1360,277 @@ export default function Profile() {
                             placeholder={finixUi("Contá algo sobre vos...")}
                             onChange={e => setEditForm(p => ({ ...p, bio: e.target.value }))}
                             rows={2}
-                            className="mb-3 bg-transparent border-white/20 text-white text-sm"
+                            className="mb-3 bg-transparent border-border text-foreground text-sm"
                         />
                     ) : profile.bio && (
-                        <p className="text-sm mb-3 leading-relaxed text-foreground/75">
+                        <p className="text-sm sm:text-[14.5px] mb-3 leading-relaxed text-foreground/90 max-w-2xl whitespace-pre-line">
                             {profile.bio}
                         </p>
                     )}
 
-                    {/* Meta info */}
-                    <div className="flex flex-wrap items-center gap-4 text-xs mb-4 text-muted-foreground">
+                    {/* Meta info row (Twitter / Instagram style) */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground mb-3">
                         {profile.location && (
-                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{profile.location}</span>
+                            <span className="inline-flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                                {profile.location}
+                            </span>
                         )}
                         {profile.company && (
-                            <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{profile.company}</span>
+                            <span className="inline-flex items-center gap-1">
+                                <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                                {profile.company}
+                            </span>
                         )}
-                        <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {" "}<FinixUiText text={"Miembro desde"} />{" "}{profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : 'recientemente'}
+                        <span className="inline-flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                            <FinixUiText text={"Se unió en"} /> {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }) : 'recientemente'}
                         </span>
                         {profile.website && (
-                            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors" style={{ color: PRIMARY }}>
-                                <Globe className="w-3 h-3" />{profile.website.replace(/^https?:\/\//, '')}
+                            <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline font-medium">
+                                <Globe className="w-3.5 h-3.5" />
+                                {profile.website.replace(/^https?:\/\//, '')}
                             </a>
                         )}
                     </div>
 
                     {/* Social links */}
-                    <div className="flex gap-1 mb-5">
-                        {[
-                            { url: profile.linkedinUrl, Icon: Linkedin },
-                            { url: profile.twitterUrl, Icon: Twitter },
-                            { url: profile.youtubeUrl, Icon: Youtube },
-                            { url: profile.instagramUrl, Icon: Instagram },
-                        ].filter(s => s.url).map(({ url, Icon }, i) => (
-                            <a key={i} href={url!} target="_blank" rel="noopener noreferrer"
-                                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110 bg-secondary border border-border">
-                                <Icon className="w-3.5 h-3.5 text-gray-400" />
-                            </a>
-                        ))}
-                    </div>
-
-                    {/* ── STATS ROW ────────────────────────────── */}
-                    <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-3">
-                        {[
-                            { value: profile._count?.followedBy?.toLocaleString('es-AR') ?? (profile.isProfilePublic ? '0' : 'Privado'), label: 'Seguidores' },
-                            { value: profile._count?.following?.toLocaleString('es-AR') ?? (profile.isProfilePublic ? '0' : 'Privado'), label: 'Siguiendo' },
-                            {
-                                value: formatSignedPercentage(profile.totalReturn, 1),
-                                label: 'Retorno Total',
-                                tone:
-                                    typeof profile.totalReturn === 'number' && Number.isFinite(profile.totalReturn)
-                                        ? profile.totalReturn >= 0
-                                            ? 'positive'
-                                            : 'negative'
-                                        : 'neutral',
-                            },
-                        ].map((s, i) => {
-                            const connectionType: ConnectionsListType | null = i === 0 ? 'followers' : i === 1 ? 'following' : null;
-                            const cardStyle = {
-                                background:
-                                    s.tone === 'positive'
-                                        ? 'linear-gradient(135deg, hsl(158 100% 45% / 0.12) 0%, hsl(158 100% 45% / 0.04) 100%)'
-                                        : s.tone === 'negative'
-                                            ? 'linear-gradient(135deg, hsl(0 90% 58% / 0.12) 0%, hsl(0 90% 58% / 0.04) 100%)'
-                                            : 'hsl(var(--secondary) / 0.5)',
-                                border:
-                                    s.tone === 'positive'
-                                        ? `1px solid ${PRIMARY_BRD}`
-                                        : s.tone === 'negative'
-                                            ? '1px solid hsl(0 90% 58% / 0.2)'
-                                            : '1px solid hsl(var(--border))',
-                            };
-                            const content = (
-                                <>
-                                    <div
-                                        className="mb-0.5 text-xl font-black"
-                                        style={{
-                                            color:
-                                                s.tone === 'positive'
-                                                    ? PRIMARY
-                                                    : s.tone === 'negative'
-                                                        ? 'hsl(0 90% 58%)'
-                                                        : 'hsl(var(--foreground))',
-                                        }}
-                                    >
-                                        {s.value}
-                                    </div>
-                                    <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{s.label}</div>
-                                </>
-                            );
-
-                            return connectionType ? (
-                                <button
-                                    key={s.label}
-                                    type="button"
-                                    onClick={() => {
-                                        setConnectionsType(connectionType);
-                                        setConnectionsOpen(true);
-                                    }}
-                                    className="rounded-2xl p-4 text-center transition-colors hover:border-primary/40 hover:bg-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                                    style={cardStyle}
-                                    aria-label={`Ver la lista de ${s.label.toLowerCase()} de @${profile.username}`}
-                                >
-                                    {content}
-                                </button>
-                            ) : (
-                                <div key={s.label} className="rounded-2xl p-4 text-center" style={cardStyle}>
-                                    {content}
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    {(profile.bioLong || profile.yearsExperience || specializations.length > 0 || certifications.length > 0) && (
-                        <div className="grid gap-4 mb-6 md:grid-cols-2">
-                            {profile.bioLong && (
-                                <div className="rounded-2xl p-5 md:col-span-2" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">{""}<FinixUiText text={"Sobre el perfil"} />{""}</p>
-                                    <p className="text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{profile.bioLong}</p>
-                                </div>
-                            )}
-
-                            {profile.yearsExperience !== undefined && profile.yearsExperience !== null && (
-                                <div className="rounded-2xl p-5" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-2">{""}<FinixUiText text={"Experiencia"} />{""}</p>
-                                    <p className="text-lg font-black text-foreground">{profile.yearsExperience} {" "}<FinixUiText text={"años"} />{""}</p>
-                                    <p className="text-xs mt-1 text-muted-foreground">{""}<FinixUiText text={"Trayectoria declarada en mercados"} />{""}</p>
-                                </div>
-                            )}
-
-                            {specializations.length > 0 && (
-                                <div className="rounded-2xl p-5" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">{""}<FinixUiText text={"Especializaciones"} />{""}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {specializations.map((item) => (
-                                            <span
-                                                key={item}
-                                                className="px-2.5 py-1 rounded-full text-xs font-semibold"
-                                                style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}
-                                            >
-                                                {item}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {certifications.length > 0 && (
-                                <div className="rounded-2xl p-5 md:col-span-2" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                    <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">{""}<FinixUiText text={"Certificaciones"} />{""}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {certifications.map((item) => (
-                                            <span
-                                                key={item}
-                                                className="px-2.5 py-1 rounded-full text-xs font-semibold"
-                                                style={{ background: 'hsl(var(--secondary))', color: 'hsl(var(--foreground))', border: '1px solid hsl(var(--border))' }}
-                                            >
-                                                {item}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                    {[
+                        { url: profile.linkedinUrl, Icon: Linkedin, title: 'LinkedIn' },
+                        { url: profile.twitterUrl, Icon: Twitter, title: 'Twitter' },
+                        { url: profile.youtubeUrl, Icon: Youtube, title: 'YouTube' },
+                        { url: profile.instagramUrl, Icon: Instagram, title: 'Instagram' },
+                    ].some(s => s.url) && (
+                        <div className="flex items-center gap-2 mb-3">
+                            {[
+                                { url: profile.linkedinUrl, Icon: Linkedin, title: 'LinkedIn' },
+                                { url: profile.twitterUrl, Icon: Twitter, title: 'Twitter' },
+                                { url: profile.youtubeUrl, Icon: Youtube, title: 'YouTube' },
+                                { url: profile.instagramUrl, Icon: Instagram, title: 'Instagram' },
+                            ].filter(s => s.url).map(({ url, Icon, title }, i) => (
+                                <a key={i} href={url!} target="_blank" rel="noopener noreferrer"
+                                    title={title}
+                                    className="w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 bg-muted/60 hover:bg-muted border border-border/80 text-muted-foreground hover:text-foreground">
+                                    <Icon className="w-3.5 h-3.5" />
+                                </a>
+                            ))}
                         </div>
                     )}
 
-                    {/* ── ACTIVOS DESTACADOS ───────────────────── */}
-                    <div className="mb-6">
+                    {/* ── STATS ROW (Twitter / Instagram style) ── */}
+                    <div className="flex flex-wrap items-center gap-5 sm:gap-7 py-3 my-2 border-y border-border/60 text-sm">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setConnectionsType('following');
+                                setConnectionsOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer group text-left"
+                            aria-label={`Ver la lista de siguiendo de @${profile.username}`}
+                        >
+                            <span className="font-extrabold text-foreground group-hover:text-primary transition-colors">
+                                {profile._count?.following?.toLocaleString('es-AR') ?? (profile.isProfilePublic ? '0' : '—')}
+                            </span>
+                            <span className="text-muted-foreground text-xs sm:text-sm">Siguiendo</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setConnectionsType('followers');
+                                setConnectionsOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity cursor-pointer group text-left"
+                            aria-label={`Ver la lista de seguidores de @${profile.username}`}
+                        >
+                            <span className="font-extrabold text-foreground group-hover:text-primary transition-colors">
+                                {profile._count?.followedBy?.toLocaleString('es-AR') ?? (profile.isProfilePublic ? '0' : '—')}
+                            </span>
+                            <span className="text-muted-foreground text-xs sm:text-sm">Seguidores</span>
+                        </button>
+
+                        <div className="inline-flex items-center gap-1.5 text-left">
+                            <span className="font-extrabold text-foreground">
+                                {profile._count?.posts ?? profilePosts.length}
+                            </span>
+                            <span className="text-muted-foreground text-xs sm:text-sm">Publicaciones</span>
+                        </div>
+
+                        {typeof profile.totalReturn === 'number' && Number.isFinite(profile.totalReturn) && (
+                            <div className="sm:ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors"
+                                 style={{
+                                     background: profile.totalReturn >= 0 ? 'hsl(158 100% 45% / 0.1)' : 'hsl(0 90% 58% / 0.1)',
+                                     borderColor: profile.totalReturn >= 0 ? 'hsl(158 100% 45% / 0.25)' : 'hsl(0 90% 58% / 0.25)',
+                                     color: profile.totalReturn >= 0 ? 'hsl(158 100% 40%)' : 'hsl(0 90% 58%)'
+                                 }}
+                            >
+                                <TrendingUp className="w-3.5 h-3.5" />
+                                <span>Rendimiento: <strong>{formatSignedPercentage(profile.totalReturn, 1)}</strong></span>
+                            </div>
+                        )}
+                    </div>
+
+                    {(profile.bioLong || profile.yearsExperience || specializations.length > 0 || certifications.length > 0) && (
+                        <div className="space-y-3 my-4 p-3.5 rounded-xl bg-muted/20 border border-border/60">
+                            {profile.bioLong && (
+                                <div>
+                                    <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-1"><FinixUiText text={"Sobre el perfil"} /></p>
+                                    <p className="text-xs sm:text-sm leading-relaxed text-foreground/80 whitespace-pre-wrap">{profile.bioLong}</p>
+                                </div>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                {profile.yearsExperience !== undefined && profile.yearsExperience !== null && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-muted border border-border/80 text-foreground">
+                                        <Award className="w-3.5 h-3.5 text-primary" />
+                                        {profile.yearsExperience} <FinixUiText text={"años de experiencia"} />
+                                    </span>
+                                )}
+
+                                {specializations.map((item) => (
+                                    <span
+                                        key={item}
+                                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                    >
+                                        {item}
+                                    </span>
+                                ))}
+
+                                {certifications.map((item) => (
+                                    <span
+                                        key={item}
+                                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-muted border border-border/80 text-foreground"
+                                    >
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── ACTIVOS DESTACADOS (INSTAGRAM STORY HIGHLIGHTS STYLE) ── */}
+                    <div className="mt-4 mb-2">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                                {" "}<FinixUiText text={"Activos Destacados"} />{" "}</h3>
-                            {isOwnProfile && allPinnedTickers.length < 4 && (
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                    <Star className="w-3.5 h-3.5 text-amber-500" />
+                                    <FinixUiText text={"Activos Destacados"} />
+                                </h3>
+                                <span className="text-[10.5px] px-2 py-0.5 rounded-full bg-muted font-bold text-muted-foreground">
+                                    {pinnedAssets.length}/4
+                                </span>
+                            </div>
+                            {isOwnProfile && allPinnedTickers.length < 4 && pinnedAssets.length > 0 && (
                                 <button
                                     onClick={() => setShowAssetPicker(true)}
-                                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
-                                    style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}
+                                    className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
                                 >
-                                    <Plus className="w-3 h-3" /> {" "}<FinixUiText text={"Agregar"} />{" "}</button>
+                                    <Plus className="w-3 h-3" /> <FinixUiText text={"Agregar"} />
+                                </button>
                             )}
                         </div>
 
                         {pinnedAssets.length === 0 ? (
-                            <div className="rounded-2xl p-6 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px dashed hsl(var(--border))' }}>
-                                <Star className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-xs text-gray-600">
-                                    {isOwnProfile ? 'Seleccioná hasta 4 activos favoritos para mostrar en tu perfil' : 'Sin activos destacados'}
-                                </p>
-                                {isOwnProfile && (
-                                    <button
-                                        onClick={() => setShowAssetPicker(true)}
-                                        className="mt-3 px-4 py-1.5 rounded-xl text-xs font-semibold"
-                                        style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}
-                                    >
-                                        {" "}<FinixUiText text={"+ Agregar activo"} />{" "}</button>
+                            <div className="flex items-center gap-4 p-4 rounded-xl border border-dashed border-border/80 bg-muted/15">
+                                {isOwnProfile ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAssetPicker(true)}
+                                            className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
+                                        >
+                                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-border group-hover:border-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                                                <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                            </div>
+                                            <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">Agregar</span>
+                                        </button>
+                                        <div className="min-w-0">
+                                            <p className="text-xs sm:text-sm font-bold text-foreground">Destacá tus activos favoritos</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Mostrá en tu perfil las acciones, CEDEARs o bonos que seguís o tenés en cartera.</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground italic">El usuario aún no seleccionó activos destacados.</p>
                                 )}
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto pb-2 scrollbar-none">
                                 {pinnedAssets.map((asset) => {
                                     const isUp = asset.changePercent >= 0;
                                     return (
-                                        <motion.div
+                                        <div
                                             key={asset.ticker}
-                                            layout
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className="relative group rounded-2xl p-3"
-                                            style={{
-                                                background: 'hsl(var(--secondary) / 0.5)',
-                                                border: '1px solid hsl(var(--border))',
-                                            }}
+                                            className="flex flex-col items-center gap-1.5 shrink-0 group relative cursor-pointer"
                                         >
-                                            {isOwnProfile && (
-                                                <button
-                                                    onClick={() => removePinnedAsset(asset.ticker)}
-                                                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded-md"
-                                                    style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}
-                                                >
-                                                    <X className="w-3 h-3" />
-                                                </button>
-                                            )}
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <SymbolLogo symbol={asset.ticker} size={20} />
-                                                <span className="text-xs font-black text-foreground">{asset.ticker}</span>
+                                            {/* Instagram Story Gradient Ring */}
+                                            <div className="relative p-[2px] rounded-full bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-300 shadow-xs group-hover:scale-105 transition-transform duration-200">
+                                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-card p-1 flex items-center justify-center overflow-hidden border border-background">
+                                                    <SymbolLogo symbol={asset.ticker} size={32} />
+                                                </div>
+                                                {isOwnProfile && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            removePinnedAsset(asset.ticker);
+                                                        }}
+                                                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-rose-600 cursor-pointer z-10"
+                                                        title="Quitar activo"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                )}
                                             </div>
-                                            <div className="text-xs text-gray-500 truncate mb-1">{asset.name}</div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-bold text-foreground">
-                                                    {asset.price > 0 ? `$${asset.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
-                                                </span>
-                                                <span
-                                                    className="px-1.5 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 opacity-90"
-                                                    style={{
-                                                        background: isUp ? 'rgba(0,230,118,0.12)' : 'rgba(239,68,68,0.12)',
-                                                        color: isUp ? PRIMARY : '#ef4444',
-                                                    }}
-                                                >
-                                                    <span>{isUp ? '+' : '-'}${(Math.abs(asset.change) ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                    <span className="opacity-80 text-[9px]">({isUp ? '+' : ''}{(asset.changePercent ?? 0).toFixed(2)}%)</span>
-                                                </span>
+                                            <div className="text-center">
+                                                <p className="text-xs font-black text-foreground tracking-tight">${asset.ticker}</p>
+                                                <p className={cn(
+                                                    "text-[10px] font-bold",
+                                                    isUp ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                                )}>
+                                                    {isUp ? '+' : ''}{(asset.changePercent ?? 0).toFixed(1)}%
+                                                </p>
                                             </div>
-                                        </motion.div>
+                                        </div>
                                     );
                                 })}
+
+                                {isOwnProfile && allPinnedTickers.length < 4 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAssetPicker(true)}
+                                        className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
+                                    >
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-border group-hover:border-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                                            <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                                        </div>
+                                        <span className="text-[11px] font-semibold text-muted-foreground group-hover:text-foreground">Nuevo</span>
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* ── TABS ──────────────────────────────────────── */}
-                <div className="desktop-profile-tabs px-6 border-b border-border">
-                    <div className="desktop-filter-bar flex">
+            {/* ── TABS & TAB CONTENT SECTION ──────────────────────── */}
+            <div className="rounded-2xl border border-border/80 bg-card text-card-foreground shadow-xs overflow-hidden transition-colors">
+                {/* ── TABS HEADER ──────────────────────────────────────── */}
+                <div className="desktop-profile-tabs px-5 sm:px-8 border-b border-border/80 bg-muted/20">
+                    <div className="desktop-filter-bar flex gap-2">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 aria-pressed={activeTab === tab.id}
-                                className="relative flex items-center gap-1.5 px-5 py-3 text-sm font-semibold transition-colors"
+                                className="relative flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
                                 style={{ color: activeTab === tab.id ? PRIMARY : 'hsl(var(--muted-foreground))' }}
                             >
                                 {'icon' in tab && tab.icon}
                                 {<FinixUiText text={tab.label} />}
                                 {'count' in tab && tab.count !== undefined && (
-                                    <span className="text-xs opacity-60">({tab.count})</span>
+                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted font-bold opacity-80">
+                                        {tab.count}
+                                    </span>
                                 )}
                                 {activeTab === tab.id && (
                                     <motion.div
@@ -1642,7 +1645,7 @@ export default function Profile() {
                 </div>
 
                 {/* ── TAB CONTENT ───────────────────────────────── */}
-                <div className="px-6 py-6">
+                <div className="p-5 sm:p-8">
                     <AnimatePresence mode="wait">
                         {activeTab === 'posts' && (
                             <motion.div key="posts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
@@ -1690,7 +1693,7 @@ export default function Profile() {
                                         </div>
                                     ) : (
                                         <div className="rounded-2xl py-12 px-6 text-center border border-border/40 bg-card/20 space-y-3">
-                                            <MessageSquare className="w-10 h-10 mx-auto opacity-30 text-primary" />
+                                            <FileText className="w-10 h-10 mx-auto opacity-30 text-primary" />
                                             <h4 className="text-base font-bold text-foreground">
                                                 {isOwnProfile ? 'Todavía no publicaste nada' : 'Sin publicaciones todavía'}
                                             </h4>
@@ -1843,41 +1846,6 @@ export default function Profile() {
                         </motion.div>
                     )}
                 </div>
-
-                {/* Specializations & Certifications */}
-                {(specializations.length > 0 || certifications.length > 0) && (
-                    <div className="px-6 pb-6 grid md:grid-cols-2 gap-4">
-                        {specializations.length > 0 && (
-                            <div className="rounded-2xl p-4" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
-                                    <BarChart3 className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
-                                    {" "}<FinixUiText text={"Especializaciones"} />{" "}</h4>
-                                <div className="flex flex-wrap gap-2">
-                                    {specializations.map((s, i) => (
-                                        <span key={i} className="px-3 py-1 rounded-xl text-xs font-semibold" style={{ background: PRIMARY_DIM, color: PRIMARY, border: `1px solid ${PRIMARY_BRD}` }}>
-                                            {s}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                        {certifications.length > 0 && (
-                            <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3 flex items-center gap-2">
-                                    <Award className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
-                                    {" "}<FinixUiText text={"Certificaciones"} />{" "}</h4>
-                                <div className="space-y-2">
-                                    {certifications.map((c, i) => (
-                                        <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Check className="w-4 h-4 flex-shrink-0" style={{ color: PRIMARY }} />
-                                            {c}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
             </div>
 
             {/* ── ASSET PICKER MODAL ─────────────────────────── */}

@@ -20,7 +20,6 @@ import {
     Loader2,
     Sun,
     Moon,
-    Users,
     Newspaper,
     Briefcase,
     PanelLeftClose,
@@ -34,7 +33,7 @@ import {
     Bookmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { hasCommunityAccess, isProUser, useAuthStore } from '../stores/authStore';
+import { isProUser, useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { NOTIFICATION_HISTORY_DAYS, type NotificationItem, groupNotificationsByDay } from '../lib/notifications';
@@ -184,7 +183,6 @@ export function Sidebar() {
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const { theme, setTheme, sidebarCollapsed: collapsed, toggleSidebar: setCollapsed } = usePreferencesStore();
     const [hov, setHov] = useState<string | null>(null);
-    const [unreadMsgs, setUnreadMsgs] = useUnreadCount('messages');
     const [unreadNotifs, setUnreadNotifs] = useUnreadCount('notifications');
     const [pinnedState, setPinnedState] = useState<{ owner?: string; items: PinnedAsset[] }>({ items: [] });
     const pinnedAssets = pinnedState.owner === user?.id ? pinnedState.items : [];
@@ -264,13 +262,6 @@ export function Sidebar() {
 
 
 
-    /* ── Poll unread messages ─────────────────────────────────── */
-
-
-    useEffect(() => {
-        if (location.pathname === '/messages') setUnreadMsgs(0);
-    }, [location.pathname, setUnreadMsgs]);
-
     /* ── Fetch pinned assets ──────────────────────────────────── */
     useEffect(() => {
         if (collapsed || !window.matchMedia('(min-width: 1024px)').matches) return;
@@ -311,8 +302,6 @@ export function Sidebar() {
             links: [
                 { name: ui("Inicio"), path: '/dashboard', icon: LayoutDashboard, badge: 0 },
                 { name: ui("Explorar"), path: '/explore', icon: Compass, badge: 0 },
-                ...(hasCommunityAccess(user) ? [{ name: ui("Comunidades"), path: '/comunidades', icon: Users, badge: 0 }] : []),
-                { name: ui("Mensajes"), path: '/messages', icon: MessageSquare, badge: unreadMsgs },
             ],
         },
         {

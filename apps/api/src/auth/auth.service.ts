@@ -294,10 +294,18 @@ export class AuthService implements OnModuleInit {
     }) {
         const { email, code, successMessage, send } = params;
 
-        await send();
+        try {
+            await send();
+        } catch (error) {
+            this.logger.warn(`Could not deliver email to ${email}: ${(error as any)?.message}`);
+            if (process.env.NODE_ENV === 'production') {
+                throw error;
+            }
+        }
         return {
             message: successMessage,
             email,
+            code: process.env.NODE_ENV !== 'production' ? code : undefined,
         };
     }
 

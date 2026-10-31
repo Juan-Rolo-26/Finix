@@ -41,16 +41,29 @@ function safePage(pathname: string) {
     return allowed.has(page) ? page : '/dashboard';
 }
 
+function safeRandomUUID(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        try {
+            return crypto.randomUUID();
+        } catch {}
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
+}
+
 function identity(accountId:string) {
     const now = Date.now();
     let visitorId = localStorage.getItem(VISITOR_KEY);
     if (!visitorId) {
-        visitorId = crypto.randomUUID();
+        visitorId = safeRandomUUID();
         localStorage.setItem(VISITOR_KEY, visitorId);
     }
     let session: { id: string; lastSeen: number; accountId?:string } | null = null;
     try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch {}
-    if (!session?.id || session.accountId!==accountId || now - session.lastSeen > SESSION_TIMEOUT) session = { id: crypto.randomUUID(), lastSeen: now,accountId };
+    if (!session?.id || session.accountId!==accountId || now - session.lastSeen > SESSION_TIMEOUT) session = { id: safeRandomUUID(), lastSeen: now,accountId };
     session.lastSeen = now;
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return { visitorId, sessionId: session.id };

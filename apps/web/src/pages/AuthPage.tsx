@@ -1,9 +1,9 @@
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 
 import { normalizeRedirectTarget } from '@/lib/auth-navigation';
@@ -12,6 +12,7 @@ import { apiFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import AuthField from '@/components/auth/AuthField';
 import BackButton from '@/components/BackButton';
+import { saveCookieConsent } from '@/components/CookieConsent';
 import { useTranslation } from '@/i18n';
 import {
     ArrowRight,
@@ -42,13 +43,26 @@ export default function AuthPage() {
     const t = useTranslation();
     const freeAccess = usePlatformAccessStore(state => state.freeAccessEnabled);
     const [searchParams] = useSearchParams();
-    const mode = searchParams.get('mode');
+    const location = useLocation();
+    const mode = searchParams.get('mode') || searchParams.get('tab') || searchParams.get('view');
+    const isRegisterRoute = location.pathname === '/register' || mode === 'register' || mode === 'signup';
     const redirectTarget = normalizeRedirectTarget(searchParams.get('redirect') || searchParams.get('returnUrl'));
     const planRequested = searchParams.get('plan');
     const callbackReason = searchParams.get('reason');
     const callbackMessage = searchParams.get('message');
 
-    const [view, setView] = useState<AuthView>(mode === 'register' ? 'register' : 'login');
+    const [view, setView] = useState<AuthView>(isRegisterRoute ? 'register' : 'login');
+
+    useEffect(() => {
+        const nextMode = searchParams.get('mode') || searchParams.get('tab') || searchParams.get('view');
+        if (location.pathname === '/register' || nextMode === 'register' || nextMode === 'signup') {
+            setView('register');
+        } else if (nextMode === 'forgot') {
+            setView('forgot');
+        } else if (nextMode === 'login' || location.pathname === '/login') {
+            setView('login');
+        }
+    }, [searchParams, location.pathname]);
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [authError, setAuthError] = useState(
@@ -61,7 +75,7 @@ export default function AuthPage() {
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [infoMessage, setInfoMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [email, setEmail] = useState('');
+    const [email, setEmail] = useState(() => searchParams.get('email') || '');
     const [password, setPassword] = useState('');
     const [username, setUsername] = useState('');
     const [forgotCodeStep, setForgotCodeStep] = useState(false);
@@ -71,6 +85,7 @@ export default function AuthPage() {
     const [forgotNewPassword, setForgotNewPassword] = useState('');
     const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
     const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(true);
 
     const { } = useAuthStore();
     const navigate = useNavigate();
@@ -128,10 +143,17 @@ export default function AuthPage() {
     };
 
     const loginGoogle = async () => {
+        if (view === 'register' && !acceptedTerms) {
+            setAuthError('Debés aceptar los Términos del Servicio y la Política de Cookies para registrarte.');
+            return;
+        }
+
         if (view === 'register' && username.trim().length < 3) {
             setAuthError('Por favor ingresá un nombre de usuario (mínimo 3 letras) en el campo de arriba antes de registrarte con Google.');
             return;
         }
+
+        saveCookieConsent();
 
         if (view === 'register') {
             localStorage.setItem('pendingUsername', username.trim());
@@ -165,33 +187,55 @@ export default function AuthPage() {
 
     const handleLogin = async (): Promise<boolean> => {
         const normalizedEmail = email.trim().toLowerCase();
-        if (!loginCodeStep) {
-            const response = await apiFetch('/auth/login/request-code', {
+
+        // 1. If user is in the verification code step, verify the code
+        if (loginCodeStep) {
+            const response = await apiFetch('/auth/login/verify-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: normalizedEmail, code: loginCode }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !data?.token || !data?.user) {
+                throw new Error(data?.message || 'El código de verificación es incorrecto o venció.');
+            }
+            useAuthStore.getState().login(data.token, data.user, data.refreshToken);
+            return true;
+        }
+
+        // 2. Direct login with email and password
+        const response = await apiFetch('/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail, password }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && data?.token && data?.user) {
+            saveCookieConsent();
+            useAuthStore.getState().login(data.token, data.user, data.refreshToken);
+            return true;
+        }
+
+        // If backend explicitly requires 2FA or code verification:
+        if (data?.require2fa || data?.requiresCode) {
+            const codeResp = await apiFetch('/auth/login/request-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: normalizedEmail, password }),
             });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data?.message || 'No se pudo iniciar sesión.');
-            setLoginCodeStep(true);
-            setSuccessMessage('Te enviamos un código de verificación a tu correo.');
-            return false;
+            if (codeResp.ok) {
+                setLoginCodeStep(true);
+                setSuccessMessage('Te enviamos un código de verificación a tu correo.');
+                return false;
+            }
         }
 
-        const response = await apiFetch('/auth/login/verify-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: normalizedEmail, code: loginCode }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data?.token || !data?.user) {
-            throw new Error(data?.message || 'El código de verificación es incorrecto o venció.');
-        }
-        useAuthStore.getState().login(data.token, data.user, data.refreshToken);
-        return true;
+        throw new Error(data?.message || 'El correo o la contraseña no son correctos.');
     };
 
     const handleRegister = async () => {
+        saveCookieConsent();
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedUsername = username.trim();
 
@@ -311,6 +355,10 @@ export default function AuthPage() {
         }
         if (view === 'register' && username.trim().length < 3) {
             setAuthError('El nombre de usuario debe tener al menos 3 caracteres.');
+            return;
+        }
+        if (view === 'register' && !acceptedTerms) {
+            setAuthError('Debés aceptar los Términos del Servicio y la Política de Cookies para registrarte.');
             return;
         }
         if (view === 'login' && !loginCodeStep && password.length < 8) {
@@ -530,6 +578,48 @@ export default function AuthPage() {
                                         </button>
                                     </div>
                                 ) : null}
+
+                                {view === 'register' && (
+                                    <div className="flex items-start gap-2.5 pt-1 pb-1 text-xs select-none">
+                                        <input
+                                            type="checkbox"
+                                            id="auth-accept-terms-cookies"
+                                            checked={acceptedTerms}
+                                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                            className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer accent-emerald-600 shrink-0"
+                                            required
+                                        />
+                                        <label htmlFor="auth-accept-terms-cookies" className="cursor-pointer leading-relaxed text-muted-foreground">
+                                            Acepto los{' '}
+                                            <Link to="/terms" target="_blank" className="text-primary hover:underline font-semibold">
+                                                Términos del Servicio
+                                            </Link>
+                                            , la{' '}
+                                            <Link to="/privacy" target="_blank" className="text-primary hover:underline font-semibold">
+                                                Privacidad
+                                            </Link>{' '}
+                                            y la{' '}
+                                            <Link to="/cookies" target="_blank" className="text-primary hover:underline font-semibold">
+                                                Política de Cookies
+                                            </Link>
+                                            .
+                                        </label>
+                                    </div>
+                                )}
+
+                                {view === 'login' && !loginCodeStep && (
+                                    <div className="text-[11.5px] text-muted-foreground/80 text-center pt-0.5 pb-0.5">
+                                        Al continuar, aceptás los{' '}
+                                        <Link to="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                                            Términos
+                                        </Link>{' '}
+                                        y el uso de{' '}
+                                        <Link to="/cookies" target="_blank" className="text-primary hover:underline font-medium">
+                                            Cookies
+                                        </Link>
+                                        .
+                                    </div>
+                                )}
 
                                 <button
                                     type="submit"

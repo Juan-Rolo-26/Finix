@@ -2,22 +2,22 @@ import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { hasCommunityAccess, hasCommunityCreatorAccess, useAuthStore } from './stores/authStore';
+import { useAuthStore } from './stores/authStore';
 import { usePreferencesStore } from './stores/preferencesStore';
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'));
 const InformationLayout = lazy(() => import('./layouts/InformationLayout'));
 import InstallBanner from './components/InstallBanner';
 import SiteAnalyticsTracker from './components/SiteAnalyticsTracker';
-const CookieConsent = lazy(() => import('./components/CookieConsent'));
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { usePlatformAccessStore } from './stores/platformAccessStore';
 import { isWatchlistEnabled, isEducationEnabled } from './lib/featureFlags';
+import FinixHome from './pages/FinixHome';
 
 // ─── Lazy Loaded Pages ────────────────────────────────────────────────────────
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const CommunityInvite = lazy(() => import('./pages/CommunityInvite'));
 const PostDetail = lazy(() => import('./pages/PostDetail'));
 const SocialDashboard = lazy(() => import('./pages/Dashboard'));
 const FinancialLaboratory = lazy(() => import('./pages/FinancialLaboratory'));
@@ -37,12 +37,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const ProUpgrade = lazy(() => import('./pages/ProUpgrade'));
 const Explore = lazy(() => import('./pages/Explore'));
-const Messages = lazy(() => import('./pages/Messages'));
-const Comunidades = lazy(() => import('./pages/Comunidades'));
 const PaymentResult = lazy(() => import('./pages/PaymentResult'));
-const CommunityDetail = lazy(() => import('./pages/CommunityDetail'));
-const CommunityCreate = lazy(() => import('./pages/CommunityCreate'));
-const CommunityAdmin = lazy(() => import('./pages/CommunityAdmin'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
 const Pricing = lazy(() => import('./pages/Pricing'));
@@ -110,24 +105,6 @@ function AccessGuard({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
-function RequireCommunityAccess({
-    children,
-    creatorOnly = false,
-}: {
-    children: React.ReactNode;
-    creatorOnly?: boolean;
-}) {
-    const { user } = useAuthStore();
-
-    const accessLoaded = usePlatformAccessStore(state => state.loaded);
-    if (!accessLoaded) return <div role="status" className="p-8 text-center text-muted-foreground">{""}<FinixUiText text={"Cargando acceso a comunidades…"} />{""}</div>;
-    if (creatorOnly ? !hasCommunityCreatorAccess(user) : !hasCommunityAccess(user)) {
-        return <Navigate to={creatorOnly ? '/creator' : '/settings/plan'} replace />;
-    }
-
-    return <>{children}</>;
-}
-
 function CanonicalPageRedirect({ pathname = '/pro' }: { pathname?: string }) {
     const location = useLocation();
     return <Navigate to={{ pathname, search: location.search, hash: location.hash }} replace />;
@@ -153,25 +130,35 @@ export default function App() {
         <>
             <InstallBanner />
             <SiteAnalyticsTracker />
-            <Suspense fallback={null}><CookieConsent /></Suspense>
             <ThemeApplier />
-            <Suspense
-                fallback={
-                    <div className="flex h-screen w-screen items-center justify-center bg-background">
-                        <div
-                            className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin"
-                            role="status"
-                            aria-label={finixUi("Cargando")}
-                        />
-                    </div>
-                }
-            >
-                <Routes>
-                    {/* Root route: Go directly to platform dashboard instead of old login screen */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <ErrorBoundary>
+                <Suspense
+                    fallback={
+                        <div className="flex h-screen w-screen items-center justify-center bg-background">
+                            <div
+                                className="h-10 w-10 rounded-full border-2 border-primary border-t-transparent animate-spin"
+                                role="status"
+                                aria-label={finixUi("Cargando")}
+                            />
+                        </div>
+                    }
+                >
+                    <Routes>
+                    {/* Root route: Finix Rava-inspired financial portal home */}
+                    <Route path="/" element={<FinixHome />} />
+                    <Route path="/home" element={<FinixHome />} />
 
                     <Route
                         path="/login"
+                        element={
+                            !token && !user
+                                ? <AuthPage />
+                                : <Navigate to="/dashboard" replace />
+                        }
+                    />
+
+                    <Route
+                        path="/register"
                         element={
                             !token && !user
                                 ? <AuthPage />
@@ -223,7 +210,7 @@ export default function App() {
                         <Route path="/social" element={<SocialDashboard />} />
                         <Route path="/posts/:id" element={<PostDetail />} />
                         <Route path="/post/:id" element={<PostDetail />} />
-                        <Route path="/comunidades/invite/:code" element={<CommunityInvite />} />
+                        <Route path="/comunidades/invite/:code" element={<Navigate to="/" replace />} />
                         <Route path="/explore" element={<Explore />} />
                         <Route path="/market" element={<Markets />} />
                         {isWatchlistEnabled() ? (
@@ -272,15 +259,10 @@ export default function App() {
                         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
                         <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
                         <Route path="/settings/plan" element={<ProUpgrade />} />
-                        <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
+                        <Route path="/messages" element={<Navigate to="/" replace />} />
                         <Route path="/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
-                        <Route path="/comunidades" element={<RequireAuth><RequireCommunityAccess><Comunidades /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/crear" element={<RequireAuth><RequireCommunityAccess creatorOnly><CommunityCreate /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id" element={<RequireAuth><RequireCommunityAccess><CommunityDetail /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/admin" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/moderacion" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/admin/finanzas" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
-                        <Route path="/comunidades/:id/admin/configuracion" element={<RequireAuth><RequireCommunityAccess><CommunityAdmin /></RequireCommunityAccess></RequireAuth>} />
+                        <Route path="/comunidades" element={<Navigate to="/" replace />} />
+                        <Route path="/comunidades/*" element={<Navigate to="/" replace />} />
                     </Route>
 
                     {/* Info & Legal Routes */}
@@ -306,6 +288,7 @@ export default function App() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Suspense>
+        </ErrorBoundary>
         </>
     );
 }

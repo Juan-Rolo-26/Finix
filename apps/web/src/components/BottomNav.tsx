@@ -1,6 +1,5 @@
 import { useTranslation } from '@/i18n';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
@@ -8,9 +7,7 @@ import type { ComponentType } from 'react';
 import {
     LayoutDashboard,
     Compass,
-    MessageSquare,
     MoreHorizontal,
-    Users,
     User,
     Settings,
     Search,
@@ -30,19 +27,18 @@ import {
     Bookmark,
 } from 'lucide-react';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
-import { hasCommunityAccess, useAuthStore } from '../stores/authStore';
+import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { cn } from '../lib/utils';
 import { isWatchlistEnabled, isEducationEnabled } from '@/lib/featureFlags';
 
 const PRIMARY = 'hsl(var(--primary))';
 
-/* ── 3 main tabs + 1 create slot + more button ────────────────── */
+/* ── Main mobile navigation tabs (Market-focused, no communities/messages) ── */
 const mainTabs = [
     { path: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
-    { path: '/comunidades', label: 'Comunidad', shortLabel: 'Grupos', icon: Users },
-    // CENTER: create button
-    { path: '/messages', label: 'Mensajes', icon: MessageSquare },
+    { path: '/market', label: 'Mercado', shortLabel: 'Mercados', icon: TrendingUp },
+    { path: '/analysis', label: 'Análisis', icon: AreaChart },
 ];
 
 export function FinanceMobileNav({ location, navigate }: { location: ReturnType<typeof useLocation>; navigate: ReturnType<typeof useNavigate> }) {
@@ -78,7 +74,6 @@ export function BottomNav() {
     const { logout, user } = useAuthStore();
     const { theme, setTheme } = usePreferencesStore();
 
-    const [unreadMsgs, setUnreadMsgs] = useUnreadCount('messages');
     const [isMoreOpen, setIsMoreOpen] = useState(false);
     const moreButtonRef = useRef<HTMLButtonElement>(null);
     const navRef = useRef<HTMLElement>(null);
@@ -92,14 +87,7 @@ export function BottomNav() {
     }, []);
 
     const isLight = theme === 'light' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches);
-    const visibleMainTabs = hasCommunityAccess(user)
-        ? mainTabs
-        : mainTabs.filter((tab) => tab.path !== '/comunidades');
-
-    /* poll unread */
-    useEffect(() => {
-        if (location.pathname === '/messages') setUnreadMsgs(0);
-    }, [location.pathname, setUnreadMsgs]);
+    const visibleMainTabs = mainTabs;
 
     /* close panel on route change */
     useEffect(() => { setIsMoreOpen(false); }, [location.pathname]);
@@ -133,14 +121,13 @@ export function BottomNav() {
         { label: ui("Portafolio"),path: '/portfolio', icon: Briefcase   },
         { label: ui("Noticias"),  path: '/news',     icon: Newspaper   },
         { label: ui("Análisis"),  path: '/analysis', icon: AreaChart   },
-        { label: ui("Comunidades"), path: '/comunidades', icon: Users },
         ...(user ? [
             { label: 'Mi Perfil', path: '/profile', icon: User },
             { label: 'Ajustes',   path: '/settings', icon: Settings },
         ] : []),
     ];
 
-    const splitIndex = hasCommunityAccess(user) ? 2 : 1;
+    const splitIndex = 2;
     const LEFT_TABS = visibleMainTabs.slice(0, splitIndex);
     const RIGHT_TABS = visibleMainTabs.slice(splitIndex);
 
@@ -225,7 +212,6 @@ export function BottomNav() {
                     {/* Right tabs */}
                     {RIGHT_TABS.map(({ path, label, icon: Icon }) => {
                         const active = isActive(path);
-                        const badge = path === '/messages' ? unreadMsgs : 0;
                         return (
                             <Link
                                 key={path}
@@ -258,16 +244,6 @@ export function BottomNav() {
                                 >
                                     {ui(label)}
                                 </span>
-                                {badge > 0 && (
-                                    <motion.span
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        className="absolute top-1 right-1.5 min-w-[15px] h-[15px] rounded-full text-[9px] font-bold flex items-center justify-center px-0.5 z-20"
-                                        style={{ background: PRIMARY, color: 'hsl(var(--primary-foreground))' }}
-                                    >
-                                        {badge > 9 ? '9+' : badge}
-                                    </motion.span>
-                                )}
                             </Link>
                         );
                     })}
