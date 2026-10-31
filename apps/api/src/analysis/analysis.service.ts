@@ -205,6 +205,7 @@ export class AnalysisService {
                 currentPrice: parsed.currentPrice,
                 dailyChange: parsed.dailyChange,
                 volume: parsed.volume, avgVolume: parsed.avgVolume, relativeVolume: parsed.relativeVolume,
+                peRatio: parsed.peRatio, beta: parsed.beta, weeklyChange: parsed.weeklyChange, monthlyChange: parsed.monthlyChange, yearlyChange: parsed.yearlyChange,
                 historicalSeries: { meta: { market: parsed.historicalSeries?.meta?.market, refreshPolicy: parsed.historicalSeries?.meta?.refreshPolicy } },
                 high52w: parsed.high52w,
                 low52w: parsed.low52w,
