@@ -112,12 +112,12 @@ export function FinixHomeDrawer({ isOpen, onClose }: FinixHomeDrawerProps) {
                                 <p className="text-xs font-bold truncate text-foreground group-hover:text-primary transition-colors">
                                     {user.username || user.email}
                                 </p>
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[0.5625rem] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                     <Crown className="w-2 h-2 fill-amber-400 text-amber-500" />
                                     PRO
                                 </span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                            <p className="text-[0.6875rem] text-muted-foreground truncate">{user.email}</p>
                         </div>
                     </Link>
                 )}
@@ -131,19 +131,19 @@ export function FinixHomeDrawer({ isOpen, onClose }: FinixHomeDrawerProps) {
                                 key={item.path}
                                 to={item.path}
                                 onClick={onClose}
-                                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-[13px] font-medium text-foreground/80 hover:text-foreground hover:bg-muted/50 transition-colors group"
+                                className="flex items-center justify-between px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium text-foreground/80 hover:text-foreground hover:bg-muted/50 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
                                     <Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                     <span>{item.label}</span>
                                 </div>
                                 {item.isPro ? (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs group-hover:bg-emerald-500/25 group-hover:border-emerald-500/50 transition-all">
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[0.625rem] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs group-hover:bg-emerald-500/25 group-hover:border-emerald-500/50 transition-all">
                                         <Crown className="w-2.5 h-2.5 fill-amber-400 text-amber-500 shrink-0" />
                                         <span>PRO</span>
                                     </span>
                                 ) : item.badge ? (
-                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
+                                    <span className="text-[0.625rem] font-semibold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
                                         {item.badge}
                                     </span>
                                 ) : (

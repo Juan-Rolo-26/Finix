@@ -85,7 +85,7 @@ export function USStocksTabsCard() {
                 <div className="flex items-center justify-between px-3.5 py-2.5">
                     <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-primary" />
-                        <h3 className="text-[14px] font-bold text-primary tracking-tight select-none">
+                        <h3 className="text-[0.875rem] font-bold text-primary tracking-tight select-none">
                             Acciones/ETF en EE. UU.
                         </h3>
                     </div>
@@ -110,7 +110,7 @@ export function USStocksTabsCard() {
                                     data-theme-ignore
                                     onClick={() => setActiveTab(tab.key)}
                                     className={cn(
-                                        'w-full h-[22px] max-h-[22px] px-1 text-[11px] font-semibold leading-none rounded-md transition-all flex items-center justify-center cursor-pointer border select-none',
+                                        'w-full h-[22px] max-h-[22px] px-1 text-[0.6875rem] font-semibold leading-none rounded-md transition-all flex items-center justify-center cursor-pointer border select-none',
                                         isSelected
                                             ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-2xs dark:bg-emerald-500 dark:border-emerald-500 text-white-force'
                                             : 'bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground border-border/70 hover:border-border'
@@ -130,19 +130,19 @@ export function USStocksTabsCard() {
                 <table className="w-full border-collapse text-left text-xs">
                     <thead>
                         <tr className="border-b border-border/60 bg-[#ebebeb] dark:bg-[#222222]">
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase">
                                 ESPECIE
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
                                 ÚLTIMO
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
                                 % DÍA
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
                                 % MES
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase text-right">
                                 % AÑO
                             </th>
                         </tr>
@@ -154,19 +154,19 @@ export function USStocksTabsCard() {
                                 onClick={() => navigate(`/market?symbol=${encodeURIComponent(row.symbol)}`)}
                                 className="group odd:bg-transparent even:bg-[#f6f7f9] dark:even:bg-white/[0.03] hover:bg-[#eaf1f7] dark:hover:bg-white/[0.07] cursor-pointer transition-colors border-none"
                             >
-                                <td className="px-3 py-1.5 text-[12px] font-bold text-foreground group-hover:text-primary transition-colors">
+                                <td className="px-3 py-1.5 text-[0.75rem] font-bold text-foreground group-hover:text-primary transition-colors">
                                     {row.symbol}
                                 </td>
-                                <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-foreground font-semibold text-right">
+                                <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-foreground font-semibold text-right">
                                     {formatNumberAr(row.last, 2)}
                                 </td>
-                                <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                     {formatPct(row.dayChangePct)}
                                 </td>
-                                <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                     {formatPct(row.monthChangePct)}
                                 </td>
-                                <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                     {formatPct(row.yearChangePct)}
                                 </td>
                             </tr>

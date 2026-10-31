@@ -153,10 +153,10 @@ export function FinvizHomeHeatmapCard() {
                         <Flame className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <h3 className="text-xs sm:text-[13px] font-bold text-foreground tracking-tight select-none">
+                        <h3 className="text-xs sm:text-[0.8125rem] font-bold text-foreground tracking-tight select-none">
                             Mapa de Calor del Mercado
                         </h3>
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9.5px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[0.59375rem] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Realtime
                         </span>
@@ -198,7 +198,7 @@ export function FinvizHomeHeatmapCard() {
                                 data-theme-ignore
                                 onClick={() => handleSelectMarket(opt.id)}
                                 className={cn(
-                                    'w-full h-[22px] max-h-[22px] px-1.5 rounded-md text-[11px] font-semibold leading-none flex items-center justify-center gap-1 transition-all cursor-pointer select-none border',
+                                    'w-full h-[22px] max-h-[22px] px-1.5 rounded-md text-[0.6875rem] font-semibold leading-none flex items-center justify-center gap-1 transition-all cursor-pointer select-none border',
                                     isSelected
                                         ? 'bg-emerald-600 text-white font-bold border-emerald-600 shadow-2xs dark:bg-emerald-500 dark:border-emerald-500 text-white-force'
                                         : 'bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground border-border/70 hover:border-border'
@@ -209,7 +209,7 @@ export function FinvizHomeHeatmapCard() {
                                 <span
                                     data-theme-ignore
                                     className={cn(
-                                        'text-[8px] font-mono font-bold tracking-tight px-1 py-0.5 rounded-[3px] leading-none shrink-0',
+                                        'text-[0.5rem] font-mono font-bold tracking-tight px-1 py-0.5 rounded-[3px] leading-none shrink-0',
                                         isSelected
                                             ? 'bg-black/25 text-white dark:bg-black/30 text-white-force'
                                             : 'bg-muted text-muted-foreground'
@@ -226,12 +226,12 @@ export function FinvizHomeHeatmapCard() {
             </div>
 
             {/* ─── Sub-bar context ─── */}
-            <div className="px-3.5 py-1 bg-muted/10 border-b border-border/40 flex items-center justify-between text-[10.5px] text-muted-foreground">
+            <div className="px-3.5 py-1 bg-muted/10 border-b border-border/40 flex items-center justify-between text-[0.65625rem] text-muted-foreground">
                 <span className="font-medium flex items-center gap-1.5 truncate mr-2">
                     <Sparkles className="w-3 h-3 text-emerald-500 shrink-0" />
                     <span className="truncate">{currentConfig.description}</span>
                 </span>
-                <span className="text-[10px] opacity-75 font-mono shrink-0">
+                <span className="text-[0.625rem] opacity-75 font-mono shrink-0">
                     TradingView Treemap
                 </span>
             </div>

@@ -23,6 +23,11 @@ export class NotificationsController {
         });
     }
 
+    @Get('emails/:recipientId')
+    async getEmail(@Req() req: any, @Param('recipientId') recipientId: string) {
+        return this.notificationsService.getEmail(req.user.id, recipientId);
+    }
+
     @Get('unread-count')
     async getUnreadCount(@Req() req: any) {
         return this.notificationsService.countUnread(req.user.id);

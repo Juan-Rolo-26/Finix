@@ -33,7 +33,7 @@ export function PromoAccountCard() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
 
             <div className="space-y-1.5 relative z-10">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary uppercase tracking-wider font-serif italic">
+                <div className="flex items-center gap-1.5 text-[0.6875rem] font-bold text-primary uppercase tracking-wider font-serif italic">
                     <span>CUENTA DIGITAL FINIX</span>
                 </div>
                 <h4 className="text-sm font-black text-foreground leading-tight">
@@ -42,7 +42,7 @@ export function PromoAccountCard() {
                 <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
                     Es 100% gratuita.
                 </p>
-                <p className="text-[11.5px] text-muted-foreground leading-relaxed pt-0.5">
+                <p className="text-[0.71875rem] text-muted-foreground leading-relaxed pt-0.5">
                     Accedé a cotizaciones en vivo, modelos DCF de valuación y herramientas de análisis financiero independiente.
                 </p>
             </div>

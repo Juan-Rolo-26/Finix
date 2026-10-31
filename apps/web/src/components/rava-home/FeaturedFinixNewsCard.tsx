@@ -228,10 +228,10 @@ export function FeaturedFinixNewsCard() {
             <div className="px-4 sm:px-5 py-2.5 bg-muted/20 border-b border-border/60 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Newspaper className="w-4 h-4 text-primary" />
-                    <h3 className="text-[14px] font-bold text-foreground tracking-tight select-none">
+                    <h3 className="text-[0.875rem] font-bold text-foreground tracking-tight select-none">
                         Noticias del Mercado
                     </h3>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.625rem] font-bold bg-primary/10 text-primary border border-primary/20">
                         <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                         En Vivo
                     </span>
@@ -262,7 +262,7 @@ export function FeaturedFinixNewsCard() {
 
                     <button
                         onClick={() => navigate('/news')}
-                        className="text-[11px] font-bold text-primary hover:underline inline-flex items-center gap-0.5 ml-1"
+                        className="text-[0.6875rem] font-bold text-primary hover:underline inline-flex items-center gap-0.5 ml-1"
                     >
                         <span>Ver todas</span>
                         <ArrowRight className="w-3 h-3" />
@@ -273,18 +273,18 @@ export function FeaturedFinixNewsCard() {
             {/* Main Article Body with Much Larger Image and Editorial Layout */}
             <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
                 {/* Source, Tag & Date bar */}
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground border-b border-border/40 pb-2">
+                <div className="flex items-center justify-between text-[0.6875rem] text-muted-foreground border-b border-border/40 pb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-extrabold text-primary tracking-wider text-[11px] uppercase">
+                        <span className="font-extrabold text-primary tracking-wider text-[0.6875rem] uppercase">
                             POR {currentArticle.source.toUpperCase()}
                         </span>
                         {currentArticle.tag && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.65625rem] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 {currentArticle.tag}
                             </span>
                         )}
                     </div>
-                    <span className="font-mono text-[10.5px] opacity-80">{currentArticle.date}</span>
+                    <span className="font-mono text-[0.65625rem] opacity-80">{currentArticle.date}</span>
                 </div>
 
                 {/* Content Row: Text on Left + MUCH LARGER REAL ARTICLE PHOTO on Right */}
@@ -294,12 +294,12 @@ export function FeaturedFinixNewsCard() {
                         <div className="space-y-2">
                             <h3
                                 onClick={handleOpenArticle}
-                                className="text-[15.5px] sm:text-[17px] md:text-[18px] font-extrabold text-foreground leading-snug cursor-pointer hover:text-primary transition-colors tracking-tight line-clamp-3"
+                                className="text-[0.96875rem] sm:text-[1.0625rem] md:text-[1.125rem] font-extrabold text-foreground leading-snug cursor-pointer hover:text-primary transition-colors tracking-tight line-clamp-3"
                             >
                                 {cleanHtmlText(currentArticle.title)}
                             </h3>
 
-                            <p className="text-[12.5px] sm:text-[13px] text-muted-foreground leading-relaxed line-clamp-3">
+                            <p className="text-[0.78125rem] sm:text-[0.8125rem] text-muted-foreground leading-relaxed line-clamp-3">
                                 {cleanHtmlText(currentArticle.summary)}
                             </p>
                         </div>
@@ -331,7 +331,7 @@ export function FeaturedFinixNewsCard() {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover/thumb:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/75 backdrop-blur-md text-white border border-white/20 shadow-xs">
+                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[0.625rem] font-bold bg-black/75 backdrop-blur-md text-white border border-white/20 shadow-xs">
                             {currentArticle.source}
                         </span>
                     </div>

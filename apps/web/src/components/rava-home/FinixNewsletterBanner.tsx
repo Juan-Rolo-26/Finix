@@ -90,7 +90,7 @@ export function FinixNewsletterBanner() {
 
                 <div className="relative z-10 max-w-3xl mx-auto space-y-4 text-center">
                     {/* Header badge — Slim and minimalist */}
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[0.625rem] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                         <Mail className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                         <span>Boletín diario de mercados · 100% gratis</span>
                     </div>
@@ -112,7 +112,7 @@ export function FinixNewsletterBanner() {
                                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                 <span>{feedbackMessage}</span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground">
+                            <p className="text-[0.6875rem] text-muted-foreground">
                                 Si no lo ves en tu bandeja principal, revisá tu carpeta de Promociones o Spam.
                             </p>
                         </div>
@@ -161,7 +161,7 @@ export function FinixNewsletterBanner() {
                                 </div>
                             )}
 
-                            <p className="text-[11px] text-muted-foreground text-center">
+                            <p className="text-[0.6875rem] text-muted-foreground text-center">
                                 Recibirás el boletín diario directamente en tu casilla registrada.
                             </p>
                         </form>
@@ -194,7 +194,7 @@ export function FinixNewsletterBanner() {
                                 </button>
                             </div>
 
-                            <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+                            <div className="flex items-center justify-center gap-1.5 text-[0.6875rem] text-muted-foreground">
                                 <span>Debés estar registrado para recibirlo.</span>
                                 <span>·</span>
                                 <button

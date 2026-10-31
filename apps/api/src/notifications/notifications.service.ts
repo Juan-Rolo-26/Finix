@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma.service';
 import { Notification } from '@prisma/client';
+import { emailNotification, emailNotificationId } from './email-notification';
 import { hasEffectiveProAccess } from '../auth/pro-access';
 
 export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL';
@@ -11,7 +12,7 @@ export type NotificationType =
     | 'MARKET_PRICE_ALERT' | 'MARKET_VARIATION' | 'MARKET_WATCHLIST' | 'MARKET_EARNINGS' | 'MARKET_NEWS'
     | 'SUBSCRIPTION_NEW' | 'SUBSCRIPTION_RENEW' | 'SUBSCRIPTION_FAIL' | 'SUBSCRIPTION_CANCEL'
     | 'SECURITY_NEW_LOGIN' | 'SECURITY_PASSWORD_CHANGE' | 'SECURITY_EMAIL_CHANGE'
-    | 'SYSTEM_ALERT';
+    | 'SYSTEM_ALERT' | 'EMAIL_FINIX';
 
 export interface CreateNotificationInput {
     userId: string;
@@ -52,6 +53,7 @@ export class NotificationsService {
 
     // Helper to group by type for the UI
     private getCategoryFromType(type: string): string {
+        if (type.startsWith('EMAIL_')) return 'EMAIL';
         if (type.startsWith('SOCIAL_')) return 'SOCIAL';
         if (type.startsWith('COMMUNITY_')) return 'COMMUNITY';
         if (type.startsWith('MARKET_')) return 'MARKET';
@@ -155,7 +157,48 @@ export class NotificationsService {
         return notification;
     }
 
+    private readonly emailHistoryReady = new Set<string>();
+
+    private async ensureEmailHistory(userId: string) {
+        if (this.emailHistoryReady.has(userId)) return;
+        const key = 'notifications.email-history.v1.' + userId;
+        if (!await this.prisma.platformSetting.findUnique({ where: { key }, select: { key: true } })) {
+            await this.prisma.$transaction(async tx => {
+                const emails = await tx.emailCampaignRecipient.findMany({
+                    where: { userId, status: { in: ['SENT', 'BOUNCED'] },
+                        sentAt: { gte: new Date(Date.now() - 90 * 86400000) } },
+                    include: { campaign: { select: { subject: true } } },
+                    orderBy: [{ sentAt: 'desc' }, { id: 'desc' }], take: 500,
+                });
+                if (emails.length) await tx.notification.createMany({ data: emails.map(emailNotification), skipDuplicates: true });
+                // Persist completion so deleting a notification never recreates it.
+                await tx.platformSetting.upsert({ where: { key },
+                    create: { key, value: new Date().toISOString(), description: 'Historial de correos incorporado a Notificaciones' },
+                    update: { value: new Date().toISOString() } });
+            });
+        }
+        if (this.emailHistoryReady.size >= 1000) this.emailHistoryReady.clear();
+        this.emailHistoryReady.add(userId);
+    }
+
+    async getEmail(userId: string, recipientId: string) {
+        const email = await this.prisma.emailCampaignRecipient.findFirst({
+            where: { id: recipientId, userId, status: { in: ['SENT', 'BOUNCED'] }, sentAt: { not: null } },
+            include: { campaign: { select: { subject: true, title: true, message: true, contentHtml: true, contentText: true } } },
+        });
+        if (!email) throw new NotFoundException('Este correo no está disponible en tu cuenta.');
+        const snapshot = email.renderedContent as { html?: unknown; text?: unknown; subject?: unknown } | null;
+        return { id: email.id, notificationId: emailNotificationId(email.id),
+            subject: typeof snapshot?.subject === 'string' ? snapshot.subject : email.campaign.subject,
+            title: email.campaign.title, to: email.email, sentAt: email.sentAt, deliveredAt: email.deliveredAt,
+            deliveryStatus: email.status === 'BOUNCED' ? 'BOUNCED' : email.deliveredAt ? 'DELIVERED' : 'SENT',
+            html: typeof snapshot?.html === 'string' ? snapshot.html : email.campaign.contentHtml || '',
+            text: typeof snapshot?.text === 'string' ? snapshot.text : email.campaign.contentText || email.campaign.message,
+        };
+    }
+
     async getNotifications(userId: string, query: { unreadOnly?: boolean; limit?: number; cursor?: string; category?: string }) {
+        await this.ensureEmailHistory(userId);
         const limit = Math.min(50, Math.max(1, Math.floor(Number(query.limit) || 20)));
 
         let whereClause: any = { userId };
@@ -211,6 +254,7 @@ export class NotificationsService {
     }
 
     async countUnread(userId: string) {
+        await this.ensureEmailHistory(userId);
         const count = await this.prisma.notification.count({
             where: { userId, isRead: false },
         });

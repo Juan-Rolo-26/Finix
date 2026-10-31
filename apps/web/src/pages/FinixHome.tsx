@@ -318,7 +318,7 @@ export default function FinixHome() {
             <DesktopNavigation onOpenSearch={openSearch} />
 
             {/* Main Content Area */}
-            <main className="flex-1 max-w-[1440px] w-full mx-auto px-2.5 sm:px-4 md:px-6 py-4">
+            <main className="finix-fluid-container flex-1 w-full mx-auto py-4">
                 {/* ─── 1. RAVA MOBILE VIEW (MOBILE PHONES ONLY) ─── */}
                 <RavaMobileView
                     dollars={dollars}

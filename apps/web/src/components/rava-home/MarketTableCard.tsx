@@ -34,13 +34,13 @@ export function formatNumberAr(val: number | string | null | undefined, decimals
 
 export function formatPct(val: number | null | undefined): React.ReactNode {
     if (val === null || val === undefined) return <span className="text-muted-foreground">-</span>;
-    if (val === 0) return <span className="text-muted-foreground font-mono tabular-nums text-[12px]">0,0%</span>;
+    if (val === 0) return <span className="text-muted-foreground font-mono tabular-nums text-[0.75rem]">0,0%</span>;
 
     const isPositive = val > 0;
     const formatted = Math.abs(val).toFixed(1).replace('.', ',');
     return (
         <span
-            className={`font-mono tabular-nums text-[12px] font-bold ${
+            className={`font-mono tabular-nums text-[0.75rem] font-bold ${
                 isPositive
                     ? 'text-[#15803d] dark:text-[#22c55e]'
                     : 'text-[#b91c1c] dark:text-[#ef4444]'
@@ -89,11 +89,11 @@ export function MarketTableCard({
                 align: 'left',
                 render: (r: MarketTickerRow) => (
                     <div className="flex flex-col">
-                        <span className="font-bold text-foreground group-hover:text-emerald-500 transition-colors tracking-tight text-[12px]">
+                        <span className="font-bold text-foreground group-hover:text-emerald-500 transition-colors tracking-tight text-[0.75rem]">
                             {r.symbol}
                         </span>
                         {r.name && (
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[90px] font-normal">
+                            <span className="text-[0.625rem] text-muted-foreground truncate max-w-[90px] font-normal">
                                 {r.name}
                             </span>
                         )}
@@ -105,7 +105,7 @@ export function MarketTableCard({
                 label: 'ÚLTIMO',
                 align: 'right',
                 render: (r: MarketTickerRow) => (
-                    <span className="font-mono text-[12px] text-foreground font-semibold">
+                    <span className="font-mono text-[0.75rem] text-foreground font-semibold">
                         {typeof r.last === 'number'
                             ? formatNumberAr(r.last, r.last >= 1000 ? (r.last % 1 === 0 ? 0 : 2) : 2)
                             : r.last}
@@ -158,14 +158,14 @@ export function MarketTableCard({
             <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/20">
                 <div className="flex items-center gap-2">
                     {icon && <span className="text-primary flex-shrink-0">{icon}</span>}
-                    <h3 className="text-[14px] font-bold text-primary tracking-tight select-none">
+                    <h3 className="text-[0.875rem] font-bold text-primary tracking-tight select-none">
                         {title}
                     </h3>
                 </div>
                 {viewAllHref ? (
                     <button
                         onClick={() => navigate(viewAllHref)}
-                        className="text-muted-foreground hover:text-primary transition-colors p-0.5 rounded focus:outline-none flex items-center gap-0.5 text-[11px] font-bold"
+                        className="text-muted-foreground hover:text-primary transition-colors p-0.5 rounded focus:outline-none flex items-center gap-0.5 text-[0.6875rem] font-bold"
                         aria-label={`Ver todo ${title}`}
                     >
                         <ChevronRight className="w-4 h-4" />
@@ -200,7 +200,7 @@ export function MarketTableCard({
                             {activeColumns.map((col) => (
                                 <th
                                     key={col.key}
-                                    className={`px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none ${
+                                    className={`px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none ${
                                         col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                                     }`}
                                 >
@@ -219,7 +219,7 @@ export function MarketTableCard({
                                 {activeColumns.map((col) => (
                                     <td
                                         key={col.key}
-                                        className={`px-3 py-1.5 text-[12px] whitespace-nowrap tabular-nums ${
+                                        className={`px-3 py-1.5 text-[0.75rem] whitespace-nowrap tabular-nums ${
                                             col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
                                         }`}
                                     >

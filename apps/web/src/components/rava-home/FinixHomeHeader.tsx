@@ -89,7 +89,7 @@ export function FinixHomeHeader({ onOpenSearch }: FinixHomeHeaderProps) {
                                 to="/profile"
                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-foreground transition-all"
                             >
-                                <div className="relative w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
+                                <div className="relative w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[0.625rem] font-bold overflow-hidden shrink-0">
                                     {user.avatarUrl ? (
                                         <img
                                             src={resolveMediaUrl(user.avatarUrl)}
@@ -109,7 +109,7 @@ export function FinixHomeHeader({ onOpenSearch }: FinixHomeHeaderProps) {
                                 {/* Abrí tu cuenta (Finix Emerald CTA) */}
                                 <button
                                     onClick={() => navigate('/login?tab=register')}
-                                    className="hidden sm:inline-flex items-center justify-center px-4 md:px-5 py-1.5 md:py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-[13px] font-black shadow-sm shadow-emerald-600/25 transition-all hover:shadow active:scale-95"
+                                    className="hidden sm:inline-flex items-center justify-center px-4 md:px-5 py-1.5 md:py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-[0.8125rem] font-black shadow-sm shadow-emerald-600/25 transition-all hover:shadow active:scale-95"
                                 >
                                     Abrí tu cuenta
                                 </button>
@@ -117,7 +117,7 @@ export function FinixHomeHeader({ onOpenSearch }: FinixHomeHeaderProps) {
                                 {/* Clientes */}
                                 <button
                                     onClick={() => navigate('/login')}
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs md:text-[13px] font-bold text-foreground/85 hover:text-emerald-500 hover:bg-muted/50 transition-colors"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs md:text-[0.8125rem] font-bold text-foreground/85 hover:text-emerald-500 hover:bg-muted/50 transition-colors"
                                 >
                                     <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                     <span className="hidden xs:inline">Clientes</span>

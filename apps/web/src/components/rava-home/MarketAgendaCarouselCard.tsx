@@ -88,7 +88,7 @@ function CompanyLogoAvatar({
     }
 
     return (
-        <div className="w-7 h-7 rounded-md bg-muted/80 border border-border/80 flex items-center justify-center font-bold text-[10px] text-foreground shrink-0 shadow-xs select-none">
+        <div className="w-7 h-7 rounded-md bg-muted/80 border border-border/80 flex items-center justify-center font-bold text-[0.625rem] text-foreground shrink-0 shadow-xs select-none">
             {cleanTicker.slice(0, 2) || '••'}
         </div>
     );
@@ -190,7 +190,7 @@ export function MarketAgendaCarouselCard() {
             <div className="px-3.5 pt-3 pb-2 border-b border-border/60 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Calendar className="w-3.5 h-3.5 text-primary" />
-                    <h3 className="text-[14px] font-bold text-primary tracking-tight select-none">
+                    <h3 className="text-[0.875rem] font-bold text-primary tracking-tight select-none">
                         Agenda Semanal
                     </h3>
                 </div>
@@ -224,11 +224,11 @@ export function MarketAgendaCarouselCard() {
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                            <span className="text-[0.625rem] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                                 Balance
                             </span>
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground">
+                        <span className="text-[0.625rem] font-mono text-muted-foreground">
                             {earning.dayLabel || 'MIÉ'} {earning.timingLabel ? `· ${earning.timingLabel}` : ''}
                         </span>
                     </div>
@@ -245,7 +245,7 @@ export function MarketAgendaCarouselCard() {
                                     <span className="font-bold text-xs text-foreground tracking-tight">
                                         ${earning.ticker}
                                     </span>
-                                    <span className="text-[11px] text-muted-foreground truncate max-w-[130px]">
+                                    <span className="text-[0.6875rem] text-muted-foreground truncate max-w-[130px]">
                                         {earning.title}
                                     </span>
                                 </div>
@@ -253,7 +253,7 @@ export function MarketAgendaCarouselCard() {
                         </div>
 
                         {formatRevenue(earning.revenueEstimate) && (
-                            <span className="text-[10px] font-semibold text-muted-foreground whitespace-nowrap font-mono">
+                            <span className="text-[0.625rem] font-semibold text-muted-foreground whitespace-nowrap font-mono">
                                 Rev: {formatRevenue(earning.revenueEstimate)}
                             </span>
                         )}
@@ -262,16 +262,16 @@ export function MarketAgendaCarouselCard() {
                     {/* Metrics grid */}
                     <div className="mt-2 pt-2 border-t border-border/40 grid grid-cols-2 gap-2 text-xs">
                         <div>
-                            <span className="text-[10px] text-muted-foreground block">BPA Est.</span>
-                            <span className="font-semibold text-foreground text-[11px] font-mono">
+                            <span className="text-[0.625rem] text-muted-foreground block">BPA Est.</span>
+                            <span className="font-semibold text-foreground text-[0.6875rem] font-mono">
                                 {formatCurrency(earning.epsEstimate)}
                             </span>
                         </div>
                         <div className="text-right">
-                            <span className="text-[10px] text-muted-foreground block">BPA Rep.</span>
+                            <span className="text-[0.625rem] text-muted-foreground block">BPA Rep.</span>
                             {earning.actualEps !== undefined ? (
                                 <span
-                                    className={`font-black text-[11px] font-mono ${
+                                    className={`font-black text-[0.6875rem] font-mono ${
                                         earning.actualEps >= (earning.epsEstimate || 0)
                                             ? 'text-emerald-600 dark:text-emerald-400'
                                             : 'text-rose-600 dark:text-rose-400'
@@ -280,7 +280,7 @@ export function MarketAgendaCarouselCard() {
                                     {formatCurrency(earning.actualEps)}
                                 </span>
                             ) : (
-                                <span className="text-[11px] font-medium text-muted-foreground">Pendiente</span>
+                                <span className="text-[0.6875rem] font-medium text-muted-foreground">Pendiente</span>
                             )}
                         </div>
                     </div>
@@ -291,11 +291,11 @@ export function MarketAgendaCarouselCard() {
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                            <span className="text-[0.625rem] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
                                 Dividendo
                             </span>
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground">
+                        <span className="text-[0.625rem] font-mono text-muted-foreground">
                             {dividend.dayLabel || 'VIE'} {dividend.paymentDate ? `· ${dividend.paymentDate}` : ''}
                         </span>
                     </div>
@@ -311,7 +311,7 @@ export function MarketAgendaCarouselCard() {
                                 <span className="font-bold text-xs text-foreground tracking-tight">
                                     ${dividend.ticker}
                                 </span>
-                                <span className="text-[11px] text-muted-foreground truncate max-w-[150px]">
+                                <span className="text-[0.6875rem] text-muted-foreground truncate max-w-[150px]">
                                     {dividend.title}
                                 </span>
                             </div>
@@ -321,14 +321,14 @@ export function MarketAgendaCarouselCard() {
                     {/* Metrics grid */}
                     <div className="mt-2 pt-2 border-t border-border/40 grid grid-cols-2 gap-2 text-xs">
                         <div>
-                            <span className="text-[10px] text-muted-foreground block">Monto / Acción</span>
-                            <span className="font-bold text-amber-600 dark:text-amber-400 text-[11px] font-mono">
+                            <span className="text-[0.625rem] text-muted-foreground block">Monto / Acción</span>
+                            <span className="font-bold text-amber-600 dark:text-amber-400 text-[0.6875rem] font-mono">
                                 USD {dividend.amount !== undefined ? dividend.amount.toFixed(3) : '0.400'}
                             </span>
                         </div>
                         <div className="text-right">
-                            <span className="text-[10px] text-muted-foreground block">Fecha de Corte</span>
-                            <span className="font-medium text-foreground text-[11px] font-mono">
+                            <span className="text-[0.625rem] text-muted-foreground block">Fecha de Corte</span>
+                            <span className="font-medium text-foreground text-[0.6875rem] font-mono">
                                 {dividend.exDate || 'Semana corriente'}
                             </span>
                         </div>
@@ -340,11 +340,11 @@ export function MarketAgendaCarouselCard() {
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                            <span className="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                            <span className="text-[0.625rem] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
                                 Hecho del Mercado
                             </span>
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground">
+                        <span className="text-[0.625rem] font-mono text-muted-foreground">
                             {economic.dayLabel || 'JUE'}
                         </span>
                     </div>
@@ -353,7 +353,7 @@ export function MarketAgendaCarouselCard() {
                         <div className="w-7 h-7 rounded-md bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">
                             <Landmark className="w-3.5 h-3.5" />
                         </div>
-                        <p className="text-[11.5px] font-bold text-foreground leading-snug line-clamp-1">
+                        <p className="text-[0.71875rem] font-bold text-foreground leading-snug line-clamp-1">
                             {economic.title}
                         </p>
                     </div>
@@ -361,20 +361,20 @@ export function MarketAgendaCarouselCard() {
                     {/* Metrics grid */}
                     <div className="mt-2 pt-2 border-t border-border/40 grid grid-cols-3 gap-1.5 text-xs">
                         <div>
-                            <span className="text-[10px] text-muted-foreground block">Previsto</span>
-                            <span className="font-medium text-foreground text-[11px] truncate block font-mono">
+                            <span className="text-[0.625rem] text-muted-foreground block">Previsto</span>
+                            <span className="font-medium text-foreground text-[0.6875rem] truncate block font-mono">
                                 {economic.consensusValue || '---'}
                             </span>
                         </div>
                         <div className="text-center">
-                            <span className="text-[10px] text-muted-foreground block">Anterior</span>
-                            <span className="font-medium text-muted-foreground text-[11px] truncate block font-mono">
+                            <span className="text-[0.625rem] text-muted-foreground block">Anterior</span>
+                            <span className="font-medium text-muted-foreground text-[0.6875rem] truncate block font-mono">
                                 {economic.previousValue || '---'}
                             </span>
                         </div>
                         <div className="text-right">
-                            <span className="text-[10px] text-muted-foreground block">Actual</span>
-                            <span className="font-bold text-sky-600 dark:text-sky-400 text-[11px] truncate block font-mono">
+                            <span className="text-[0.625rem] text-muted-foreground block">Actual</span>
+                            <span className="font-bold text-sky-600 dark:text-sky-400 text-[0.6875rem] truncate block font-mono">
                                 {economic.actualValue || 'Pendiente'}
                             </span>
                         </div>
@@ -384,13 +384,13 @@ export function MarketAgendaCarouselCard() {
 
             {/* Footer: Discrete link to full calendar */}
             <div className="px-3.5 py-2 bg-muted/20 border-t border-border/50 flex items-center justify-between text-xs mt-auto">
-                <span className="text-[10.5px] text-muted-foreground">
+                <span className="text-[0.65625rem] text-muted-foreground">
                     Rotación en vivo (30s)
                 </span>
 
                 <button
                     onClick={() => navigate('/calendar')}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline group"
+                    className="inline-flex items-center gap-1 text-[0.6875rem] font-bold text-emerald-600 dark:text-emerald-400 hover:underline group"
                 >
                     <span>Ver calendario completo</span>
                     <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />

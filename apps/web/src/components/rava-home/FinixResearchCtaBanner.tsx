@@ -137,7 +137,7 @@ export function FinixResearchCtaBanner() {
                                 <Sparkles className="w-3.5 h-3.5 text-primary" />
                                 <span>FINIX RESEARCH & VALUACIÓN DCF</span>
                             </span>
-                            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                            <span className="hidden sm:inline-flex items-center gap-1 text-[0.6875rem] font-semibold text-muted-foreground">
                                 <ShieldCheck className="w-3.5 h-3.5 text-primary" />
                                 <span>Acceso Abierto & Gratuito</span>
                             </span>
@@ -213,18 +213,18 @@ export function FinixResearchCtaBanner() {
                                             <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                                                 ${activeItem.ticker}
                                             </span>
-                                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary font-mono">
+                                            <span className="text-[0.625rem] font-bold px-1.5 py-0.2 rounded bg-primary/10 text-primary font-mono">
                                                 MODELO DCF
                                             </span>
                                         </div>
-                                        <p className="text-[11px] text-muted-foreground truncate max-w-[170px]">
+                                        <p className="text-[0.6875rem] text-muted-foreground truncate max-w-[170px]">
                                             {activeItem.companyName}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="text-right">
-                                    <span className="text-[10px] font-mono text-muted-foreground block uppercase">
+                                    <span className="text-[0.625rem] font-mono text-muted-foreground block uppercase">
                                         Precio Actual
                                     </span>
                                     <span className="text-sm font-bold font-mono text-foreground">
@@ -236,7 +236,7 @@ export function FinixResearchCtaBanner() {
                             {/* Core Valuation Metrics */}
                             <div className="grid grid-cols-2 gap-3 bg-muted/20 border border-border/50 rounded-lg p-3">
                                 <div>
-                                    <span className="text-[10px] font-medium text-muted-foreground block">
+                                    <span className="text-[0.625rem] font-medium text-muted-foreground block">
                                         Precio Objetivo
                                     </span>
                                     <span className="text-base font-bold font-mono text-primary">
@@ -244,7 +244,7 @@ export function FinixResearchCtaBanner() {
                                     </span>
                                 </div>
                                 <div>
-                                    <span className="text-[10px] font-medium text-muted-foreground block">
+                                    <span className="text-[0.625rem] font-medium text-muted-foreground block">
                                         Upside Potencial
                                     </span>
                                     <span className="text-base font-bold font-mono text-primary flex items-center gap-1">
@@ -256,7 +256,7 @@ export function FinixResearchCtaBanner() {
 
                             {/* Click to open report */}
                             <div className="flex items-center justify-between text-xs font-bold pt-1">
-                                <span className="text-muted-foreground flex items-center gap-1 text-[11px]">
+                                <span className="text-muted-foreground flex items-center gap-1 text-[0.6875rem]">
                                     <BarChart3 className="w-3.5 h-3.5 text-primary" />
                                     <span>Ver valuación y múltiplos</span>
                                 </span>
@@ -269,7 +269,7 @@ export function FinixResearchCtaBanner() {
 
                         {/* Mini Selector Pills for Other Reports */}
                         <div className="flex items-center justify-center gap-1.5 mt-3 pt-1">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase mr-1">
+                            <span className="text-[0.625rem] font-bold text-muted-foreground uppercase mr-1">
                                 Ver otros:
                             </span>
                             {analyses.slice(0, 5).map((item, idx) => (

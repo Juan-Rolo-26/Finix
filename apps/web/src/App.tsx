@@ -40,6 +40,7 @@ const Explore = lazy(() => import('./pages/Explore'));
 const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
+const EmailNotificationPage = lazy(() => import('./pages/EmailNotification'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const AnalysisPage = lazy(() => import('./pages/Analysis'));
 const TopGainersPage = lazy(() => import('./pages/TopGainersPage'));
@@ -261,6 +262,7 @@ export default function App() {
                         <Route path="/settings/plan" element={<ProUpgrade />} />
                         <Route path="/messages" element={<Navigate to="/" replace />} />
                         <Route path="/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
+                        <Route path="/notifications/emails/:recipientId" element={<RequireAuth><EmailNotificationPage /></RequireAuth>} />
                         <Route path="/comunidades" element={<Navigate to="/" replace />} />
                         <Route path="/comunidades/*" element={<Navigate to="/" replace />} />
                     </Route>

@@ -73,7 +73,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
     return (
         <>
             <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur-md border-b border-border/80 transition-colors">
-                <div className="relative max-w-[1440px] mx-auto px-3 sm:px-6 h-11 sm:h-12 flex items-center justify-between">
+                <div className="finix-fluid-container relative mx-auto h-11 sm:h-12 flex items-center justify-between">
                     {/* Left: Hamburger menu button only (like Rava) */}
                     <div className="flex items-center">
                         <button
@@ -88,7 +88,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                     </div>
 
                     {/* Center: Brand Logo centered (like Rava) */}
-                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+                    <div className="absolute left-14 sm:left-1/2 sm:-translate-x-1/2 flex items-center">
                         <Link
                             to="/"
                             className="flex items-center group select-none focus:outline-none"
@@ -153,7 +153,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                 {/* User Dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger className="flex items-center gap-1 p-0.5 rounded-full border border-border/80 hover:bg-muted/70 transition-colors focus:outline-none cursor-pointer">
-                                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[11px]">
+                                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-[0.6875rem]">
                                             {user.avatarUrl && user.avatarUrl !== failedAvatar ? (
                                                 <img
                                                     src={resolveMediaUrl(user.avatarUrl)}
@@ -174,12 +174,12 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                                 <span className="font-bold text-sm text-foreground truncate">
                                                     {user.username || 'Mi cuenta'}
                                                 </span>
-                                                <span className="text-[10.5px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 inline-flex items-center gap-1">
+                                                <span className="text-[0.65625rem] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 inline-flex items-center gap-1">
                                                     <Flame className="w-3 h-3 text-amber-500" />
                                                     <span>{streak}d</span>
                                                 </span>
                                             </div>
-                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.65625rem] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                                 <Sparkles className="w-3 h-3 text-emerald-500" />
                                                 {plan}
                                             </span>
@@ -240,7 +240,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                 {/* Abrí tu cuenta — Finix Signature Emerald Pill Button */}
                                 <Link
                                     to="/register"
-                                    className="px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[11.5px] sm:text-xs font-bold shadow-xs shadow-emerald-600/20 transition-all active:scale-95 whitespace-nowrap"
+                                    className="hidden sm:inline-flex px-3.5 sm:px-4 py-1 sm:py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-[0.71875rem] sm:text-xs font-bold shadow-xs shadow-emerald-600/20 transition-all active:scale-95 whitespace-nowrap"
                                 >
                                     Abrí tu cuenta
                                 </Link>
@@ -248,7 +248,7 @@ export function DesktopNavigation({ onOpenSearch }: { onOpenSearch: () => void }
                                 {/* Clientes */}
                                 <Link
                                     to="/login"
-                                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full text-[11.5px] sm:text-xs font-bold text-foreground/85 hover:text-emerald-500 hover:bg-muted/50 transition-colors whitespace-nowrap"
+                                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-full text-[0.71875rem] sm:text-xs font-bold text-foreground/85 hover:text-emerald-500 hover:bg-muted/50 transition-colors whitespace-nowrap"
                                 >
                                     <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span>Clientes</span>

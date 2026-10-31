@@ -3,7 +3,7 @@ import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bell, Heart, MessageSquare, TrendingUp, UserPlus, Loader2, CheckCheck, Settings, ShieldAlert, Sparkles, Building2, Repeat } from 'lucide-react';
+import { Bell, Heart, MessageSquare, TrendingUp, UserPlus, Loader2, CheckCheck, Settings, ShieldAlert, Sparkles, Building2, Repeat, Mail } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/mediaUrl';
 import { type NotificationItem, groupNotificationsByDay, formatNotificationTime, notificationTimezone } from '@/lib/notifications';
@@ -11,6 +11,7 @@ import { type NotificationItem, groupNotificationsByDay, formatNotificationTime,
 const CATEGORIES = [
     { id: 'ALL', label: 'Todas' },
     { id: 'UNREAD', label: 'No leídas' },
+    { id: 'EMAIL', label: 'Correos de Finix' },
     { id: 'SOCIAL', label: 'Social' },
     { id: 'COMMUNITY', label: 'Comunidades' },
     { id: 'MARKET', label: 'Mercados' },
@@ -18,6 +19,7 @@ const CATEGORIES = [
 ];
 
 const getNotificationConfig = (type: string) => {
+    if (type.startsWith('EMAIL_')) return { icon: Mail, color: 'var(--primary)', bg: 'var(--primary) / 0.1' };
     if (type.startsWith('SOCIAL_FOLLOW')) return { icon: UserPlus, color: 'var(--primary)', bg: 'var(--primary) / 0.1' };
     if (type.startsWith('SOCIAL_LIKE')) return { icon: Heart, color: 'hsl(0 68% 54%)', bg: 'hsl(0 68% 54% / 0.1)' };
     if (type.startsWith('SOCIAL_COMMENT') || type.startsWith('SOCIAL_REPLY')) return { icon: MessageSquare, color: 'hsl(145 65% 38%)', bg: 'hsl(145 65% 38% / 0.1)' };
@@ -134,7 +136,7 @@ export default function Notifications() {
             <div className="sticky top-0 z-30 pt-4 pb-3 px-4 md:px-0 md:pt-0" style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h1 className="text-[22px] font-black tracking-tight flex items-center gap-2">
+                        <h1 className="text-[1.375rem] font-black tracking-tight flex items-center gap-2">
                             {" "}<FinixUiText text={"Notificaciones"} />{" "}</h1>
                     </div>
                     <div className="flex items-center gap-2">
@@ -147,11 +149,11 @@ export default function Notifications() {
                                 title={finixUi("Marcar leídas")}
                             >
                                 <CheckCheck className="w-4 h-4" />
-                                <span className="hidden md:block text-[13px] font-bold">{""}<FinixUiText text={"Leídas"} />{""}</span>
+                                <span className="hidden md:block text-[0.8125rem] font-bold">{""}<FinixUiText text={"Leídas"} />{""}</span>
                             </button>
                         )}
                         <button
-                            onClick={() => navigate('/settings?tab=notifications')}
+                            onClick={() => navigate('/settings?tab=notificaciones')}
                             className="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-xl transition-all hover:bg-secondary"
                             style={{ color: 'hsl(var(--muted-foreground))' }}
                         >
@@ -169,7 +171,7 @@ export default function Notifications() {
                                 key={c.id}
                                 onClick={() => setActiveTab(c.id)}
                                 aria-pressed={isActive}
-                                className="relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold flex-shrink-0 transition-colors z-10"
+                                className="relative px-3.5 py-1.5 rounded-full text-[0.8125rem] font-semibold flex-shrink-0 transition-colors z-10"
                                 style={{
                                     color: isActive ? 'hsl(var(--primary-foreground))' : 'hsl(var(--muted-foreground))',
                                 }}
@@ -205,14 +207,14 @@ export default function Notifications() {
                             <Bell className="w-7 h-7" style={{ color: 'hsl(var(--muted-foreground))' }} />
                         </div>
                         <h3 className="text-base font-bold mb-1">{""}<FinixUiText text={"Todo al día"} />{""}</h3>
-                        <p className="text-[13.5px] max-w-[280px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                        <p className="text-[0.84375rem] max-w-[280px]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                             {" "}<FinixUiText text={"No hay notificaciones recientes en esta categoría."} />{" "}</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
                         {groups.map((group, gi) => (
                             <div key={group.dateKey}>
-                                <p className="mb-2.5 px-2 text-[11px] font-black uppercase tracking-[0.15em]" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                                <p className="mb-2.5 px-2 text-[0.6875rem] font-black uppercase tracking-[0.15em]" style={{ color: 'hsl(var(--muted-foreground))' }}>
                                     {group.label}
                                 </p>
                                 <div className="space-y-1 md:space-y-2">
@@ -264,16 +266,17 @@ export default function Notifications() {
                                                 </div>
 
                                                 <div className="flex-1 min-w-0 pr-6">
-                                                    <p className="text-[14px] font-semibold leading-[1.3] mb-0.5" style={{ color: isUnread ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' }}>
+                                                    <p className="text-[0.875rem] font-semibold leading-[1.3] mb-0.5" style={{ color: isUnread ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))' }}>
                                                         {n.title}
                                                     </p>
                                                     {n.message && (
-                                                        <p className="text-[13px] leading-snug line-clamp-2"
+                                                        <p className="text-[0.8125rem] leading-snug line-clamp-2"
                                                             style={{ color: 'hsl(var(--muted-foreground) / 0.8)' }}>
                                                             {n.message}
                                                         </p>
                                                     )}
-                                                    <time dateTime={n.createdAt} className="text-[13px] mt-1.5 inline-block font-semibold"
+                                                    {n.type.startsWith('EMAIL_') && <span className="block mt-2 text-xs font-semibold text-primary">{n.metadata?.deliveryStatus === 'DELIVERED' ? 'Entrega confirmada · Leer correo' : n.metadata?.deliveryStatus === 'BOUNCED' ? 'No entregado por email · Leer en Finix' : 'Enviado · Leer correo'}</span>}
+                                                    <time dateTime={n.createdAt} className="text-[0.8125rem] mt-1.5 inline-block font-semibold"
                                                         style={{ color: isUnread ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground) / 0.6)' }}>
                                                         {formatNotificationTime(n.createdAt, timeZone, locale)}
                                                     </time>
@@ -297,7 +300,7 @@ export default function Notifications() {
                         <button
                             onClick={() => loadNotifications(nextCursor)}
                             disabled={isLoadingMore}
-                            className="text-[13px] font-bold px-6 py-2.5 rounded-full transition-all"
+                            className="text-[0.8125rem] font-bold px-6 py-2.5 rounded-full transition-all"
                             style={{
                                 color: 'hsl(var(--foreground))',
                                 background: 'hsl(var(--secondary))',

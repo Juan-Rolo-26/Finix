@@ -21,13 +21,13 @@ export function CorporateBondsCard() {
             <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border/60 bg-muted/20">
                 <div className="flex items-center gap-2">
                     <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-[13px] font-bold text-foreground tracking-tight select-none">
+                    <h3 className="text-[0.8125rem] font-bold text-foreground tracking-tight select-none">
                         Obligaciones Negociables (ONs)
                     </h3>
                 </div>
                 <button
                     onClick={() => navigate('/market')}
-                    className="text-muted-foreground hover:text-emerald-500 transition-colors p-0.5 rounded flex items-center gap-0.5 text-[11px] font-bold"
+                    className="text-muted-foreground hover:text-emerald-500 transition-colors p-0.5 rounded flex items-center gap-0.5 text-[0.6875rem] font-bold"
                     aria-label="Ver todas las Obligaciones Negociables"
                 >
                     <ChevronRight className="w-4 h-4" />
@@ -50,28 +50,28 @@ export function CorporateBondsCard() {
                 <table className="w-full border-collapse text-left">
                     <thead>
                         <tr className="border-b border-border/60 bg-[#ebebeb] dark:bg-[#222222]">
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none">
                                 ESPECIE
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none">
                                 NOMBRE
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-center">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-center">
                                 VTO.
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
                                 ÚLTIMO
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
                                 PARIDAD
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
                                 TIR
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
                                 VOLUMEN
                             </th>
-                            <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
+                            <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] tracking-wider uppercase select-none text-right">
                                 % DÍA
                             </th>
                         </tr>
@@ -83,28 +83,28 @@ export function CorporateBondsCard() {
                                 onClick={() => navigate(`/market?symbol=${encodeURIComponent(bond.symbol)}`)}
                                 className="group hover:bg-muted/40 cursor-pointer transition-colors"
                             >
-                                <td className="px-3 py-1.5 text-[11.5px] font-bold text-foreground group-hover:text-emerald-500 transition-colors">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-bold text-foreground group-hover:text-emerald-500 transition-colors">
                                     {bond.symbol}
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] text-muted-foreground truncate max-w-[120px]">
+                                <td className="px-3 py-1.5 text-[0.71875rem] text-muted-foreground truncate max-w-[120px]">
                                     {bond.name}
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] font-mono text-muted-foreground text-center">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-mono text-muted-foreground text-center">
                                     {bond.maturity}
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] font-mono text-right font-semibold text-foreground">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-mono text-right font-semibold text-foreground">
                                     {formatNumberAr(bond.last, 2)}
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] font-mono text-right text-muted-foreground">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-mono text-right text-muted-foreground">
                                     {formatNumberAr(bond.parity, 1)}
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] font-mono text-right font-bold text-emerald-600 dark:text-emerald-400">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-mono text-right font-bold text-emerald-600 dark:text-emerald-400">
                                     {bond.tir.toFixed(1).replace('.', ',')}%
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] font-mono text-right text-muted-foreground">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-mono text-right text-muted-foreground">
                                     {bond.volume.toLocaleString('es-AR')}
                                 </td>
-                                <td className="px-3 py-1.5 text-[11.5px] font-mono text-right">
+                                <td className="px-3 py-1.5 text-[0.71875rem] font-mono text-right">
                                     {formatPct(bond.dayChangePct)}
                                 </td>
                             </tr>

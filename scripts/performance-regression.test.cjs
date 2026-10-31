@@ -70,8 +70,10 @@ test('feed filters follows in SQL, bounds pages and isolates user caches', async
 
 test('notification cursors retain every record over successive pages', async () => {
     const all = Array.from({ length: 7 }, (_, i) => ({ id: String(i), createdAt: new Date(), type: 'SOCIAL_LIKE', title: 'Like' }));
-    const service = Object.create(NotificationsService.prototype);
-    service.prisma = { notification: { findMany: async args => all.slice(args.cursor ? Number(args.cursor.id) + 1 : 0, (args.cursor ? Number(args.cursor.id) + 1 : 0) + args.take) } };
+    const service = new NotificationsService({
+        platformSetting: { findUnique: async () => ({ key: 'history-imported' }) },
+        notification: { findMany: async args => all.slice(args.cursor ? Number(args.cursor.id) + 1 : 0, (args.cursor ? Number(args.cursor.id) + 1 : 0) + args.take) },
+    }, {});
     const first = await service.getNotifications('u', { limit: 3 });
     const second = await service.getNotifications('u', { limit: 3, cursor: first.nextCursor });
     const third = await service.getNotifications('u', { limit: 3, cursor: second.nextCursor });

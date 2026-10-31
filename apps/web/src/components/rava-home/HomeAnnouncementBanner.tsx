@@ -114,7 +114,7 @@ export function HomeAnnouncementBanner() {
 
                     {/* Text block: Quote & attribution + Navigation controls */}
                     <div className="min-w-0 flex-1 w-full space-y-2.5">
-                        <blockquote className="text-base sm:text-lg md:text-[19px] font-medium text-foreground leading-snug sm:leading-relaxed tracking-tight text-center sm:text-left">
+                        <blockquote className="text-base sm:text-lg md:text-[1.1875rem] font-medium text-foreground leading-snug sm:leading-relaxed tracking-tight text-center sm:text-left">
                             “{quote.quote}”
                         </blockquote>
 
@@ -130,7 +130,7 @@ export function HomeAnnouncementBanner() {
 
                             {/* Minimal Navigation */}
                             <div className="flex items-center gap-1 ml-auto shrink-0">
-                                <span className="text-[11px] font-mono text-muted-foreground mr-1.5 select-none">
+                                <span className="text-[0.6875rem] font-mono text-muted-foreground mr-1.5 select-none">
                                     {currentIdx + 1} / {totalQuotes}
                                 </span>
                                 <button

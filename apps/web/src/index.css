@@ -1778,3 +1778,9 @@ html, body, body *:not(.emoji-glyph):not(.emoji-glyph *), input::placeholder, te
     .analysis-page .grid-cols-2 { grid-template-columns: minmax(0, 1fr); }
     .analysis-page .recharts-responsive-container { min-width: 0; max-width: 100%; overflow: hidden; }
 }
+
+/* Keep the portal fluid on desktop instead of shrinking inside a fixed width cap. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.finix-fluid-container { width: 100%; max-width: none; padding-inline: clamp(12px, 4.2vw, 84px); }
+@media (max-width: 767px) { .finix-fluid-container { padding-inline: 12px; } }
+@media (min-width: 1536px) { :root { font-size: clamp(16px, 1.0416667vw, 20px); } }

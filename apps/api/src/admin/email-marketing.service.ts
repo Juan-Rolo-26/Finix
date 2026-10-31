@@ -1,3 +1,4 @@
+import { emailNotification, emailNotificationDelivery, emailNotificationId } from '../notifications/email-notification';
 import { isCurrentDailyCampaign } from './newsletter-day';
 import { isOfficialPublisher } from '../posts/publication-email';
 import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
@@ -151,6 +152,8 @@ export class EmailMarketingService {
                     const success = ['delivered', 'opened', 'clicked'].includes(event);
                     if (success) delivered++; else bounced++;
                     await tx.emailEvent.create({ data: { type: success ? 'DELIVERED' : 'BOUNCED', campaignId: row.campaignId, recipientId: row.id, userId: row.userId, providerId: row.providerId } });
+                    await tx.notification.updateMany({ where: { id: emailNotificationId(row.id), userId: row.userId },
+                        data: emailNotificationDelivery({ ...row, status: success ? 'SENT' : 'BOUNCED', deliveredAt: success ? new Date() : null }) });
                 }
             });
             await new Promise(resolve => setTimeout(resolve, 550));
@@ -316,8 +319,11 @@ export class EmailMarketingService {
                 }
                 if (!row.firstAttemptAt) await this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { firstAttemptAt: new Date() } });
                 const result = await this.mail.sendEmail({ to: row.email, ...snapshot, idempotencyKey: 'campaign/' + row.id });
+                const sentAt = new Date();
+                const notice = emailNotification({ ...row, status: 'SENT', sentAt, deliveredAt: null, campaign });
                 await this.prisma.$transaction([
-                    this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SENT', sentAt: new Date(), providerId: result.id, lockedUntil: null } }),
+                    this.prisma.emailCampaignRecipient.update({ where: { id: row.id }, data: { status: 'SENT', sentAt, providerId: result.id, lockedUntil: null } }),
+                    this.prisma.notification.upsert({ where: { id: notice.id }, create: notice, update: {} }),
                     this.prisma.emailEvent.create({ data: { type: 'SENT', campaignId: id, recipientId: row.id, userId: row.userId, providerId: result.id } }),
                 ]);
             } catch {

@@ -42,9 +42,9 @@ export function MarketTreemap({
     return (
         <div className={`rounded-xl border border-border/80 bg-[#161a22] text-white overflow-hidden shadow-sm flex flex-col ${className}`}>
             {/* Header bar */}
-            <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#1f2633] border-b border-white/10 text-[11px] font-bold text-gray-300">
+            <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#1f2633] border-b border-white/10 text-[0.6875rem] font-bold text-gray-300">
                 <span className="uppercase tracking-wide">{title}</span>
-                <span className="font-mono text-gray-400 font-normal text-[10px]">{timestamp}</span>
+                <span className="font-mono text-gray-400 font-normal text-[0.625rem]">{timestamp}</span>
             </div>
 
             {/* Treemap Container */}
@@ -82,7 +82,7 @@ export function MarketTreemap({
                             <span className="text-xs md:text-sm font-bold tracking-tight">
                                 {tile.symbol}
                             </span>
-                            <span className="text-[10px] md:text-[11px] font-medium opacity-90">
+                            <span className="text-[0.625rem] md:text-[0.6875rem] font-medium opacity-90">
                                 {tile.changePct > 0 ? '+' : ''}{tile.changePct.toFixed(2)}%
                             </span>
                         </div>
@@ -100,10 +100,10 @@ export function MarketTreemap({
                                     tile.changePct
                                 )}`}
                             >
-                                <span className="text-[10px] font-bold truncate max-w-[60px]">
+                                <span className="text-[0.625rem] font-bold truncate max-w-[60px]">
                                     {tile.symbol}
                                 </span>
-                                <span className="text-[9px] font-medium opacity-90">
+                                <span className="text-[0.5625rem] font-medium opacity-90">
                                     {tile.changePct > 0 ? '+' : ''}{tile.changePct.toFixed(2)}%
                                 </span>
                             </div>

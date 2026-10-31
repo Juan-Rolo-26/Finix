@@ -107,12 +107,12 @@ export function RavaMobileView({
                         return (
                             <div
                                 key={idx}
-                                className="flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap pr-2 border-r border-border/40 last:border-r-0"
+                                className="flex items-center gap-1.5 text-[0.6875rem] font-medium whitespace-nowrap pr-2 border-r border-border/40 last:border-r-0"
                             >
-                                <span className="text-muted-foreground text-[10.5px]">{item.label}</span>
-                                <span className="font-mono font-bold text-foreground text-[11.5px]">{item.price}</span>
+                                <span className="text-muted-foreground text-[0.65625rem]">{item.label}</span>
+                                <span className="font-mono font-bold text-foreground text-[0.71875rem]">{item.price}</span>
                                 <span
-                                    className={`inline-flex items-center font-mono font-bold text-[10.5px] ${
+                                    className={`inline-flex items-center font-mono font-bold text-[0.65625rem] ${
                                         isPos
                                             ? 'text-[#15803d] dark:text-[#22c55e]'
                                             : 'text-[#b91c1c] dark:text-[#ef4444]'
@@ -136,7 +136,7 @@ export function RavaMobileView({
                             <button
                                 key={cat.id}
                                 onClick={() => setSelectedCategory(cat.id)}
-                                className={`h-6 px-2.5 rounded-[4px] text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                                className={`h-6 px-2.5 rounded-[4px] text-[0.6875rem] font-medium transition-all cursor-pointer whitespace-nowrap ${
                                     isSelected
                                         ? 'bg-emerald-600 text-white dark:bg-emerald-600 dark:text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
@@ -177,14 +177,14 @@ export function RavaMobileView({
                     <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-1.5">
                             <Flame className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            <h3 className="text-[13px] font-bold text-primary tracking-tight">Rendimientos Argentina</h3>
+                            <h3 className="text-[0.8125rem] font-bold text-primary tracking-tight">Rendimientos Argentina</h3>
                         </div>
 
                         {/* Segmented Switcher */}
                         <div className="inline-flex items-center bg-muted/40 dark:bg-muted/20 rounded-md p-0.5 border border-border/50 gap-0.5">
                             <button
                                 onClick={() => setGainersTab('gainers')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     gainersTab === 'gainers'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -194,7 +194,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setGainersTab('losers')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     gainersTab === 'losers'
                                         ? 'bg-rose-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -210,9 +210,9 @@ export function RavaMobileView({
                         <table className="w-full border-collapse text-left text-xs">
                             <thead>
                                 <tr className="border-b border-border/60 bg-[#ebebeb] dark:bg-[#222222]">
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase">ESPECIE</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase">ESPECIE</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -222,11 +222,11 @@ export function RavaMobileView({
                                         onClick={() => navigate(`/market?symbol=${encodeURIComponent(row.symbol)}`)}
                                         className="even:bg-[#f6f7f9] dark:even:bg-white/[0.03] hover:bg-[#eaf1f7] dark:hover:bg-white/[0.07] cursor-pointer transition-colors"
                                     >
-                                        <td className="px-3 py-1.5 text-[12px] font-bold text-foreground">{row.symbol}</td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-foreground font-semibold text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-bold text-foreground">{row.symbol}</td>
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-foreground font-semibold text-right">
                                             {formatNumberAr(row.last, 2)}
                                         </td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                             {formatPct(row.dayChangePct)}
                                         </td>
                                     </tr>
@@ -243,14 +243,14 @@ export function RavaMobileView({
                     <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-1.5">
                             <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            <h3 className="text-[13px] font-bold text-primary tracking-tight">Acciones BYMA</h3>
+                            <h3 className="text-[0.8125rem] font-bold text-primary tracking-tight">Acciones BYMA</h3>
                         </div>
 
                         {/* Sub-panel tabs */}
                         <div className="inline-flex items-center bg-muted/40 dark:bg-muted/20 rounded-md p-0.5 border border-border/50 gap-0.5">
                             <button
                                 onClick={() => setEquityTab('lider')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     equityTab === 'lider'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -260,7 +260,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setEquityTab('general')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     equityTab === 'general'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -270,7 +270,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setEquityTab('adrs')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     equityTab === 'adrs'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -286,10 +286,10 @@ export function RavaMobileView({
                         <table className="w-full border-collapse text-left text-xs">
                             <thead>
                                 <tr className="border-b border-border/60 bg-[#ebebeb] dark:bg-[#222222]">
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase">ESPECIE</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% MES</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase">ESPECIE</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% MES</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -299,14 +299,14 @@ export function RavaMobileView({
                                         onClick={() => navigate(`/market?symbol=${encodeURIComponent(row.symbol)}`)}
                                         className="even:bg-[#f6f7f9] dark:even:bg-white/[0.03] hover:bg-[#eaf1f7] dark:hover:bg-white/[0.07] cursor-pointer transition-colors"
                                     >
-                                        <td className="px-3 py-1.5 text-[12px] font-bold text-foreground">{row.symbol}</td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-foreground font-semibold text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-bold text-foreground">{row.symbol}</td>
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-foreground font-semibold text-right">
                                             {formatNumberAr(row.last, 2)}
                                         </td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                             {formatPct(row.dayChangePct)}
                                         </td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                             {formatPct(row.monthChangePct)}
                                         </td>
                                     </tr>
@@ -343,14 +343,14 @@ export function RavaMobileView({
                     <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-1.5">
                             <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            <h3 className="text-[13px] font-bold text-primary tracking-tight">Renta Fija & Bonos</h3>
+                            <h3 className="text-[0.8125rem] font-bold text-primary tracking-tight">Renta Fija & Bonos</h3>
                         </div>
 
                         {/* Segmented tabs */}
                         <div className="inline-flex items-center bg-muted/40 dark:bg-muted/20 rounded-md p-0.5 border border-border/50 gap-0.5">
                             <button
                                 onClick={() => setBondsTab('pesos')}
-                                className={`h-5 px-1.5 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-1.5 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     bondsTab === 'pesos'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -360,7 +360,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setBondsTab('ons')}
-                                className={`h-5 px-1.5 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-1.5 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     bondsTab === 'ons'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -370,7 +370,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setBondsTab('bopreal')}
-                                className={`h-5 px-1.5 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-1.5 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     bondsTab === 'bopreal'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -380,7 +380,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setBondsTab('cer')}
-                                className={`h-5 px-1.5 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-1.5 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     bondsTab === 'cer'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -398,9 +398,9 @@ export function RavaMobileView({
                             <table className="w-full border-collapse text-left text-xs">
                                 <thead>
                                     <tr className="border-b border-border/60 bg-[#ebebeb] dark:bg-[#222222]">
-                                        <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase">ESPECIE</th>
-                                        <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
-                                        <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
+                                        <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase">ESPECIE</th>
+                                        <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
+                                        <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -415,11 +415,11 @@ export function RavaMobileView({
                                             onClick={() => navigate(`/market?symbol=${encodeURIComponent(row.symbol)}`)}
                                             className="even:bg-[#f6f7f9] dark:even:bg-white/[0.03] hover:bg-[#eaf1f7] dark:hover:bg-white/[0.07] cursor-pointer transition-colors"
                                         >
-                                            <td className="px-3 py-1.5 text-[12px] font-bold text-foreground">{row.symbol}</td>
-                                            <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-foreground font-semibold text-right">
+                                            <td className="px-3 py-1.5 text-[0.75rem] font-bold text-foreground">{row.symbol}</td>
+                                            <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-foreground font-semibold text-right">
                                                 {formatNumberAr(row.last, 2)}
                                             </td>
-                                            <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                            <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                                 {formatPct(row.dayChangePct)}
                                             </td>
                                         </tr>
@@ -437,13 +437,13 @@ export function RavaMobileView({
                     <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20">
                         <div className="flex items-center gap-1.5">
                             <Coins className="w-4 h-4 text-amber-500" />
-                            <h3 className="text-[13px] font-bold text-primary tracking-tight">Criptomonedas</h3>
+                            <h3 className="text-[0.8125rem] font-bold text-primary tracking-tight">Criptomonedas</h3>
                         </div>
 
                         <div className="inline-flex items-center bg-muted/40 dark:bg-muted/20 rounded-md p-0.5 border border-border/50 gap-0.5">
                             <button
                                 onClick={() => setCryptoTab('global')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     cryptoTab === 'global'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -453,7 +453,7 @@ export function RavaMobileView({
                             </button>
                             <button
                                 onClick={() => setCryptoTab('bolsa')}
-                                className={`h-5 px-2 rounded-[3px] text-[10.5px] font-medium transition-all ${
+                                className={`h-5 px-2 rounded-[3px] text-[0.65625rem] font-medium transition-all ${
                                     cryptoTab === 'bolsa'
                                         ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -468,9 +468,9 @@ export function RavaMobileView({
                         <table className="w-full border-collapse text-left text-xs">
                             <thead>
                                 <tr className="border-b border-border/60 bg-[#ebebeb] dark:bg-[#222222]">
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase">CRIPTO</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
-                                    <th className="px-3 py-1.5 text-[11px] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase">CRIPTO</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">ÚLTIMO</th>
+                                    <th className="px-3 py-1.5 text-[0.6875rem] font-bold text-[#666666] dark:text-[#888888] uppercase text-right">% DÍA</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -480,13 +480,13 @@ export function RavaMobileView({
                                         onClick={() => navigate(`/market?symbol=${encodeURIComponent(row.symbol)}`)}
                                         className="even:bg-[#f6f7f9] dark:even:bg-white/[0.03] hover:bg-[#eaf1f7] dark:hover:bg-white/[0.07] cursor-pointer transition-colors"
                                     >
-                                        <td className="px-3 py-1.5 text-[12px] font-bold text-foreground">{row.symbol}</td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-foreground font-semibold text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-bold text-foreground">{row.symbol}</td>
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-foreground font-semibold text-right">
                                             {typeof row.last === 'number'
                                                 ? formatNumberAr(row.last, row.last >= 1000 ? 0 : 2)
                                                 : row.last}
                                         </td>
-                                        <td className="px-3 py-1.5 text-[12px] font-mono tabular-nums text-right">
+                                        <td className="px-3 py-1.5 text-[0.75rem] font-mono tabular-nums text-right">
                                             {formatPct(row.dayChangePct)}
                                         </td>
                                     </tr>

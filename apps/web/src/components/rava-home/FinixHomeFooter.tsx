@@ -53,7 +53,7 @@ export function FinixHomeFooter() {
                             <li>
                                 <Link to="/laboratorio" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
                                     <span>Laboratorio Financiero</span>
-                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[0.5625rem] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                         <Crown className="w-2 h-2 fill-amber-400 text-amber-500 shrink-0" />
                                         PRO
                                     </span>
@@ -62,7 +62,7 @@ export function FinixHomeFooter() {
                             <li>
                                 <Link to="/analysis" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
                                     <span>Modelos DCF y Valuación</span>
-                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[0.5625rem] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                         <Crown className="w-2 h-2 fill-amber-400 text-amber-500 shrink-0" />
                                         PRO
                                     </span>
@@ -71,7 +71,7 @@ export function FinixHomeFooter() {
                             <li>
                                 <Link to="/market/seguimiento" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
                                     <span>Seguimiento / Watchlists</span>
-                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[0.5625rem] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                         <Crown className="w-2 h-2 fill-amber-400 text-amber-500 shrink-0" />
                                         PRO
                                     </span>
@@ -81,7 +81,7 @@ export function FinixHomeFooter() {
                             <li>
                                 <Link to="/portfolio" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
                                     <span>Mi Portafolio</span>
-                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[0.5625rem] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                         <Crown className="w-2 h-2 fill-amber-400 text-amber-500 shrink-0" />
                                         PRO
                                     </span>
@@ -90,7 +90,7 @@ export function FinixHomeFooter() {
                             <li>
                                 <Link to="/mercado/mejores-rendimientos" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
                                     <span>Mejores Rendimientos</span>
-                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[0.5625rem] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                                         <Crown className="w-2 h-2 fill-amber-400 text-amber-500 shrink-0" />
                                         PRO
                                     </span>
@@ -117,10 +117,10 @@ export function FinixHomeFooter() {
 
                 {/* Disclaimer */}
                 <div className="pt-6 space-y-3">
-                    <p className="text-[11px] text-muted-foreground/80 leading-relaxed text-justify">
+                    <p className="text-[0.6875rem] text-muted-foreground/80 leading-relaxed text-justify">
                         <strong>Aviso Legal y Disclaimer Financiero:</strong> La información provista por Finix (finixarg.com) tiene fines exclusivamente informativos y educativos. Finix no brinda asesoramiento financiero ni sugerencias personalizadas de inversión. Los precios y cotizaciones pueden contar con demoras reglamentarias según el proveedor del mercado. El rendimiento pasado no garantiza resultados futuros.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-between text-[11px] text-muted-foreground pt-2">
+                    <div className="flex flex-col sm:flex-row items-center justify-between text-[0.6875rem] text-muted-foreground pt-2">
                         <span>© {new Date().getFullYear()} Finix. Todos los derechos reservados.</span>
                         <span className="flex items-center gap-1 mt-1 sm:mt-0">
                             Hecho para inversores por inversores
