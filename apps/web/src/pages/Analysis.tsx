@@ -733,13 +733,14 @@ function getMetricGuide(label: string): MetricGuideInfo {
 }
 
 // ─── SUB-COMPONENTE: TARJETA DE MÉTRICA INDIVIDUAL CON GUÍA DESPLEGABLE ────────
-function MetricBox({ label, value, unit = '', highlight = false, badge = '', tooltip = '' }: {
+function MetricBox({ label, value, unit = '', highlight = false, badge = '', tooltip = '', missingReason = '' }: {
     label: string;
     value: any;
     unit?: string;
     highlight?: boolean;
     badge?: string;
     tooltip?: string;
+    missingReason?: string;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const missing = value === null || value === undefined || value === '';
@@ -787,6 +788,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                         )}
                     </div>
 
+                    {missing && <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{missingReason || 'No se obtuvo un dato verificable. Revisá las fuentes y los períodos de la ficha; no equivale a cero.'}</p>}
                     {tooltip && !isOpen && (
                         <p className="text-[11px] text-muted-foreground/70 truncate mt-1 leading-normal" title={tooltip}>
                             {tooltip}
@@ -1272,20 +1274,21 @@ export default function Analysis() {
                     />
                     <MetricBox
                         label="P/E Ratio"
+                        missingReason={a.eps != null && a.eps <= 0 ? "No aplica un P/E positivo: el beneficio por acción es nulo o negativo." : undefined}
                         value={a.peRatio != null ? Number(a.peRatio).toFixed(1) : null}
                         unit="x"
                         highlight
                         tooltip="Precio sobre Beneficios"
                     />
                     <MetricBox
-                        label="Vol. Hoy"
+                        label="Vol. sesión"
                         value={formatNumber(a.volume, true)}
-                        tooltip="Acciones negociadas hoy"
+                        tooltip="Acciones negociadas en la última sesión disponible"
                     />
                     <MetricBox
-                        label="Vol. Prom. 30D"
+                        label="Vol. Prom. 30 sesiones"
                         value={formatNumber(a.avgVolume, true)}
-                        tooltip="Promedio diario 30 días"
+                        tooltip="Promedio de las 30 sesiones previas, sin incluir la sesión actual"
                     />
                     <MetricBox
                         label="Vol. Relativo"
@@ -1295,7 +1298,7 @@ export default function Analysis() {
                         tooltip="Volumen actual vs promedio"
                     />
                     <MetricBox
-                        label="Beta (1A)"
+                        label="Beta"
                         value={a.beta != null ? Number(a.beta).toFixed(2) : null}
                         tooltip="Sensibilidad vs mercado"
                     />
@@ -1334,7 +1337,12 @@ export default function Analysis() {
                 )}
             </div>
 
-            {series.meta && (
+            {(series.meta?.market || series.meta?.refreshPolicy) && <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground leading-relaxed space-y-1">
+                {series.meta.market && <p><strong className="text-foreground">Datos de mercado:</strong> {series.meta.market.source} · {series.meta.market.sessionAt ? `sesión del ${new Date(series.meta.market.sessionAt).toLocaleDateString('es-AR', {timeZone:'America/New_York'})}` : 'última referencia disponible'}. El promedio utiliza 30 sesiones anteriores completas. Fuera de rueda se muestra la última sesión disponible.</p>}
+                {series.meta.refreshPolicy?.nextDueAt && <p><strong className="text-foreground">Revisión automática cada 2 meses.</strong> Próxima revisión: {new Date(series.meta.refreshPolicy.nextDueAt).toLocaleDateString('es-AR', {timeZone:'America/Argentina/Buenos_Aires'})}. Los volúmenes se consultan además al finalizar cada día hábil.</p>}
+                {Object.keys(series.meta?.retainedValues || {}).length > 0 && <p>Algunos valores conservan su última medición verificada porque la consulta nueva no ofreció un reemplazo válido.</p>}
+            </div>}
+            {series.meta?.currency && (
                 <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
                     <strong className="text-foreground">Períodos de la información:</strong> ingresos {series.meta.basis || 'no informados'} al {series.meta.revenue || 'no informado'} · balance al {series.meta.balance || 'no informado'} · flujo de caja {series.meta.cashFlowBasis || 'no informado'} al {series.meta.cashFlow || 'no informado'} · moneda contable {financialCurrency}. Cotización y capitalización en USD. Consultado el {new Date(series.meta.queriedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} ART. Los campos sin datos publicados se muestran como «No informado».
                 </div>

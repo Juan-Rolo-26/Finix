@@ -1,3 +1,4 @@
+import { collectFundamentalInputs, supplementFundamentals } from './fundamental-providers';
 /** Observed provider values and SEC facts only. Unknown fields remain null. */
 export type FundamentalInputs = { ticker: string; profile?: any; finnhubProfile?: any; finnhub?: any; sec?: any; ratios?: any; keyMetrics?: any; estimates?: any[]; segments?: any[]; geography?: any[]; queriedAt?: string; reported?: any };
 const num = (v: any): number | null => typeof v === 'number' && Number.isFinite(v) ? v : null;
@@ -141,16 +142,7 @@ export function buildVerifiedFundamentals(input: FundamentalInputs) {
     return data;
 }
 
-let secTickerCache: { at:number; data:any } | undefined;
 export async function fetchVerifiedFundamentals(symbol: string) {
-    const ticker=symbol.trim().toUpperCase().split(':').at(-1)!;
-    if(!/^[A-Z0-9.-]{1,16}$/.test(ticker)) throw new Error('Ticker inválido.');
-    const read=async(url:string)=>{try{const response=await fetch(url,{headers:{'User-Agent':'Finix Research contact@finixarg.com'},signal:AbortSignal.timeout(12000)});return response.ok?await response.json():null;}catch{return null;}};
-    const token=encodeURIComponent(process.env.FINNHUB_API_KEY||'');
-    const [finnhub,finnhubProfile,reported,quote]=await Promise.all([read('https://finnhub.io/api/v1/stock/metric?symbol='+ticker+'&metric=all&token='+token),read('https://finnhub.io/api/v1/stock/profile2?symbol='+ticker+'&token='+token),read('https://finnhub.io/api/v1/stock/financials-reported?symbol='+ticker+'&freq=annual&token='+token),read('https://finnhub.io/api/v1/quote?symbol='+ticker+'&token='+token)]);
-    if(!finnhub?.metric||!Object.keys(finnhub.metric).length)throw new Error('El proveedor no devolvió métricas verificables. Reintentá sin guardar valores de ejemplo.');
-    if(!secTickerCache||Date.now()-secTickerCache.at>86400000){const data=await read('https://www.sec.gov/files/company_tickers.json');if(data)secTickerCache={at:Date.now(),data};}
-    const issuer=Object.values(secTickerCache?.data||{}).find((x:any)=>x.ticker===ticker) as any;
-    const sec=issuer?await read('https://data.sec.gov/api/xbrl/companyfacts/CIK'+String(issuer.cik_str).padStart(10,'0')+'.json'):null;
-    return buildVerifiedFundamentals({ticker,profile:{price:quote?.c>0?quote.c:null,changePercentage:quote?.dp},finnhubProfile,finnhub,sec,reported});
+    const collected = await collectFundamentalInputs(symbol);
+    return supplementFundamentals(buildVerifiedFundamentals(collected.inputs), collected);
 }

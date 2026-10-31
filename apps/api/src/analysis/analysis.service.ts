@@ -33,6 +33,9 @@ export class AnalysisService {
      */
     public calculateDerivedMetrics(data: any) {
         const computed = { ...data };
+        let retained: Record<string, any> = {};
+        try { retained = JSON.parse(computed.historicalSeries || '{}').meta?.retainedValues || {}; } catch { /* Legacy records. */ }
+        const compatible = (...fields: string[]) => fields.every(field => !retained[field]);
 
         // 1. Revenue Growth YoY (si no viene explícito o si tenemos histórico)
         if (computed.revenue && computed.prevRevenue && !computed.revenueGrowthYoY) {
@@ -40,22 +43,22 @@ export class AnalysisService {
         }
 
         // 2. Net Debt = Total Debt - Cash
-        if (computed.totalDebt !== null && computed.totalDebt !== undefined && computed.cash !== null && computed.cash !== undefined) {
+        if (compatible('totalDebt', 'cash') && computed.totalDebt !== null && computed.totalDebt !== undefined && computed.cash !== null && computed.cash !== undefined) {
             computed.netDebt = Number((computed.totalDebt - computed.cash).toFixed(2));
         }
 
         // 3. Net Debt / EBITDA
-        if (computed.netDebtToEbitda == null && computed.netDebt !== null && computed.netDebt !== undefined && computed.ebitda) {
+        if (compatible('netDebt', 'ebitda') && computed.netDebtToEbitda == null && computed.netDebt !== null && computed.netDebt !== undefined && computed.ebitda) {
             computed.netDebtToEbitda = Number((computed.netDebt / computed.ebitda).toFixed(2));
         }
 
         // 4. Free Cash Flow = Operating Cash Flow - CapEx
-        if (computed.operatingCashFlow !== null && computed.operatingCashFlow !== undefined && computed.capEx !== null && computed.capEx !== undefined) {
+        if (compatible('operatingCashFlow', 'capEx') && computed.operatingCashFlow !== null && computed.operatingCashFlow !== undefined && computed.capEx !== null && computed.capEx !== undefined) {
             computed.freeCashFlow = Number((computed.operatingCashFlow - Math.abs(computed.capEx)).toFixed(2));
         }
 
         // 5. FCF Yield = (Free Cash Flow / Market Cap) * 100
-        if (computed.fcfYield == null && computed.freeCashFlow && computed.marketCap && (() => { try { const meta = JSON.parse(computed.historicalSeries || '{}').meta; return meta?.currency === 'USD' && meta?.cashFlowBasis === 'TTM'; } catch { return false; } })()) {
+        if (compatible('freeCashFlow', 'marketCap') && computed.fcfYield == null && computed.freeCashFlow && computed.marketCap && (() => { try { const meta = JSON.parse(computed.historicalSeries || '{}').meta; return meta?.currency === 'USD' && meta?.cashFlowBasis === 'TTM'; } catch { return false; } })()) {
             computed.fcfYield = Number(((computed.freeCashFlow / computed.marketCap) * 100).toFixed(2));
         }
 
@@ -201,6 +204,8 @@ export class AnalysisService {
                 logoUrl: parsed.logoUrl,
                 currentPrice: parsed.currentPrice,
                 dailyChange: parsed.dailyChange,
+                volume: parsed.volume, avgVolume: parsed.avgVolume, relativeVolume: parsed.relativeVolume,
+                historicalSeries: { meta: { market: parsed.historicalSeries?.meta?.market, refreshPolicy: parsed.historicalSeries?.meta?.refreshPolicy } },
                 high52w: parsed.high52w,
                 low52w: parsed.low52w,
                 marketCap: parsed.marketCap,
