@@ -1,6 +1,6 @@
 import { formatAnalysisMetric } from '@/lib/analysisFormatting';
 import AnalysisRequestBox from '@/components/analysis/AnalysisRequestBox';
-import { useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -733,7 +733,8 @@ function getMetricGuide(label: string): MetricGuideInfo {
 }
 
 // ─── SUB-COMPONENTE: TARJETA DE MÉTRICA INDIVIDUAL CON GUÍA DESPLEGABLE ────────
-function MetricBox({ label, value, unit = '', highlight = false, badge = '', tooltip = '', missingReason = '' }: {
+const MetricEvidenceContext = createContext<Record<string, any>>({});
+function MetricBox({ label, value, unit = '', highlight = false, badge = '', tooltip = '', missingReason = '', metricKey = '' }: {
     label: string;
     value: any;
     unit?: string;
@@ -741,9 +742,13 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
     badge?: string;
     tooltip?: string;
     missingReason?: string;
+    metricKey?: string;
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const missing = value === null || value === undefined || value === '';
+    const evidence = useContext(MetricEvidenceContext)[metricKey];
+    const displayed = missing ? evidence?.display || 'En validación' : formatAnalysisMetric(value);
+    const reason = evidence?.reason || missingReason || 'La consulta no aportó una cifra verificable para esta métrica. No se convierte un dato ausente en cero.';
 
     const guide = getMetricGuide(label);
 
@@ -752,7 +757,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
             role="button"
             tabIndex={0}
             aria-expanded={isOpen}
-            aria-label={`${label}: ${formatAnalysisMetric(value)}`}
+            aria-label={`${label}: ${displayed}`}
             onKeyDown={event => {
                 if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
                     event.preventDefault();
@@ -780,7 +785,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                     <div className={`font-mono tracking-tight font-bold leading-tight ${missing ? 'text-xs sm:text-sm font-normal text-muted-foreground' : 'text-base sm:text-lg'} ${
                         highlight && !missing ? 'text-primary' : 'text-foreground'
                     }`}>
-                        {formatAnalysisMetric(value)}
+                        {displayed}
                         {unit && !missing && (
                             <span className="text-xs font-sans font-medium text-muted-foreground ml-1">
                                 {unit}
@@ -788,7 +793,8 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                         )}
                     </div>
 
-                    {missing && <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{missingReason || 'No se obtuvo un dato verificable. Revisá las fuentes y los períodos de la ficha; no equivale a cero.'}</p>}
+                    {missing && <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{reason}</p>}
+                    {isOpen && evidence?.source && <p className="mt-2 text-xs text-muted-foreground leading-relaxed">Fuente: {/^https:\/\//.test(evidence.source) ? <a href={evidence.source} target="_blank" rel="noopener noreferrer" className="underline text-primary">ver publicación</a> : evidence.source}{evidence.period ? ` · Período: ${evidence.period}` : ''}{evidence.method ? ` · ${evidence.method}` : ''}</p>}
                     {tooltip && !isOpen && (
                         <p className="text-[11px] text-muted-foreground/70 truncate mt-1 leading-normal" title={tooltip}>
                             {tooltip}
@@ -797,7 +803,7 @@ function MetricBox({ label, value, unit = '', highlight = false, badge = '', too
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                    {badge && (
+                    {badge && !missing && (
                         <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded border border-primary/30 bg-primary/10 text-primary uppercase tracking-wider">
                             {badge}
                         </span>
@@ -1157,6 +1163,7 @@ export default function Analysis() {
     const businessModel = a.businessModel || [];
     const competitors = a.competitorsData || [];
     const series = a.historicalSeries || {};
+    const metricEvidence = { ...(series.meta?.fieldAvailability || {}), ...Object.fromEntries(Object.entries(series.meta?.fieldSources || {}).map(([key, source]) => [key, { ...(series.meta?.fieldAvailability?.[key] || {}), ...(source as object) }])) };
     const financialCurrency = series.meta?.currency || 'USD';
     const financialMoney = (value: number | null | undefined, compact = false) => {
         if (value == null) return null;
@@ -1170,6 +1177,7 @@ export default function Analysis() {
     const methodology = a.valuationMethodology;
 
     return (
+        <MetricEvidenceContext.Provider value={metricEvidence}>
         <div className="analysis-page w-full max-w-7xl mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8 space-y-7 pb-32">
             {/* Navegación Superior */}
             <div className="flex items-center justify-between pb-1">
@@ -1228,7 +1236,7 @@ export default function Analysis() {
                                     : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
                             }`}>
                                 {Number(a.dailyChange) >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-                                <span>{a.dailyChange == null ? 'No informado' : `${Number(a.dailyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.dailyChange)}%`}</span>
+                                <span>{a.dailyChange == null ? 'Sin sesión verificable' : `${Number(a.dailyChange) >= 0 ? '+' : ''}${formatAnalysisMetric(a.dailyChange)}%`}</span>
                                 <span className="text-[10px] font-sans text-muted-foreground font-normal">hoy</span>
                             </div>
                         </div>
@@ -1267,12 +1275,12 @@ export default function Analysis() {
 
                 {/* Métricas de Mercado y Liquidez */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3">
-                    <MetricBox
+                    <MetricBox metricKey="marketCap"
                         label="Cap. Mercado"
                         value={formatCurrency(a.marketCap, true)}
                         tooltip="Capitalización bursátil total"
                     />
-                    <MetricBox
+                    <MetricBox metricKey="eps"
                         label="P/E Ratio"
                         missingReason={a.eps != null && a.eps <= 0 ? "No aplica un P/E positivo: el beneficio por acción es nulo o negativo." : undefined}
                         value={a.peRatio != null ? Number(a.peRatio).toFixed(1) : null}
@@ -1280,24 +1288,24 @@ export default function Analysis() {
                         highlight
                         tooltip="Precio sobre Beneficios"
                     />
-                    <MetricBox
+                    <MetricBox metricKey="volume"
                         label="Vol. sesión"
                         value={formatNumber(a.volume, true)}
                         tooltip="Acciones negociadas en la última sesión disponible"
                     />
-                    <MetricBox
+                    <MetricBox metricKey="avgVolume"
                         label="Vol. Prom. 30 sesiones"
                         value={formatNumber(a.avgVolume, true)}
                         tooltip="Promedio de las 30 sesiones previas, sin incluir la sesión actual"
                     />
-                    <MetricBox
+                    <MetricBox metricKey="relativeVolume"
                         label="Vol. Relativo"
                         value={a.relativeVolume != null ? Number(a.relativeVolume).toFixed(2) : null}
                         unit="x"
                         highlight
                         tooltip="Volumen actual vs promedio"
                     />
-                    <MetricBox
+                    <MetricBox metricKey="beta"
                         label="Beta"
                         value={a.beta != null ? Number(a.beta).toFixed(2) : null}
                         tooltip="Sensibilidad vs mercado"
@@ -1344,7 +1352,7 @@ export default function Analysis() {
             </div>}
             {series.meta?.currency && (
                 <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
-                    <strong className="text-foreground">Períodos de la información:</strong> ingresos {series.meta.basis || 'no informados'} al {series.meta.revenue || 'no informado'} · balance al {series.meta.balance || 'no informado'} · flujo de caja {series.meta.cashFlowBasis || 'no informado'} al {series.meta.cashFlow || 'no informado'} · moneda contable {financialCurrency}. Cotización y capitalización en USD. Consultado el {new Date(series.meta.queriedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} ART. Los campos sin datos publicados se muestran como «No informado».
+                    <strong className="text-foreground">Períodos de la información:</strong> ingresos {series.meta.basis || 'según fuente'} al {series.meta.revenue || 'ver fuente'} · balance al {series.meta.balance || 'ver fuente'} · flujo de caja {series.meta.cashFlowBasis || 'ver fuente'} al {series.meta.cashFlow || 'ver fuente'} · moneda contable {financialCurrency}. Cotización y capitalización en USD. Consultado el {new Date(series.meta.queriedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })} ART. Cada indicador identifica su fuente, su cálculo o el motivo por el que no es aplicable; las estimaciones de modelo se distinguen de los resultados publicados.
                 </div>
             )}
 
@@ -1427,13 +1435,13 @@ export default function Analysis() {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                                 <div className="space-y-2.5">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/15 text-primary border border-primary/25">
-                                        <Target className="w-3.5 h-3.5" /> Valor razonable y valoración
+                                        <Target className="w-3.5 h-3.5" /> Estimación por múltiplos
                                     </div>
                                     <div className="text-4xl sm:text-5xl font-mono font-bold text-foreground tracking-tight">
                                         ${Number(a.estimatedFairValue).toFixed(2)}
                                     </div>
                                     <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl leading-relaxed">
-                                        Precio objetivo intrínseco calculado mediante {methodology?.method || 'flujos de caja descontados (DCF) y múltiplos comparables'}.
+                                        Estimación comparativa calculada mediante {methodology?.method || 'el modelo documentado en esta ficha'}.
                                     </p>
                                 </div>
 
@@ -1472,24 +1480,24 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
-                                <MetricBox label="P/E Ratio (TTM)" value={a.peRatio} unit="x" highlight tooltip="Precio sobre Beneficios últimos 12 meses" />
-                                <MetricBox label="Forward P/E" value={a.forwardPe} unit="x" tooltip="P/E proyectado a próximos 12 meses" />
-                                <MetricBox label="PEG Ratio" value={a.pegRatio} unit="x" tooltip="P/E relativo a la tasa de crecimiento estimada" />
-                                <MetricBox label="Precio / Ventas (P/S)" value={a.priceToSales} unit="x" tooltip="Precio sobre Ventas anuales" />
-                                <MetricBox label="Precio / Valor Libros (P/B)" value={a.priceToBook} unit="x" tooltip="Precio sobre Valor Contable en Libros" />
-                                <MetricBox label="EV / EBITDA" value={a.evToEbitda} unit="x" tooltip="Enterprise Value sobre EBITDA" />
-                                <MetricBox label="EV / Ingresos" value={a.evToRevenue} unit="x" tooltip="Enterprise Value sobre Ingresos" />
-                                <MetricBox label="Precio / Flujo Libre (P/FCF)" value={a.priceToFcf} unit="x" tooltip="Precio sobre Flujo de Caja Libre" />
-                                <MetricBox label="Rendimiento por Dividendo" value={a.dividendYield} unit="%" badge={Number(a.dividendYield) > 2 ? 'Con Dividendo' : undefined} tooltip="Rendimiento anual por dividendo" />
-                                <MetricBox label="P/E Histórico Prom." value={a.historicalAvgPe} unit="x" tooltip="Media histórica de valuación" />
-                                <MetricBox label="P/E Sectorial" value={a.sectorPe} unit="x" tooltip="Promedio ponderado del sector" />
-                                <MetricBox
+                                <MetricBox metricKey="peRatio" label="P/E Ratio (TTM)" value={a.peRatio} unit="x" highlight tooltip="Precio sobre Beneficios últimos 12 meses" />
+                                <MetricBox metricKey="forwardPe" label="Forward P/E" value={a.forwardPe} unit="x" tooltip="P/E proyectado a próximos 12 meses" />
+                                <MetricBox metricKey="pegRatio" label="PEG Ratio" value={a.pegRatio} unit="x" tooltip="P/E relativo a la tasa de crecimiento estimada" />
+                                <MetricBox metricKey="priceToSales" label="Precio / Ventas (P/S)" value={a.priceToSales} unit="x" tooltip="Precio sobre Ventas anuales" />
+                                <MetricBox metricKey="priceToBook" label="Precio / Valor Libros (P/B)" value={a.priceToBook} unit="x" tooltip="Precio sobre Valor Contable en Libros" />
+                                <MetricBox metricKey="evToEbitda" label="EV / EBITDA" value={a.evToEbitda} unit="x" tooltip="Enterprise Value sobre EBITDA" />
+                                <MetricBox metricKey="evToRevenue" label="EV / Ingresos" value={a.evToRevenue} unit="x" tooltip="Enterprise Value sobre Ingresos" />
+                                <MetricBox metricKey="priceToFcf" label="Precio / Flujo Libre (P/FCF)" value={a.priceToFcf} unit="x" tooltip="Precio sobre Flujo de Caja Libre" />
+                                <MetricBox metricKey="dividendYield" label="Rendimiento por Dividendo" value={a.dividendYield} unit="%" badge={Number(a.dividendYield) > 2 ? 'Con Dividendo' : undefined} tooltip="Rendimiento anual por dividendo" />
+                                <MetricBox metricKey="historicalComparison" label={series.meta?.valuationReference?.ratio === 'PS' ? "P/S Histórico Prom." : "P/E Histórico Prom."} value={series.meta?.valuationReference?.mean ?? a.historicalAvgPe} unit="x" tooltip="Media de cierres fiscales positivos; ver fuente y cantidad de ejercicios" />
+                                <MetricBox metricKey="sectorComparison" label={series.meta?.valuationReference?.ratio === 'PS' ? "P/S Sectorial" : "P/E Sectorial"} value={series.meta?.valuationReference?.ratio === 'PS' ? series.meta?.sectorBenchmark?.ps : a.sectorPe} unit="x" tooltip="Referencia sectorial publicada por Finviz" />
+                                <MetricBox metricKey="valuationPremiumDiscount"
                                     label="Prima / Descuento"
-                                    value={a.valuationPremiumDiscount ? `${Number(a.valuationPremiumDiscount) > 0 ? '+' : ''}${Number(a.valuationPremiumDiscount).toFixed(1)}` : null}
+                                    value={a.valuationPremiumDiscount != null ? `${Number(a.valuationPremiumDiscount) > 0 ? '+' : ''}${Number(a.valuationPremiumDiscount).toFixed(1)}` : null}
                                     unit="%"
                                     highlight={Number(a.valuationPremiumDiscount) < 0}
-                                    badge={Number(a.valuationPremiumDiscount) < 0 ? 'Subvaluada' : 'Sobrevaluada'}
-                                    tooltip="Diferencia frente al valor razonable estimado"
+                                    badge={a.valuationPremiumDiscount == null ? undefined : Number(a.valuationPremiumDiscount) < 0 ? 'Bajo su media' : Number(a.valuationPremiumDiscount) > 0 ? 'Sobre su media' : 'En su media'}
+                                    tooltip="Diferencia del múltiplo actual frente a su media histórica; se utiliza P/S cuando el P/E no es comparable"
                                 />
                             </div>
 
@@ -1515,10 +1523,10 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-                                <MetricBox label="CEO / Liderazgo" value={a.ceo} />
-                                <MetricBox label="Año de Fundación" value={a.foundedYear} />
-                                <MetricBox label="Empleados" value={a.employeesCount != null ? formatNumber(a.employeesCount) : null} />
-                                <MetricBox label="Cuota de Mercado" value={a.marketShare} />
+                                <MetricBox metricKey="ceo" label="CEO / Liderazgo" value={a.ceo} />
+                                <MetricBox metricKey="foundedYear" label="Año de Fundación" value={a.foundedYear} />
+                                <MetricBox metricKey="employeesCount" label="Empleados" value={a.employeesCount != null ? formatNumber(a.employeesCount) : null} />
+                                <MetricBox metricKey="marketShare" label="Cuota de Mercado" value={a.marketShare} />
                             </div>
 
                             {/* Descripción y Moat */}
@@ -1611,10 +1619,10 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-                                <MetricBox label={`Ingresos ${series.meta?.basis || 'TTM'}`} value={financialMoney(a.revenue, true)} highlight />
-                                <MetricBox label="Crecimiento YoY" value={a.revenueGrowthYoY} unit="%" />
-                                <MetricBox label="CAGR 3 Años" value={a.revenueCagr3y} unit="%" />
-                                <MetricBox label="ARR Anualizado" value={financialMoney(a.arr, true)} />
+                                <MetricBox metricKey="revenue" label={`Ingresos ${series.meta?.basis || 'TTM'}`} value={financialMoney(a.revenue, true)} highlight />
+                                <MetricBox metricKey="revenueGrowthYoY" label="Crecimiento YoY" value={a.revenueGrowthYoY} unit="%" />
+                                <MetricBox metricKey="revenueCagr3y" label="CAGR 3 Años" value={a.revenueCagr3y} unit="%" />
+                                <MetricBox metricKey="arr" label="ARR Anualizado" value={financialMoney(a.arr, true)} />
                             </div>
 
                             {/* Gráfico Recharts: Revenue Histórico */}
@@ -1662,19 +1670,19 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
-                                <MetricBox label="EPS Diluido" value={a.eps != null ? `$${Number(a.eps).toFixed(2)}` : null} highlight />
-                                <MetricBox label="Crecimiento EPS" value={a.epsGrowth} unit="%" />
-                                <MetricBox label="Margen Bruto" value={a.grossMargin} unit="%" />
-                                <MetricBox label="Margen Operativo" value={a.operatingMargin} unit="%" />
-                                <MetricBox label="Margen Neto" value={a.netMargin} unit="%" highlight />
-                                <MetricBox label="Margen EBITDA" value={a.ebitdaMargin} unit="%" />
-                                <MetricBox label="EBIT Operativo" value={financialMoney(a.ebit, true)} />
-                                <MetricBox label="EBITDA TTM" value={financialMoney(a.ebitda, true)} />
-                                <MetricBox label="ROE (Patrimonio)" value={a.roe} unit="%" tooltip="Return on Equity" />
-                                <MetricBox label="ROA (Activos)" value={a.roa} unit="%" tooltip="Return on Assets" />
-                                <MetricBox label="ROIC (Capital Inv.)" value={a.roic} unit="%" badge="Excelente" tooltip="Return on Invested Capital" />
-                                <MetricBox label="ROCE (Cap. Empleado)" value={a.roce} unit="%" tooltip="Return on Capital Employed" />
-                                <MetricBox label="Margen FCF" value={a.fcfMargin} unit="%" />
+                                <MetricBox metricKey="eps" label="EPS Diluido" value={a.eps != null ? `$${Number(a.eps).toFixed(2)}` : null} highlight />
+                                <MetricBox metricKey="epsGrowth" label="Crecimiento EPS" value={a.epsGrowth} unit="%" />
+                                <MetricBox metricKey="grossMargin" label="Margen Bruto" value={a.grossMargin} unit="%" />
+                                <MetricBox metricKey="operatingMargin" label="Margen Operativo" value={a.operatingMargin} unit="%" />
+                                <MetricBox metricKey="netMargin" label="Margen Neto" value={a.netMargin} unit="%" highlight />
+                                <MetricBox metricKey="ebitdaMargin" label="Margen EBITDA" value={a.ebitdaMargin} unit="%" />
+                                <MetricBox metricKey="ebit" label="EBIT Operativo" value={financialMoney(a.ebit, true)} />
+                                <MetricBox metricKey="ebitda" label="EBITDA TTM" value={financialMoney(a.ebitda, true)} />
+                                <MetricBox metricKey="roe" label="ROE (Patrimonio)" value={a.roe} unit="%" tooltip="Return on Equity" />
+                                <MetricBox metricKey="roa" label="ROA (Activos)" value={a.roa} unit="%" tooltip="Return on Assets" />
+                                <MetricBox metricKey="roic" label="ROIC (Capital Inv.)" value={a.roic} unit="%" badge="Excelente" tooltip="Return on Invested Capital" />
+                                <MetricBox metricKey="roce" label="ROCE (Cap. Empleado)" value={a.roce} unit="%" tooltip="Return on Capital Employed" />
+                                <MetricBox metricKey="fcfMargin" label="Margen FCF" value={a.fcfMargin} unit="%" />
                             </div>
 
                             {a.epsEstimatedVsReal && (
@@ -1725,12 +1733,12 @@ export default function Analysis() {
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3">
-                                    <MetricBox label="Flujo de Caja Operativo" value={financialMoney(a.operatingCashFlow, true)} />
-                                    <MetricBox label="Flujo de Caja Libre (FCF)" value={financialMoney(a.freeCashFlow, true)} highlight />
-                                    <MetricBox label="CapEx (Inversión)" value={financialMoney(a.capEx, true)} />
-                                    <MetricBox label="Rendimiento FCF" value={a.fcfYield} unit="%" />
-                                    <MetricBox label="FCF por Acción" value={a.fcfPerShare != null ? `$${Number(a.fcfPerShare).toFixed(2)}` : null} />
-                                    <MetricBox label="Conv. Ganancia a Caja" value={a.earningsToCashConversion} unit="%" />
+                                    <MetricBox metricKey="operatingCashFlow" label="Flujo de Caja Operativo" value={financialMoney(a.operatingCashFlow, true)} />
+                                    <MetricBox metricKey="freeCashFlow" label="Flujo de Caja Libre (FCF)" value={financialMoney(a.freeCashFlow, true)} highlight />
+                                    <MetricBox metricKey="capEx" label="CapEx (Inversión)" value={financialMoney(a.capEx, true)} />
+                                    <MetricBox metricKey="fcfYield" label="Rendimiento FCF" value={a.fcfYield} unit="%" />
+                                    <MetricBox metricKey="fcfPerShare" label="FCF por Acción" value={a.fcfPerShare != null ? `$${Number(a.fcfPerShare).toFixed(2)}` : null} />
+                                    <MetricBox metricKey="earningsToCashConversion" label="Conv. Ganancia a Caja" value={a.earningsToCashConversion} unit="%" />
                                 </div>
 
                                 {a.historicalCashFlow && (
@@ -1754,18 +1762,18 @@ export default function Analysis() {
                                 </div>
 
                                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
-                                    <MetricBox label="Efectivo y Equivalentes" value={financialMoney(a.cash, true)} highlight />
-                                    <MetricBox label="Deuda Total" value={financialMoney(a.totalDebt, true)} />
-                                    <MetricBox label="Deuda Neta" value={financialMoney(a.netDebt, true)} />
-                                    <MetricBox label="Net Debt / EBITDA" value={a.netDebtToEbitda} unit="x" badge={a.netDebtToEbitda != null ? (Number(a.netDebtToEbitda) < 1.5 ? 'Sano' : 'Atención') : undefined} />
-                                    <MetricBox label="Ratio Corriente" value={a.currentRatio} unit="x" tooltip="Activo Corriente / Pasivo Corriente" />
-                                    <MetricBox label="Prueba Ácida" value={a.quickRatio} unit="x" tooltip="Liquidez inmediata sin inventarios" />
-                                    <MetricBox label="Activos Totales" value={financialMoney(a.totalAssets, true)} />
-                                    <MetricBox label="Pasivos Totales" value={financialMoney(a.totalLiabilities, true)} />
-                                    <MetricBox label="Patrimonio Neto" value={financialMoney(a.equity, true)} />
-                                    <MetricBox label="Deuda Largo Plazo" value={financialMoney(a.longTermDebt, true)} />
-                                    <MetricBox label="Deuda Corto Plazo" value={financialMoney(a.shortTermDebt, true)} />
-                                    <MetricBox label="Cobertura Intereses" value={a.interestCoverageRatio} unit="x" tooltip="EBIT / Intereses pagados" />
+                                    <MetricBox metricKey="cash" label="Efectivo y Equivalentes" value={financialMoney(a.cash, true)} highlight />
+                                    <MetricBox metricKey="totalDebt" label="Deuda Total" value={financialMoney(a.totalDebt, true)} />
+                                    <MetricBox metricKey="netDebt" label="Deuda Neta" value={financialMoney(a.netDebt, true)} />
+                                    <MetricBox metricKey="netDebtToEbitda" label="Net Debt / EBITDA" value={a.netDebtToEbitda} unit="x" badge={a.netDebtToEbitda != null ? (Number(a.netDebtToEbitda) < 1.5 ? 'Sano' : 'Atención') : undefined} />
+                                    <MetricBox metricKey="currentRatio" label="Ratio Corriente" value={a.currentRatio} unit="x" tooltip="Activo Corriente / Pasivo Corriente" />
+                                    <MetricBox metricKey="quickRatio" label="Prueba Ácida" value={a.quickRatio} unit="x" tooltip="Liquidez inmediata sin inventarios" />
+                                    <MetricBox metricKey="totalAssets" label="Activos Totales" value={financialMoney(a.totalAssets, true)} />
+                                    <MetricBox metricKey="totalLiabilities" label="Pasivos Totales" value={financialMoney(a.totalLiabilities, true)} />
+                                    <MetricBox metricKey="equity" label="Patrimonio Neto" value={financialMoney(a.equity, true)} />
+                                    <MetricBox metricKey="longTermDebt" label="Deuda Largo Plazo" value={financialMoney(a.longTermDebt, true)} />
+                                    <MetricBox metricKey="shortTermDebt" label="Deuda Corto Plazo" value={financialMoney(a.shortTermDebt, true)} />
+                                    <MetricBox metricKey="interestCoverageRatio" label="Cobertura Intereses" value={a.interestCoverageRatio} unit="x" tooltip="EBIT / Intereses pagados" />
                                 </div>
                             </section>
                         )}
@@ -1785,14 +1793,14 @@ export default function Analysis() {
                             </div>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <MetricBox label="Acciones en Circulación" value={formatNumber(a.sharesOutstanding, true)} tooltip="Total shares outstanding" />
-                                <MetricBox label="Tenencia Institucional" value={a.institutionalOwnership} unit="%" badge="Fondos / ETFs" />
-                                <MetricBox label="Tenencia Directivos (Insiders)" value={a.insiderOwnership} unit="%" badge="Directores" />
-                                <MetricBox label="Beta (1 Año)" value={a.beta} unit="x" badge={a.beta != null ? (Number(a.beta) > 1.2 ? 'Volátil' : 'Estable') : undefined} tooltip="Volatilidad vs S&P 500" />
-                                <MetricBox label="Posiciones Cortas (Short Interest)" value={a.shortInterest} unit="%" tooltip="Porcentaje de acciones en corto" />
-                                <MetricBox label="% Flotante en Corto" value={a.shortFloat} unit="%" tooltip="Porcentaje del flotante vendido en corto" />
-                                <MetricBox label="Dilución / Variación Neta" value={a.shareDilution} unit="%" tooltip="Variación neta anual de acciones en circulación" />
-                                <MetricBox label="Volatilidad Histórica" value={a.historicalVolatility} unit="%" tooltip="Volatilidad anualizada calculada" />
+                                <MetricBox metricKey="sharesOutstanding" label="Acciones en Circulación" value={formatNumber(a.sharesOutstanding, true)} tooltip="Total shares outstanding" />
+                                <MetricBox metricKey="institutionalOwnership" label="Tenencia Institucional" value={a.institutionalOwnership} unit="%" badge="Fondos / ETFs" />
+                                <MetricBox metricKey="insiderOwnership" label="Tenencia Directivos (Insiders)" value={a.insiderOwnership} unit="%" badge="Directores" />
+                                <MetricBox metricKey="beta" label="Beta (1 Año)" value={a.beta} unit="x" badge={a.beta != null ? (Number(a.beta) > 1.2 ? 'Volátil' : 'Estable') : undefined} tooltip="Volatilidad vs S&P 500" />
+                                <MetricBox metricKey="shortInterest" label="Posiciones Cortas (Short Interest)" value={a.shortInterest} unit="%" tooltip="Porcentaje de acciones en corto" />
+                                <MetricBox metricKey="shortFloat" label="% Flotante en Corto" value={a.shortFloat} unit="%" tooltip="Porcentaje del flotante vendido en corto" />
+                                <MetricBox metricKey="shareDilution" label="Dilución / Variación Neta" value={a.shareDilution} unit="%" tooltip="Variación neta anual de acciones en circulación" />
+                                <MetricBox metricKey="historicalVolatility" label="Volatilidad Histórica" value={a.historicalVolatility} unit="%" tooltip="Volatilidad anualizada calculada" />
                             </div>
 
                             {/* Detalle de Recompras e Insiders */}
@@ -1835,7 +1843,7 @@ export default function Analysis() {
                                     <Users className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Comparación con Competidores Directos</h2>
+                                    <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Comparación con Empresas del Sector</h2>
                                     <span className="text-xs sm:text-sm text-muted-foreground mt-0.5 block">Benchmarking sectorial de múltiplos, rentabilidad sobre capital y escala.</span>
                                 </div>
                             </div>
@@ -1859,10 +1867,10 @@ export default function Analysis() {
                                                 <tr key={idx} className={isSelected ? 'bg-primary/10 font-bold text-primary' : 'text-foreground/90 font-normal hover:bg-muted/20'}>
                                                     <td className="px-4 py-3 font-sans font-medium text-foreground">{c.name}</td>
                                                     <td className="px-4 py-3 font-semibold">{c.ticker}</td>
-                                                    <td className="px-4 py-3">{c.pe ? `${c.pe}x` : '—'}</td>
-                                                    <td className="px-4 py-3">{c.roic ? `${c.roic}%` : '—'}</td>
-                                                    <td className="px-4 py-3">{c.netMargin ? `${c.netMargin}%` : '—'}</td>
-                                                    <td className="px-4 py-3 font-semibold">{c.marketCap ? `$${c.marketCap}B` : '—'}</td>
+                                                    <td className="px-4 py-3">{c.pe != null ? `${formatAnalysisMetric(c.pe)}x` : 'No comparable'}</td>
+                                                    <td className="px-4 py-3">{c.roic != null ? `${formatAnalysisMetric(c.roic)}%` : 'No comparable'}</td>
+                                                    <td className="px-4 py-3">{c.netMargin != null ? `${formatAnalysisMetric(c.netMargin)}%` : 'No comparable'}</td>
+                                                    <td className="px-4 py-3 font-semibold">{formatCurrency(c.marketCap,true) || 'Consultar fuente'}</td>
                                                 </tr>
                                             );
                                         })}
@@ -2014,14 +2022,14 @@ export default function Analysis() {
 
                             {/* Ratios Técnicos Cuantitativos */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3.5">
-                                <MetricBox label="RSI (14D)" value={a.rsi} badge={Number(a.rsi) > 70 ? 'Sobrecompra' : Number(a.rsi) < 30 ? 'Sobreventa' : 'Neutral'} />
-                                <MetricBox label="SMA 20" value={a.sma20 ? `$${Number(a.sma20).toFixed(2)}` : null} />
-                                <MetricBox label="SMA 50" value={a.sma50 ? `$${Number(a.sma50).toFixed(2)}` : null} />
-                                <MetricBox label="SMA 100" value={a.sma100 ? `$${Number(a.sma100).toFixed(2)}` : null} />
-                                <MetricBox label="SMA 200" value={a.sma200 ? `$${Number(a.sma200).toFixed(2)}` : null} />
-                                <MetricBox label="ATR" value={a.atr ? `$${Number(a.atr).toFixed(2)}` : null} tooltip="Rango Medio Verdadero" />
-                                <MetricBox label="Volatilidad" value={a.historicalVolatility} unit="%" tooltip="Volatilidad histórica calculada" />
-                                <MetricBox label="Tendencia" value={a.trend || 'Alcista'} highlight />
+                                <MetricBox metricKey="rsi" label="RSI (14D)" value={a.rsi} badge={Number(a.rsi) > 70 ? 'Sobrecompra' : Number(a.rsi) < 30 ? 'Sobreventa' : 'Neutral'} />
+                                <MetricBox metricKey="sma20" label="SMA 20" value={a.sma20 ? `$${Number(a.sma20).toFixed(2)}` : null} />
+                                <MetricBox metricKey="sma50" label="SMA 50" value={a.sma50 ? `$${Number(a.sma50).toFixed(2)}` : null} />
+                                <MetricBox metricKey="sma100" label="SMA 100" value={a.sma100 ? `$${Number(a.sma100).toFixed(2)}` : null} />
+                                <MetricBox metricKey="sma200" label="SMA 200" value={a.sma200 ? `$${Number(a.sma200).toFixed(2)}` : null} />
+                                <MetricBox metricKey="atr" label="ATR" value={a.atr ? `$${Number(a.atr).toFixed(2)}` : null} tooltip="Rango Medio Verdadero" />
+                                <MetricBox metricKey="historicalVolatility" label="Volatilidad" value={a.historicalVolatility} unit="%" tooltip="Volatilidad histórica calculada" />
+                                <MetricBox metricKey="trend" label="Tendencia" value={a.trend || 'Alcista'} highlight />
                             </div>
 
                             {/* Lectura de Indicadores de Oscilación: MACD & Bollinger */}
@@ -2248,5 +2256,6 @@ export default function Analysis() {
                 </div>
             )}
         </div>
+        </MetricEvidenceContext.Provider>
     );
 }

@@ -13,7 +13,7 @@ export function addTwoMonths(value: Date) {
 }
 export async function collectFundamentalInputs(raw: string, marketOnly = false): Promise<CollectedFundamentals> {
     const ticker = raw.trim().toUpperCase().split(':').at(-1)!;
-    if (!/^[A-Z0-9.-]{1,16}$/.test(ticker)) throw new Error('Ticker invÃ¡lido.');
+    if (!/^[A-Z0-9.-]{1,16}$/.test(ticker)) throw new Error('Ticker inválido.');
     const receipts: Receipt[] = [];
     const read = async (source: string, url: string, bucket = source) => {
         if ((cooldown.get(bucket) || 0) > Date.now()) { receipts.push({ source, status: 'cooldown', at: new Date().toISOString() }); return null; }
@@ -34,7 +34,7 @@ export async function collectFundamentalInputs(raw: string, marketOnly = false):
     if (marketOnly) { const chart = await chartPromise; const profile = chart?.chart?.result?.length ? {} : (await fmp('profile'))?.[0]; return { inputs: { ticker, profile, queriedAt: new Date().toISOString() }, chart, balance: null, income: null, cashFlow: null, alpha: null, receipts }; }
     const profilePromise = fmp('profile');
     const [profileRows, finnhub, finnhubProfile, reported] = await Promise.all([profilePromise,
-        hk ? read('Finnhub mÃ©tricas', 'https://finnhub.io/api/v1/stock/metric?symbol=' + ticker + '&metric=all&token=' + hk, 'finnhub') : null,
+        hk ? read('Finnhub métricas', 'https://finnhub.io/api/v1/stock/metric?symbol=' + ticker + '&metric=all&token=' + hk, 'finnhub') : null,
         hk ? read('Finnhub perfil', 'https://finnhub.io/api/v1/stock/profile2?symbol=' + ticker + '&token=' + hk, 'finnhub') : null,
         hk ? read('Finnhub reportes', 'https://finnhub.io/api/v1/stock/financials-reported?symbol=' + ticker + '&freq=annual&token=' + hk, 'finnhub') : null]);
     const profile = profileRows?.[0] || {};
@@ -115,8 +115,8 @@ export function supplementFundamentals(data: Record<string, any>, c: CollectedFu
     }
     meta.unavailable = {};
     for (const [key, value] of Object.entries(data)) if (value === null) meta.unavailable[key] = { reason: 'No se obtuvo un valor verificable en las fuentes consultadas. No equivale a cero.', checkedAt: c.inputs.queriedAt };
-    if (data.peRatio === null && data.eps !== null && data.eps <= 0) meta.unavailable.peRatio.reason = 'No aplica un P/E positivo: el beneficio por acciÃ³n reportado es nulo o negativo.';
+    if (data.peRatio === null && data.eps !== null && data.eps <= 0) meta.unavailable.peRatio.reason = 'No aplica un P/E positivo: el beneficio por acción reportado es nulo o negativo.';
     if (data.priceToBook === null && data.equity !== null && data.equity <= 0) meta.unavailable.priceToBook.reason = 'No es interpretable con patrimonio neto nulo o negativo.';
-    data.sources += ' Â· Fuentes alternativas consultadas: ' + c.receipts.map(r => r.source + ' (' + (r.status === 'ok' ? 'datos recibidos' : r.status === 'limited' ? 'límite de consultas' : ['http-401', 'http-402', 'http-403'].includes(r.status) ? 'acceso no habilitado' : 'sin respuesta válida') + ')').join(', ') + '. Volumen: Ãºltima sesiÃ³n disponible; promedio de 30 sesiones previas completas.';
+    data.sources += ' · Fuentes alternativas consultadas: ' + c.receipts.map(r => r.source + ' (' + (r.status === 'ok' ? 'datos recibidos' : r.status === 'limited' ? 'límite de consultas' : ['http-401', 'http-402', 'http-403'].includes(r.status) ? 'acceso no habilitado' : 'sin respuesta válida') + ')').join(', ') + '. Volumen: última sesión disponible; promedio de 30 sesiones previas completas.';
     return data;
 }

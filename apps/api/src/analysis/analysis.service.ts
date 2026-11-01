@@ -33,9 +33,15 @@ export class AnalysisService {
      */
     public calculateDerivedMetrics(data: any) {
         const computed = { ...data };
-        let retained: Record<string, any> = {};
-        try { retained = JSON.parse(computed.historicalSeries || '{}').meta?.retainedValues || {}; } catch { /* Legacy records. */ }
-        const compatible = (...fields: string[]) => fields.every(field => !retained[field]);
+        let retained: Record<string, any> = {}, metadata: Record<string, any> = {};
+        try { metadata = JSON.parse(computed.historicalSeries || '{}').meta || {}; retained = metadata.retainedValues || {}; } catch { /* Legacy records. */ }
+        const compatible = (...fields: string[]) => {
+            if (fields.some(field => retained[field])) return false;
+            const observations = fields.map(field => metadata.fieldSources?.[field]).filter(Boolean);
+            const periods = new Set(observations.map(source => source.period).filter(Boolean));
+            const currencies = new Set(observations.map(source => source.currency).filter(Boolean));
+            return periods.size <= 1 && currencies.size <= 1;
+        };
 
         // 1. Revenue Growth YoY (si no viene explícito o si tenemos histórico)
         if (computed.revenue && computed.prevRevenue && !computed.revenueGrowthYoY) {
@@ -63,7 +69,9 @@ export class AnalysisService {
         }
 
         // 6. Premium / Discount vs Historical P/E = ((Current P/E / Historical Avg P/E) - 1) * 100
-        if (computed.peRatio && computed.historicalAvgPe) {
+        if (metadata.valuationReference?.ratio === 'PS' && metadata.valuationReference.mean > 0 && computed.priceToSales > 0) {
+            computed.valuationPremiumDiscount = Number(((computed.priceToSales / metadata.valuationReference.mean - 1) * 100).toFixed(2));
+        } else if (computed.peRatio > 0 && computed.historicalAvgPe > 0) {
             computed.valuationPremiumDiscount = Number((((computed.peRatio / computed.historicalAvgPe) - 1) * 100).toFixed(2));
         }
 

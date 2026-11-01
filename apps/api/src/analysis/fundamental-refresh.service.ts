@@ -1,3 +1,6 @@
+import { COMPANY_DESCRIPTIONS_ES } from './company-descriptions.es';
+import { fetchPublicFundamentals, publicSectorValuations } from './public-fundamentals';
+import { enrichResearch, attachComparables } from './fundamental-research';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
@@ -6,7 +9,7 @@ import { PrismaService } from '../prisma.service';
 import { fetchVerifiedFundamentals } from './verified-fundamentals';
 import { addTwoMonths, collectFundamentalInputs, marketObservation } from './fundamental-providers';
 
-export const REFRESH_VERSION = 'fundamentals-v2';
+export const REFRESH_VERSION = 'fundamentals-v3';
 const stateKey = (id: string) => 'analysis.refresh.' + id;
 const marketKey = (id: string) => 'analysis.market.' + id;
 const localDay = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(d);
@@ -81,6 +84,12 @@ export class FundamentalRefreshService implements OnModuleInit {
             this.running = false;
         }
     }
+    private async fetchResearch(ticker: string) {
+        const research = await fetchPublicFundamentals(ticker);
+        if (research.sources.length < 5) throw new Error('Consulta pública incompleta; se reintentará.');
+        const sectors = await publicSectorValuations();
+        return { research, sectors, texts: { description: COMPANY_DESCRIPTIONS_ES[ticker.toUpperCase()] } };
+    }
     private async refreshFundamentals(row: any, previous: any) {
         const observed = await fetchVerifiedFundamentals(row.ticker || row.symbol);
         if (!(observed.revenue > 0) || !(observed.totalAssets > 0)) throw new Error('Estados financieros incompletos.');
@@ -112,6 +121,14 @@ export class FundamentalRefreshService implements OnModuleInit {
         if (observed.logoUrl) data.logoUrl = observed.logoUrl;
         if (observed.ceo) data.ceo = observed.ceo;
         const visibility = parse(row.sectionVisibility); data.sectionVisibility = JSON.stringify({ ...visibility, showTechnical: false });
+        const expanded = await this.fetchResearch(row.ticker || row.symbol);
+        if (expanded) {
+            const enriched = enrichResearch({ ...row, ...data }, expanded.research, expanded.sectors, expanded.texts);
+            const peers = await this.prisma.assetAnalysis.findMany({ where: { status: 'PUBLISHED', isActive: true } });
+            Object.assign(enriched.data, attachComparables({ ...row, ...data, ...enriched.data }, peers));
+            const structured = new Set(['historicalSeries','sectionVisibility','valuationMethodology','scenariosData','swotData','businessModel','competitorsData','executiveSummary','risksData','catalystsData']);
+            for (const [field, value] of Object.entries(enriched.data)) data[field] = structured.has(field) && value !== null && typeof value !== 'string' ? JSON.stringify(value) : value;
+        }
         const now = new Date(), value = JSON.stringify({ version: REFRESH_VERSION, lastAttemptAt: now.toISOString(), lastSuccessAt: now.toISOString(), nextDueAt: addTwoMonths(now).toISOString(), providers: meta.providers, retained: Object.keys(meta.retainedValues), error: null, retryAt: null });
         await this.prisma.$transaction(async tx => {
             const changed = await tx.assetAnalysis.updateMany({ where: { id: row.id, updatedAt: row.updatedAt }, data });
