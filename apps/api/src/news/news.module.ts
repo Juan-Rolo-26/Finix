@@ -1,3 +1,4 @@
+import { AccessModule } from '../access/access.module';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { NewsController } from './news.controller';
@@ -12,6 +13,7 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
     imports: [
+        AccessModule,
         AuthModule,
         JwtModule.register({
             secret: process.env.JWT_SECRET,

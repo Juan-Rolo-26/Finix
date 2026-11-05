@@ -11,7 +11,8 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { CalendarService } from './calendar.service';
-import { OptionalJwtAuthGuard } from '../auth/optional-jwt.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireProGuard } from '../access/require-pro.guard';
 import { AdminGuard } from '../admin/admin.guard';
 
 @Controller('calendar')
@@ -31,7 +32,7 @@ export class CalendarController {
      * Endpoint para la vista semanal completa en /calendario.
      * Verifica acceso Free / Pro en backend.
      */
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('week')
     async getWeekCalendar(
         @Query('weekStart') weekStart?: string,
@@ -48,9 +49,9 @@ export class CalendarController {
     }
 
     /**
-     * Consulta pública de eventos económicos
+     * Consulta PRO de eventos económicos
      */
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('economic')
     async getEconomicEvents(
         @Query('weekStart') weekStart?: string,
@@ -64,9 +65,9 @@ export class CalendarController {
     }
 
     /**
-     * Consulta pública de resultados corporativos
+     * Consulta PRO de resultados corporativos
      */
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('earnings')
     async getEarningsEvents(
         @Query('weekStart') weekStart?: string,
@@ -80,9 +81,9 @@ export class CalendarController {
     }
 
     /**
-     * Consulta pública de dividendos del universo estadounidense de TradingView
+     * Consulta PRO de dividendos del universo estadounidense de TradingView
      */
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('dividends')
     async getDividendEvents(
         @Query('weekStart') weekStart?: string,
@@ -96,9 +97,9 @@ export class CalendarController {
     }
 
     /**
-     * Consulta pública de eventos de mercado (solo status PUBLISHED o APPROVED)
+     * Consulta PRO de eventos de mercado (solo status PUBLISHED o APPROVED)
      */
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('events')
     async getPublicEvents(
         @Query('range') range?: 'today' | 'tomorrow' | 'week' | 'next_week' | 'month' | 'all',
@@ -122,13 +123,13 @@ export class CalendarController {
         });
     }
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('events/:id')
     async getEventById(@Param('id') id: string) {
         return this.calendarService.getEventById(id);
     }
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('today')
     async getTodayEvents(@Query('country') country?: string) {
         return this.calendarService.getPublicEvents({
@@ -138,7 +139,7 @@ export class CalendarController {
         });
     }
 
-    @UseGuards(OptionalJwtAuthGuard)
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('upcoming')
     async getUpcomingEvents(@Query('country') country?: string) {
         return this.calendarService.getPublicEvents({

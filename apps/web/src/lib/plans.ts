@@ -1,3 +1,6 @@
+/** Public offer visibility only; existing Creator subscriptions remain manageable. */
+export const CREATOR_PLAN_AVAILABLE = false;
+
 export type FinixPlan = 'FREE' | 'PRO' | 'CREATOR';
 export type PaidPlan = Exclude<FinixPlan, 'FREE'>;
 

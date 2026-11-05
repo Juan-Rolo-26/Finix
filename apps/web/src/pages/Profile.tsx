@@ -1035,7 +1035,7 @@ export default function Profile() {
     ];
 
     return (
-        <div className="profile-page mx-auto flex-1 w-full max-w-[1440px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 text-foreground relative space-y-6">
+        <div className="profile-page mx-auto flex-1 w-full min-w-0 max-w-none px-3 sm:px-4 lg:px-5 py-0 text-foreground relative space-y-6">
             {/* Toast feedback */}
             <AnimatePresence>
                 {toast && (

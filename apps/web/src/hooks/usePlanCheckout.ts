@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/lib/api';
-import { PaidPlan, subscribedPlan } from '@/lib/plans';
+import { CREATOR_PLAN_AVAILABLE, PaidPlan, subscribedPlan } from '@/lib/plans';
 import { useAuthStore } from '@/stores/authStore';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
 
@@ -72,6 +72,7 @@ export function usePlanCheckout() {
     const choose = (plan: PaidPlan) => {
         if (!catalog || loading || busy) return;
         setError(null);
+        if (plan === 'CREATOR' && !CREATOR_PLAN_AVAILABLE) { setError('El plan Creador no está disponible para nuevas contrataciones por el momento.'); return; }
         if (catalog.freeAccessEnabled) {
             const destination = plan === 'CREATOR' ? '/comunidades/crear' : '/market';
             navigate(user ? destination : `/auth?mode=register&redirect=${encodeURIComponent(destination)}`);

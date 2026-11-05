@@ -20,7 +20,7 @@ test('APP_USR test-seller credentials never enable real Pro, Creator or communit
     const { service, calls } = mpFixture({ tags:['test_user','normal'] });
     assert.equal(service.isConfigured(),true);
     assert.equal(await service.isCheckoutReady(),false);
-    for (const purchase of [()=>service.createPreference('user','pro'),()=>service.createPreference('user','creator'),()=>service.createCommunityPreference('user','community','plan')]) await assert.rejects(purchase,/no está disponible/);
+    for (const purchase of [()=>service.createPreference('user','pro'),()=>service.createCommunityPreference('user','community','plan')]) await assert.rejects(purchase,/no está disponible/);
     assert.equal(calls(),1);
 });
 test('a real active Argentine seller shares concurrent checks and enables checkout', async () => {

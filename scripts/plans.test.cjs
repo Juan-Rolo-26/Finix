@@ -71,7 +71,8 @@ test('public catalog exposes configured prices and actual watchlist limits', asy
     const controller = new MercadoPagoController({ isCheckoutReady: () => false, isConfigured: () => true, isProductionCredential: () => true, getProPrice: () => 8500, getCreatorPrice: () => 29900 });
     const catalog = await controller.getConfig();
     assert.equal(catalog.proPriceArs, 8500);
-    assert.equal(catalog.creatorPriceArs, 29900);
+    assert.equal(catalog.creatorPriceArs, null);
+    assert.equal(catalog.creatorPlanAvailable, false);
     for (const plan of ['FREE', 'PRO', 'CREATOR']) for (const [key, value] of Object.entries(WATCHLIST_CONFIG[plan])) assert.equal(catalog.planLimits[plan][key], value);
     assert.equal(catalog.planLimits.FREE.maxPortfolios, 1);
     assert.equal(catalog.planLimits.PRO.maxPortfolios, null);

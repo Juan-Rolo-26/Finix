@@ -1,3 +1,4 @@
+import { CREATOR_PLAN_AVAILABLE } from '../access/plan-offerings';
 import {
     Controller,
     Post,
@@ -50,13 +51,14 @@ export class MercadoPagoController {
         const ready = await this.mpService.isCheckoutReady();
         return {
             ...getAccessMode(),
+            creatorPlanAvailable: CREATOR_PLAN_AVAILABLE,
             configured: ready,
             credentialsConfigured: this.mpService.isConfigured(),
             production: ready && this.mpService.isProductionCredential(),
             checkoutReady: ready,
             communityCurrency: 'ARS',
             proPriceArs: this.mpService.getProPrice(),
-            creatorPriceArs: this.mpService.getCreatorPrice(),
+            creatorPriceArs: CREATOR_PLAN_AVAILABLE ? this.mpService.getCreatorPrice() : null,
             planLimits: {
                 FREE: { ...WATCHLIST_CONFIG.FREE, maxPortfolios: PLAN_PERMISSIONS.free.maxPortfolios },
                 PRO: { ...WATCHLIST_CONFIG.PRO, maxPortfolios: null },

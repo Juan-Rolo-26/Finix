@@ -1,3 +1,4 @@
+import { assertCreatorPlanAvailable } from '../access/plan-offerings';
 import { Injectable, Logger, BadRequestException, NotFoundException, UnauthorizedException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -150,6 +151,8 @@ export class MercadoPagoService {
     }
 
     async createPreference(userId: string, planType: 'pro' | 'creator', autoRenew = false) {
+        assertPurchasesEnabled();
+        if (planType === 'creator') assertCreatorPlanAvailable();
         // Pro and Creator always start with a trial-backed recurring subscription.
         autoRenew = true;
         await this.ensureCheckoutReady();

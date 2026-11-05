@@ -512,7 +512,7 @@ export function ProGate({
 
                     <div className="flex items-start gap-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold pt-2 border-t border-border/40">
                         <Zap className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{freeAccess ? 'PRO y Creador están incluidos gratis durante esta etapa. Creá una cuenta para acceder; las compras están pausadas.' : purchasesPaused ? 'Las compras están pausadas. Consultá el estado de los planes.' : 'Consultá los planes y medios de pago disponibles.'}</span>
+                        <span>{freeAccess ? 'Las funciones de PRO están incluidos gratis durante esta etapa. Creá una cuenta para acceder; las compras están pausadas.' : purchasesPaused ? 'Las compras están pausadas. Consultá el estado de los planes.' : 'Consultá los planes y medios de pago disponibles.'}</span>
                     </div>
                 </div>
 

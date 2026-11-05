@@ -1,3 +1,5 @@
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RequireProGuard } from '../access/require-pro.guard';
 import {
     Controller,
     Get,
@@ -23,6 +25,7 @@ export class NewsSlotsPublicController {
     constructor(private readonly slotsService: NewsSlotsService) {}
 
     /** GET /news/slots/categories — all active categories */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('categories')
     getCategories() {
         return this.slotsService.getPublicCategories();
@@ -35,6 +38,7 @@ export class NewsSlotsPublicController {
     }
 
     /** GET /news/slots/category/:slug — category + 5 slots with published articles */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('category/:slug')
     getCategorySlots(@Param('slug') slug: string) {
         return this.slotsService.getPublicCategorySlots(slug);

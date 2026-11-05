@@ -18,7 +18,7 @@ import {
     ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
-import { FinixPlan, PLAN_NAMES, subscribedPlan } from '@/lib/plans';
+import { CREATOR_PLAN_AVAILABLE, FinixPlan, PLAN_NAMES, subscribedPlan } from '@/lib/plans';
 import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 import { PlanCheckoutDialog } from '@/components/PlanCheckoutDialog';
 import { InvestorQuote } from '@/components/common/InvestorQuote';
@@ -41,7 +41,7 @@ interface PlanItem {
     features: PlanFeature[];
 }
 
-const PLANS: PlanItem[] = [
+const ALL_PLANS: PlanItem[] = [
     {
         id: 'FREE',
         title: 'Gratis',
@@ -57,6 +57,8 @@ const PLANS: PlanItem[] = [
             { text: 'Unite a comunidades gratuitas', included: true },
             { text: 'Ver portafolios públicos', included: true },
             { text: 'Cotizaciones de mercado', included: false },
+            { text: 'Noticias financieras', included: false },
+            { text: 'Calendario económico', included: false },
             { text: 'Modelos de Valuación DCF & ROIC vs WACC', included: false },
             { text: 'Métricas TWR/XIRR y Benchmark SPY', included: false },
             { text: 'Alertas de mercado 24/7 multicanal', included: false },
@@ -104,14 +106,16 @@ const PLANS: PlanItem[] = [
     },
 ];
 
-const FAQS = [
+const PLANS = ALL_PLANS.filter(plan => CREATOR_PLAN_AVAILABLE || plan.id !== 'CREATOR');
+
+const ALL_FAQS = [
     [
         '¿Qué incluye el acceso gratuito temporal?',
-        'Cuando el acceso bonificado está activo, podés usar PRO y Creador con una cuenta sin pagar. El estado vigente aparece arriba de los planes. La promoción no crea una suscripción ni activa renovaciones automáticas.',
+        'Cuando el acceso bonificado está activo, podés usar PRO con una cuenta sin pagar. El estado vigente aparece arriba de los planes. La promoción no crea una suscripción ni activa renovaciones automáticas.',
     ],
     [
         '¿Cómo se abona un plan cuando esté disponible?',
-        'PRO y Creador incluyen una prueba gratis de 2 días al iniciar una suscripción. Luego se cobra el precio mensual indicado en el checkout y la suscripción se renueva automáticamente hasta que la canceles desde Configuración.',
+        'PRO incluyen una prueba gratis de 2 días al iniciar una suscripción. Luego se cobra el precio mensual indicado en el checkout y la suscripción se renueva automáticamente hasta que la canceles desde Configuración.',
     ],
     [
         '¿Cómo cancelo o administro mi suscripción?',
@@ -126,6 +130,8 @@ const FAQS = [
         'El plan Creador te permite fijar tus propios precios de membresía mensual para tu comunidad. Los ingresos, comisiones aplicables y el saldo disponible para retiro se gestionan de forma clara desde el panel de facturación del creador.',
     ],
 ];
+
+const FAQS = ALL_FAQS.filter(([question]) => CREATOR_PLAN_AVAILABLE || !question.includes('plan Creador'));
 
 export default function Pricing() {
     const { ui: finixUi } = useFinixUiTranslation();
@@ -186,7 +192,9 @@ export default function Pricing() {
         { label: 'Importar listas desde CSV', values: [no, yes, yes] },
         { label: 'Seguimiento de ideas y alertas avanzadas', values: [no, yes, yes] },
         { label: 'Acceso a la sección de comunidades', values: [no, yes, yes] },
-        { label: 'Crear y monetizar comunidades', values: [no, no, yes] },
+        { label: 'Noticias financieras', values: [no, yes, yes] },
+        { label: 'Calendario económico', values: [no, yes, yes] },
+        ...(CREATOR_PLAN_AVAILABLE ? [{ label: 'Crear y monetizar comunidades', values: [no, no, yes] }] : []),
     ];
 
     return (
@@ -262,7 +270,7 @@ export default function Pricing() {
                         <div>
                             <strong>{""}<FinixUiText text={"Finix PRO y sus funcionalidades están momentáneamente abiertas"} />{""}</strong>
                             <p>
-                                {" "}<FinixUiText text={"Actualmente todas las funciones avanzadas de PRO y Creador están 100% bonificadas para todos los usuarios. Aprovechá este período de acceso libre; más adelante las herramientas PRO volverán a ser de pago bajo suscripción."} />{" "}</p>
+                                {" "}<FinixUiText text={"Actualmente todas las funciones avanzadas de PRO están 100% bonificadas para todos los usuarios. Aprovechá este período de acceso libre; más adelante las herramientas PRO volverán a ser de pago bajo suscripción."} />{" "}</p>
                         </div>
                         <span className="pricing-free-tag">{""}<FinixUiText text={"Acceso Libre Temporal"} />{""}</span>
                     </div>
@@ -463,13 +471,13 @@ export default function Pricing() {
                         <h2 id="pricing-comparison-title">{""}<FinixUiText text={"Compará lo que incluye cada plan"} />{""}</h2>
                         <p>
                             {catalog?.freeAccessEnabled
-                                ? 'Estos son los límites habituales de cada plan. El acceso temporal bonificado habilita las funciones de Creador.'
+                                ? 'Estos son los límites habituales de cada plan. La disponibilidad del acceso temporal aparece arriba de los planes.'
                                 : 'Detalle comparativo de capacidades y herramientas disponibles en Finix.'}
                         </p>
                     </div>
 
                     <div className="pricing-comparison-mobile">
-                        {rows.map(row => <article key={row.label} className="pricing-comparison-benefit"><h3>{row.label}</h3><dl>{row.values.map((value,index) => <div key={PLANS[index].id}><dt>{PLAN_NAMES[PLANS[index].id]}</dt><dd>{value}</dd></div>)}</dl></article>)}
+                        {rows.map(row => <article key={row.label} className="pricing-comparison-benefit"><h3>{row.label}</h3><dl>{row.values.slice(0, PLANS.length).map((value,index) => <div key={PLANS[index].id}><dt>{PLAN_NAMES[PLANS[index].id]}</dt><dd>{value}</dd></div>)}</dl></article>)}
                     </div>
                     <div className="pricing-table-wrap">
                         <table>
@@ -491,7 +499,7 @@ export default function Pricing() {
                                 {rows.map((row) => (
                                     <tr key={row.label}>
                                         <th scope="row">{row.label}</th>
-                                        {row.values.map((value, index) => (
+                                        {row.values.slice(0, PLANS.length).map((value, index) => (
                                             <td
                                                 key={index}
                                                 className={index === 1 ? 'col-pro' : ''}

@@ -1,3 +1,4 @@
+import { CREATOR_PLAN_AVAILABLE } from '@/lib/plans';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { useEffect, lazy, Suspense } from 'react';
@@ -273,8 +274,8 @@ export default function App() {
                         {/* Canonical redirect: all pricing entries land on /pro */}
                         <Route path="/pricing" element={<CanonicalPageRedirect />} />
                         <Route path="/payment-result" element={<PaymentResult />} />
-                        <Route path="/creator" element={<CreatorPage />} />
-                        <Route path="/creador" element={<CreatorPage />} />
+                        <Route path="/creator" element={CREATOR_PLAN_AVAILABLE ? <CreatorPage /> : <Navigate to="/pricing#planes" replace />} />
+                        <Route path="/creador" element={CREATOR_PLAN_AVAILABLE ? <CreatorPage /> : <Navigate to="/pricing#planes" replace />} />
                         <Route path="/about" element={<About />} />
                         <Route path="/help" element={<Help />} />
                         <Route path="/legal/privacy" element={<Privacy />} />

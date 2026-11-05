@@ -5,6 +5,13 @@
 
 /* Transparent on mobile so nothing breaks below the breakpoint */
 .desktop-page-frame { display: contents; }
+
+/* The current profile header is sticky and already occupies its height in normal flow. */
+.finix-desktop-shell[data-section='profile'] .desktop-content {
+    padding-top: 0;
+    min-height: 0;
+}
+
 .desktop-info-shell, .desktop-info-main { display: contents; }
 
 @media (min-width: 1024px) {
@@ -147,7 +154,8 @@
 
     /* Profile banners and chats use the available viewport width. */
     .finix-desktop-shell .desktop-page-frame[data-page='profile'] > :first-child {
-        padding: 0 0 32px;
+        max-width: none;
+        padding: 0 clamp(12px, 1.3vw, 24px);
     }
 
     /* Messages (chat) layout */
@@ -505,7 +513,6 @@
 /* Reading and account screens use a centered measure rather than stretching every row. */
 @media (min-width:1024px){
  .finix-desktop-shell .desktop-page-frame[data-page='settings'] > .settings-page{max-width:1080px;margin-inline:auto;padding:24px clamp(20px,2.5vw,36px) 48px;}
- .finix-desktop-shell .desktop-page-frame[data-page='profile'] > .profile-page{max-width:1440px;margin-inline:auto;padding:16px clamp(16px,2.5vw,36px) 48px;}
  .finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;}
  .finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading h1,.finix-desktop-shell .desktop-page-frame[data-page='settings'] .desktop-page-heading p{text-align:center!important;}
 }

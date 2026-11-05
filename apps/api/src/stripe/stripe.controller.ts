@@ -1,3 +1,4 @@
+import { CREATOR_PLAN_AVAILABLE } from '../access/plan-offerings';
 import { Controller, Get, Headers, HttpCode, HttpStatus, Param, Post, Req, UseGuards, Body } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -13,11 +14,12 @@ export class StripeController {
     async getConfig() {
         return {
             ...getAccessMode(),
+            creatorPlanAvailable: CREATOR_PLAN_AVAILABLE,
             configured: !isFreeAccessEnabled() && await this.stripeService.isCheckoutReady(),
             credentialsConfigured: this.stripeService.isConfigured(),
             communityCurrency: 'ARS',
             proPriceUsd: await this.stripeService.getProMonthlyPriceUsd(),
-            creatorPriceUsd: await this.stripeService.getCreatorMonthlyPriceUsd(),
+            creatorPriceUsd: CREATOR_PLAN_AVAILABLE ? await this.stripeService.getCreatorMonthlyPriceUsd() : null,
         };
     }
 

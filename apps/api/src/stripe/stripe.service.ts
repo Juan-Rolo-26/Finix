@@ -1,3 +1,4 @@
+import { assertCreatorPlanAvailable } from '../access/plan-offerings';
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -34,6 +35,7 @@ export class StripeService {
 
     async createSubscription(userId: string, planType: 'pro_investor' | 'pro_creator') {
         assertPurchasesEnabled();
+        if (planType === 'pro_creator') assertCreatorPlanAvailable();
         if (!await this.isCheckoutReady()) throw new ServiceUnavailableException('Stripe no está disponible en este momento. Elegí otro medio de pago o contactá al soporte de Finix.');
 
         const user = await this.prisma.user.findUnique({

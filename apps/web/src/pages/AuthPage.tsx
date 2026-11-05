@@ -1,3 +1,4 @@
+import { CREATOR_PLAN_AVAILABLE } from '@/lib/plans';
 import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import { usePlatformAccessStore } from '@/stores/platformAccessStore';
@@ -47,7 +48,8 @@ export default function AuthPage() {
     const mode = searchParams.get('mode') || searchParams.get('tab') || searchParams.get('view');
     const isRegisterRoute = location.pathname === '/register' || mode === 'register' || mode === 'signup';
     const redirectTarget = normalizeRedirectTarget(searchParams.get('redirect') || searchParams.get('returnUrl'));
-    const planRequested = searchParams.get('plan');
+    const requestedPlan = searchParams.get('plan');
+    const planRequested = !CREATOR_PLAN_AVAILABLE && requestedPlan?.toLowerCase() === 'creador' ? 'PRO' : requestedPlan;
     const callbackReason = searchParams.get('reason');
     const callbackMessage = searchParams.get('message');
 

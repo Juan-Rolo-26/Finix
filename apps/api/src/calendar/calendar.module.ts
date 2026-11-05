@@ -1,3 +1,4 @@
+import { AccessModule } from '../access/access.module';
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from '../admin/admin.module';
@@ -11,6 +12,7 @@ import { MarketDataProviderService } from '../market-ranking/services/market-dat
 
 @Module({
     imports: [
+        AccessModule,
         ScheduleModule,
         AdminModule,
     ],

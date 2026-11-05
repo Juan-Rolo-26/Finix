@@ -1,3 +1,4 @@
+import { CREATOR_PLAN_AVAILABLE } from '@/lib/plans';
 import { useTranslation } from '@/i18n';
 import WatchlistLimitsSummary from '@/components/watchlist/WatchlistLimitsSummary';
 import { formatArs } from '@/lib/plans';
@@ -500,6 +501,7 @@ export default function Settings() {
             if (!res.ok) throw new Error(ui("No pudimos consultar tu facturación."));
             const data = await res.json();
             setBillingOverview(data);
+            if (data.subscriptions?.CREATOR && Number(data.creatorPriceArs) > 0) setCreatorPriceArs(Number(data.creatorPriceArs));
             setBillingError(null);
         } catch {
             setBillingError(ui("No pudimos consultar tu facturación. Reintentá antes de gestionar una suscripción."));
@@ -1158,7 +1160,7 @@ export default function Settings() {
                     </Card>
 
                     {/* Plan Creador Card */}
-                    <Card className="rounded-3xl border-2 border-blue-500/30 bg-card/90 dark:bg-card/40 backdrop-blur-md shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    {(CREATOR_PLAN_AVAILABLE || (creatorBilling && ['ACTIVE', 'PENDING', 'PAST_DUE'].includes(creatorBilling.status))) && <Card className="rounded-3xl border-2 border-blue-500/30 bg-card/90 dark:bg-card/40 backdrop-blur-md shadow-sm hover:shadow-md transition-all overflow-hidden">
                         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4 p-6 sm:p-7 border-b border-border/50 bg-gradient-to-r from-blue-500/5 via-transparent to-transparent">
                             <div className="flex items-center gap-3.5">
                                 <div className="rounded-2xl bg-gradient-to-br from-blue-500/25 to-indigo-500/10 p-3 text-blue-500 border border-blue-500/30 shrink-0 shadow-xs">
@@ -1238,7 +1240,7 @@ export default function Settings() {
                                         <p className="text-sm text-muted-foreground font-medium">{ui("La autorización de pago todavía está pendiente.")} </p>
                                         <Button type="button" variant="destructive" size="sm" disabled={!!billingError || !creatorBilling} onClick={() => { setPlanToCancel('CREATOR'); setCancelModalOpen(true); }} className="w-full sm:w-auto text-sm font-bold py-2.5 px-5 rounded-xl shadow-xs">{ui("Cancelar solicitud")} </Button>
                                     </>
-                                ) : isCreatorActive ? (
+                                ) : isCreatorActive || ['ACTIVE', 'PAST_DUE'].includes(creatorBilling?.status || '') ? (
                                     <>
                                         {creatorBilling?.cancelAtPeriodEnd ? (
                                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
@@ -1281,7 +1283,7 @@ export default function Settings() {
                                 )}
                             </div>
                         </CardContent>
-                    </Card>
+                    </Card>}
                 </TabsContent>
 
                 {/* ── PRIVACIDAD ── */}

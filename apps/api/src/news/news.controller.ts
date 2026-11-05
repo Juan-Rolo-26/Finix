@@ -1,3 +1,4 @@
+import { RequireProGuard } from '../access/require-pro.guard';
 import { Controller, Get, Query, Param, Post, Body, ForbiddenException, Request, UseGuards } from '@nestjs/common';
 import { NewsService } from './news.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -16,6 +17,7 @@ export class NewsController {
      * - limit: Number of news items (default: 50)
      * - offset: Pagination offset
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get()
     async getNews(@Query() query: any) {
         const {
@@ -39,6 +41,7 @@ export class NewsController {
      * Get news for a specific ticker/company
      * Example: /news/ticker/AAPL
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('ticker/:ticker')
     async getNewsByTicker(
         @Param('ticker') ticker: string,
@@ -54,6 +57,7 @@ export class NewsController {
     /**
      * Get all available categories
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('categories')
     async getCategories() {
         return this.newsService.getCategories();
@@ -62,6 +66,7 @@ export class NewsController {
     /**
      * Get all news sources
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('sources')
     async getSources() {
         return this.newsService.getSources();
@@ -70,6 +75,7 @@ export class NewsController {
     /**
      * Get trending news (most viewed in last 24h)
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('trending')
     async getTrending(@Query('limit') limit = 10) {
         return this.newsService.getTrendingNews(parseInt(limit as any));
@@ -78,6 +84,7 @@ export class NewsController {
     /**
      * Get news by category
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('category/:slug')
     async getNewsByCategory(
         @Param('slug') slug: string,
@@ -105,6 +112,7 @@ export class NewsController {
     /**
      * Get news statistics
      */
+    @UseGuards(JwtAuthGuard, RequireProGuard)
     @Get('stats')
     async getStats() {
         return this.newsService.getNewsStats();
