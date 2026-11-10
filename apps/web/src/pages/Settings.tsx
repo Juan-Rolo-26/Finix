@@ -642,8 +642,8 @@ export default function Settings() {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={tab => setSearchParams({ tab })} className="space-y-6">
-                <div className="w-full pb-2 flex justify-center">
-                    <TabsList className="is-centered justify-center mx-auto inline-flex flex-wrap items-center gap-1.5 p-1.5 bg-secondary/40 border border-border/60 rounded-2xl min-w-0">
+                <div className="w-full pb-2 overflow-x-auto scrollbar-hide flex justify-start sm:justify-center px-1">
+                    <TabsList className="h-auto w-max sm:w-auto inline-flex flex-nowrap sm:flex-wrap items-center justify-start sm:justify-center gap-1.5 p-1.5 bg-secondary/40 border border-border/60 rounded-2xl min-w-0 shrink-0">
                         {[
                             { value: 'cuenta', label: ui("Cuenta"), icon: <User className="w-4 h-4 shrink-0" /> },
                             { value: 'suscripcion', label: ui("Planes PRO"), icon: <Crown className="w-4 h-4 text-amber-500 shrink-0" /> },
@@ -656,7 +656,7 @@ export default function Settings() {
                             <TabsTrigger
                                 key={value}
                                 value={value}
-                                className="flex items-center justify-center gap-2 py-2 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-secondary/70 transition-all text-muted-foreground shrink-0"
+                                className="flex items-center justify-center gap-2 py-2 px-3 sm:px-3.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md hover:bg-secondary/70 transition-all text-muted-foreground shrink-0 cursor-pointer"
                             >
                                 {icon}
                                 <span className="whitespace-nowrap">{label}</span>

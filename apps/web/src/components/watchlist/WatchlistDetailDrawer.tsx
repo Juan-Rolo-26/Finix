@@ -10,7 +10,6 @@ import SymbolLogo from '@/components/SymbolLogo';
 import {
     Target,
     Bell,
-    MessageSquare,
     ExternalLink,
     Plus,
     Trash2,
@@ -76,28 +75,12 @@ function WatchlistItemDetails({
     const [newNoteContent, setNewNoteContent] = useState('');
     const [addingNote, setAddingNote] = useState(false);
 
-    // Publicaciones comunitarias
-    const [communityPosts, setCommunityPosts] = useState<any[]>([]);
-    const [loadingPosts, setLoadingPosts] = useState(false);
-
     // Estado de guardado
     const [saving, setSaving] = useState(false);
     const [savedSuccess, setSavedSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => { setNotes(item?.notes || []); }, [item?.id, item?.notes]);
-
-    useEffect(() => {
-        if (!item?.symbol || !isOpen) return;
-        const controller = new AbortController();
-        setCommunityPosts([]);
-        setLoadingPosts(true);
-        apiFetch(`/watchlist/posts/${encodeURIComponent(item.symbol)}`, { signal: controller.signal })
-            .then(async response => { if (response.ok) { const data = await response.json(); if (!controller.signal.aborted) setCommunityPosts(data.posts || []); } })
-            .catch(() => {})
-            .finally(() => { if (!controller.signal.aborted) setLoadingPosts(false); });
-        return () => controller.abort();
-    }, [item?.symbol, isOpen]);
 
     if (!isOpen || !item) return null;
 
@@ -577,46 +560,6 @@ function WatchlistItemDetails({
                                 ))
                             )}
                         </div>
-                    </div>
-
-                    {/* Publicaciones comunitarias relacionadas con advertencia */}
-                    <div className="space-y-3 pt-4 border-t border-border/40">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                                <MessageSquare className="w-4 h-4 text-primary" />
-                                {" "}<FinixUiText text={"Publicaciones de la comunidad sobre"} />{" "}{item.symbol}
-                            </h4>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-snug">
-                            {" "}<FinixUiText text={"Las opiniones de los usuarios no constituyen datos verificados ni recomendaciones de Finix."} />{" "}</p>
-
-                        {loadingPosts ? (
-                            <div className="py-4 flex justify-center">
-                                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                            </div>
-                        ) : communityPosts.length === 0 ? (
-                            <p className="text-[11px] text-muted-foreground italic text-center py-2">
-                                {" "}<FinixUiText text={"No hay publicaciones recientes etiquetadas con este activo."} />{" "}</p>
-                        ) : (
-                            <div className="space-y-2">
-                                {communityPosts.map((post) => (
-                                    <div
-                                        key={post.id}
-                                        className="rounded-2xl border border-border/50 bg-background/50 p-3 text-xs space-y-1.5"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-foreground">
-                                                @{post.author?.username || 'usuario'}
-                                            </span>
-                                            <span className="text-[10px] text-muted-foreground">
-                                                {new Date(post.createdAt).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <p className="text-muted-foreground line-clamp-2 leading-relaxed">{post.content}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
                 </div>
             </DialogPrimitive.Content>

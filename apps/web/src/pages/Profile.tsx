@@ -11,14 +11,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SymbolLogo } from '@/components/SymbolLogo';
 import { UserConnectionsDialog, type ConnectionsListType } from '@/components/UserConnectionsDialog';
 import { resolveAssetInfo } from '@/lib/tradingview';
-import PostCard from '@/components/posts/PostCard';
 import { ImagePreviewButton } from '@/components/common/ImagePreviewButton';
-import type { Post } from '@/pages/Explore';
 import {
     User, MapPin, Briefcase, Calendar, Award, TrendingUp,
     Linkedin, Twitter, Youtube, Instagram,
-    Edit, Check, X, Camera, Globe, Bookmark,
-    BarChart3, Target, FileText, UserPlus,
+    Edit, Check, X, Camera, Globe,
+    BarChart3, Target, UserPlus,
     Star, Search, Plus, Wallet, DollarSign,
     ArrowUpRight, ArrowDownRight, Layers, Activity, Loader2, Lock, Flag,
     Share2, Settings as SettingsIcon, CheckCircle2, AlertCircle, RefreshCw
@@ -517,18 +515,10 @@ export default function Profile() {
     const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
     const [uploadingImage, setUploadingImage] = useState<'avatar' | 'banner' | null>(null);
     const [imageUploadError, setImageUploadError] = useState('');
-    const [activeTab, setActiveTab] = useState<'posts' | 'saved'>('posts');
     const [isFollowing, setIsFollowing] = useState(false);
     const [isFollowSubmitting, setIsFollowSubmitting] = useState(false);
     const [connectionsOpen, setConnectionsOpen] = useState(false);
     const [connectionsType, setConnectionsType] = useState<ConnectionsListType>('followers');
-    const [profilePosts, setProfilePosts] = useState<Post[]>([]);
-    const [savedPosts, setSavedPosts] = useState<Post[]>([]);
-    const savedPostsCursorRef = useRef<string | null>(null);
-    const [hasMoreSavedPosts, setHasMoreSavedPosts] = useState(false);
-    const [savedPostsError, setSavedPostsError] = useState('');
-    const [isLoadingPosts, setIsLoadingPosts] = useState(false);
-    const [isLoadingSavedPosts, setIsLoadingSavedPosts] = useState(false);
 
     // Pinned assets state
     const [pinnedAssets, setPinnedAssets] = useState<PinnedAsset[]>([]);
@@ -566,13 +556,6 @@ export default function Profile() {
         setPinnedAssets([]);
         setAllPinnedTickers([]);
     }, [isOwnProfile, profile?.id]);
-
-    useEffect(() => {
-        if (!isOwnProfile && activeTab === 'saved') {
-            setActiveTab('posts');
-        }
-        // activeTab is always valid (posts/saved)
-    }, [isOwnProfile, activeTab]);
 
     /* ── Load profile ────────────────────────────── */
     const loadProfile = async () => {
@@ -816,73 +799,6 @@ export default function Profile() {
         showToast(`${ticker} eliminado de tus destacados`);
     };
 
-    const loadProfilePosts = async () => {
-        const targetUsername = profile?.username || username || currentUser?.username;
-        if (!targetUsername) return;
-
-        setIsLoadingPosts(true);
-        try {
-            const res = await apiFetch(`/posts/user/${encodeURIComponent(targetUsername)}?limit=20`);
-            if (!res.ok) {
-                setProfilePosts([]);
-                return;
-            }
-
-            const data = await res.json();
-            setProfilePosts(Array.isArray(data?.posts) ? data.posts : []);
-        } catch {
-            setProfilePosts([]);
-        } finally {
-            setIsLoadingPosts(false);
-        }
-    };
-
-    const loadSavedPosts = async (reset = true) => {
-        if (!isOwnProfile) return;
-
-        if (reset) {
-            setSavedPosts([]);
-            savedPostsCursorRef.current = null;
-            setHasMoreSavedPosts(false);
-        }
-        setSavedPostsError('');
-        setIsLoadingSavedPosts(true);
-        try {
-            const params = new URLSearchParams({ limit: '20' });
-            if (!reset && savedPostsCursorRef.current) params.set('cursor', savedPostsCursorRef.current);
-
-            const res = await apiFetch(`/posts/saved?${params.toString()}`);
-            if (!res.ok) {
-                const error = await res.json().catch(() => ({}));
-                throw new Error(error.message || `No se pudieron cargar los guardados (${res.status}).`);
-            }
-
-            const data = await res.json();
-            const loadedPosts: Post[] = Array.isArray(data?.posts) ? data.posts : [];
-            setSavedPosts((current) => {
-                if (reset) return loadedPosts;
-                const existingIds = new Set(current.map((post) => post.id));
-                return [...current, ...loadedPosts.filter((post) => !existingIds.has(post.id))];
-            });
-            savedPostsCursorRef.current = data?.nextCursor || null;
-            setHasMoreSavedPosts(Boolean(data?.hasMore));
-        } catch (error) {
-            setSavedPostsError(error instanceof Error ? error.message : 'No se pudieron cargar las publicaciones guardadas.');
-        } finally {
-            setIsLoadingSavedPosts(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!profile) return;
-
-        if (activeTab === 'posts') {
-            void loadProfilePosts();
-        } else if (activeTab === 'saved' && isOwnProfile) {
-            void loadSavedPosts();
-        }
-    }, [activeTab, profile?.username, isOwnProfile]);
-
     /* ── Save profile ────────────────────────────── */
     const handleSaveProfile = async () => {
         setIsSavingProfile(true);
@@ -1028,11 +944,6 @@ export default function Profile() {
 
     const specializations = parseJsonArray(profile.specializations);
     const certifications = parseJsonArray(profile.certifications);
-
-    const tabs: { id: 'posts' | 'saved'; label: string; count?: number; icon?: JSX.Element }[] = [
-        { id: 'posts', label: 'Publicaciones', count: profile._count?.posts },
-        ...(isOwnProfile ? [{ id: 'saved' as const, label: 'Guardados' }] : []),
-    ];
 
     return (
         <div className="profile-page mx-auto flex-1 w-full min-w-0 max-w-none px-3 sm:px-4 lg:px-5 py-0 text-foreground relative space-y-6">
@@ -1449,13 +1360,6 @@ export default function Profile() {
                             <span className="text-muted-foreground text-xs sm:text-sm">Seguidores</span>
                         </button>
 
-                        <div className="inline-flex items-center gap-1.5 text-left">
-                            <span className="font-extrabold text-foreground">
-                                {profile._count?.posts ?? profilePosts.length}
-                            </span>
-                            <span className="text-muted-foreground text-xs sm:text-sm">Publicaciones</span>
-                        </div>
-
                         {typeof profile.totalReturn === 'number' && Number.isFinite(profile.totalReturn) && (
                             <div className="sm:ml-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border transition-colors"
                                  style={{
@@ -1612,182 +1516,20 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* ── TABS & TAB CONTENT SECTION ──────────────────────── */}
+            {/* ── PORTFOLIO & PERFORMANCE SECTION ──────────────────────── */}
             <div className="rounded-2xl border border-border/80 bg-card text-card-foreground shadow-xs overflow-hidden transition-colors">
-                {/* ── TABS HEADER ──────────────────────────────────────── */}
-                <div className="desktop-profile-tabs px-5 sm:px-8 border-b border-border/80 bg-muted/20">
-                    <div className="desktop-filter-bar flex gap-2">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                aria-pressed={activeTab === tab.id}
-                                className="relative flex items-center gap-2 px-5 py-3.5 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
-                                style={{ color: activeTab === tab.id ? PRIMARY : 'hsl(var(--muted-foreground))' }}
-                            >
-                                {'icon' in tab && tab.icon}
-                                {<FinixUiText text={tab.label} />}
-                                {'count' in tab && tab.count !== undefined && (
-                                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted font-bold opacity-80">
-                                        {tab.count}
-                                    </span>
-                                )}
-                                {activeTab === tab.id && (
-                                    <motion.div
-                                        layoutId="profile-tab-underline"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full"
-                                        style={{ background: PRIMARY }}
-                                    />
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* ── TAB CONTENT ───────────────────────────────── */}
                 <div className="p-5 sm:p-8">
-                    <AnimatePresence mode="wait">
-                        {activeTab === 'posts' && (
-                            <motion.div key="posts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                <div className="space-y-4">
-                                    <ProfilePortfolioSection
-                                        profileUserId={profile.id}
-                                        isOwnProfile={isOwnProfile}
-                                        showPortfolio={profile.showPortfolio}
-                                        totalReturn={profile.totalReturn}
-                                        winRate={profile.winRate}
-                                        riskScore={profile.riskScore}
-                                        showStats={profile.showStats}
-                                        showExactReturns={profile.showExactReturns}
-                                        returnsVisibilityMode={profile.returnsVisibilityMode}
-                                    />
-                                    {isLoadingPosts ? (
-                                        <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                            <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
-                                            <p className="text-muted-foreground text-sm">{""}<FinixUiText text={"Cargando publicaciones..."} />{""}</p>
-                                        </div>
-                                    ) : profilePosts.length > 0 ? (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {profilePosts.map((post) => (
-                                                <PostCard
-                                                    key={post.id}
-                                                    post={post}
-                                                    currentUserId={currentUser?.id}
-                                                    onUpdated={(updatedPost) => {
-                                                        setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                        setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                    }}
-                                                    onDeleted={(postId) => {
-                                                        setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
-                                                        setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
-                                                        setProfile((prev) => prev ? {
-                                                            ...prev,
-                                                            _count: prev._count ? {
-                                                                ...prev._count,
-                                                                posts: Math.max((prev._count.posts || 0) - 1, 0),
-                                                            } : prev._count,
-                                                        } : prev);
-                                                    }}
-                                                />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-2xl py-12 px-6 text-center border border-border/40 bg-card/20 space-y-3">
-                                            <FileText className="w-10 h-10 mx-auto opacity-30 text-primary" />
-                                            <h4 className="text-base font-bold text-foreground">
-                                                {isOwnProfile ? 'Todavía no publicaste nada' : 'Sin publicaciones todavía'}
-                                            </h4>
-                                            <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
-                                                {isOwnProfile
-                                                    ? 'Compartí tus análisis técnicos, reflexiones de mercado o ideas de trading con la comunidad.'
-                                                    : `@${profile.username} aún no ha compartido ninguna publicación.`}
-                                            </p>
-                                            {isOwnProfile && (
-                                                <button
-                                                    onClick={() => navigate('/dashboard')}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer mt-2"
-                                                    style={{ background: PRIMARY, color: '#000' }}
-                                                >
-                                                    <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                                                    {" "}<FinixUiText text={"Ir al Feed para Publicar"} />{" "}</button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {activeTab === 'saved' && (
-                            <motion.div key="saved" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                                {isLoadingSavedPosts && savedPosts.length === 0 ? (
-                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                        <Loader2 className="w-12 h-12 mx-auto mb-3 opacity-40 animate-spin" />
-                                        <p className="text-muted-foreground text-sm">{""}<FinixUiText text={"Cargando guardados..."} />{""}</p>
-                                    </div>
-                                ) : savedPostsError && savedPosts.length === 0 ? (
-                                    <div className="rounded-2xl py-12 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                        <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400 opacity-80" />
-                                        <p className="text-sm text-red-300">{savedPostsError}</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => void loadSavedPosts()}
-                                            className="mt-4 rounded-xl border border-border px-4 py-2 text-xs font-semibold hover:bg-secondary"
-                                        >
-                                            {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
-                                    </div>
-                                ) : savedPosts.length > 0 ? (
-                                    <>
-                                        <div className="space-y-4">
-                                            {savedPosts.map((post) => (
-                                                <PostCard
-                                                    key={post.id}
-                                                    post={post}
-                                                    currentUserId={currentUser?.id}
-                                                    onUpdated={(updatedPost) => {
-                                                        if (!updatedPost.savedByMe) {
-                                                            setSavedPosts((prev) => prev.filter((item) => item.id !== updatedPost.id));
-                                                            setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                            return;
-                                                        }
-                                                        setSavedPosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                        setProfilePosts((prev) => prev.map((item) => item.id === updatedPost.id ? updatedPost : item));
-                                                    }}
-                                                    onDeleted={(postId) => {
-                                                        setSavedPosts((prev) => prev.filter((item) => item.id !== postId));
-                                                        setProfilePosts((prev) => prev.filter((item) => item.id !== postId));
-                                                    }}
-                                                />
-                                            ))}
-                                        </div>
-                                        {savedPostsError && (
-                                            <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
-                                                <p className="text-sm text-red-300">{savedPostsError}</p>
-                                                <button type="button" onClick={() => void loadSavedPosts(false)} className="mt-2 text-xs font-semibold text-primary hover:underline">
-                                                    {" "}<FinixUiText text={"Reintentar"} />{" "}</button>
-                                            </div>
-                                        )}
-                                        {hasMoreSavedPosts && (
-                                            <div className="flex justify-center py-5">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => void loadSavedPosts(false)}
-                                                    disabled={isLoadingSavedPosts}
-                                                    className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold hover:bg-secondary disabled:cursor-wait disabled:opacity-60"
-                                                >
-                                                    {isLoadingSavedPosts ? 'Cargando…' : 'Cargar más guardados'}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="rounded-2xl py-16 text-center" style={{ background: 'hsl(var(--secondary) / 0.4)', border: '1px solid hsl(var(--border))' }}>
-                                        <Bookmark className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                        <p className="text-muted-foreground text-sm">{""}<FinixUiText text={"No hay guardados"} />{""}</p>
-                                    </div>
-                                )}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    <ProfilePortfolioSection
+                        profileUserId={profile.id}
+                        isOwnProfile={isOwnProfile}
+                        showPortfolio={profile.showPortfolio}
+                        totalReturn={profile.totalReturn}
+                        winRate={profile.winRate}
+                        riskScore={profile.riskScore}
+                        showStats={profile.showStats}
+                        showExactReturns={profile.showExactReturns}
+                        returnsVisibilityMode={profile.returnsVisibilityMode}
+                    />
 
                     {/* ── EDIT FORM (about tab when editing) ───── */}
                     {isEditing && (

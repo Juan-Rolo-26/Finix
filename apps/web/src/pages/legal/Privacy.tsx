@@ -128,7 +128,7 @@ export default function Privacy() {
                 </div>
             </nav>
 
-            <div className="info-page__container container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-6xl">
+            <div className="info-page__container container mx-auto px-4 md:px-8 pt-5 sm:pt-8 pb-20 max-w-6xl">
                 {/* ── Tabs ── */}
                 <InformationPageTabs />
 

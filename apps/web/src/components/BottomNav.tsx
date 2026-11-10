@@ -6,7 +6,6 @@ import { useState, useEffect, useRef } from 'react';
 import type { ComponentType } from 'react';
 import {
     LayoutDashboard,
-    Compass,
     MoreHorizontal,
     User,
     Settings,
@@ -34,11 +33,12 @@ import { isWatchlistEnabled, isEducationEnabled } from '@/lib/featureFlags';
 
 const PRIMARY = 'hsl(var(--primary))';
 
-/* ── Main mobile navigation tabs (Market-focused, no communities/messages) ── */
+/* ── Main mobile navigation tabs (Market-focused, no communities/messages/posts) ── */
 const mainTabs = [
-    { path: '/dashboard', label: 'Inicio', icon: LayoutDashboard },
+    { path: '/', label: 'Inicio', icon: LayoutDashboard },
     { path: '/market', label: 'Mercado', shortLabel: 'Mercados', icon: TrendingUp },
     { path: '/analysis', label: 'Análisis', icon: AreaChart },
+    { path: '/portfolio', label: 'Portafolio', icon: Briefcase },
 ];
 
 export function FinanceMobileNav({ location, navigate }: { location: ReturnType<typeof useLocation>; navigate: ReturnType<typeof useNavigate> }) {
@@ -105,15 +105,17 @@ export function BottomNav() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isMoreOpen]);
 
-    const isActive = (p: string) =>
-        location.pathname === p ||
-        (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
+    const isActive = (p: string) => {
+        if (p === '/') {
+            return location.pathname === '/' || location.pathname === '/home';
+        }
+        return location.pathname === p || location.pathname.startsWith(`${p}/`);
+    };
 
-    const moreActive = ['/laboratorio', '/explore', '/market', '/calendario', '/calendar', '/portfolio', '/news', '/analysis', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
+    const moreActive = ['/laboratorio', '/calendario', '/calendar', '/news', ...(isEducationEnabled() ? ['/educativa'] : []), '/profile', '/settings', '/notifications'].some(p => isActive(p));
 
     const moreLinks = [
         { label: ui("Laboratorio Financiero"), path: '/laboratorio', icon: FlaskConical },
-        { label: ui("Explorar"),  path: '/explore',  icon: Compass     },
         { label: ui("Mercado"),   path: '/market',   icon: TrendingUp  },
         ...(isWatchlistEnabled() ? [{ label: ui("Seguimiento"), path: '/market/seguimiento', icon: Bookmark }] : []),
         ...(isEducationEnabled() ? [{ label: 'Educativa', path: '/educativa', icon: GraduationCap }] : []),
@@ -126,10 +128,6 @@ export function BottomNav() {
             { label: 'Ajustes',   path: '/settings', icon: Settings },
         ] : []),
     ];
-
-    const splitIndex = 2;
-    const LEFT_TABS = visibleMainTabs.slice(0, splitIndex);
-    const RIGHT_TABS = visibleMainTabs.slice(splitIndex);
 
     return (
         <>
@@ -149,8 +147,8 @@ export function BottomNav() {
                 aria-label="Navegación inferior"
             >
                 <div className="flex items-stretch justify-around min-h-[60px] py-1 px-1 gap-1">
-                    {/* Left tabs */}
-                    {LEFT_TABS.map(({ path, label, shortLabel, icon: Icon }) => {
+                    {/* Main navigation tabs */}
+                    {visibleMainTabs.map(({ path, label, shortLabel, icon: Icon }) => {
                         const active = isActive(path);
                         return (
                             <Link
@@ -190,59 +188,6 @@ export function BottomNav() {
                                     ) : (
                                         ui(label)
                                     )}
-                                </span>
-                            </Link>
-                        );
-                    })}
-
-                    {/* ── CENTER CREATE BUTTON ──────────────── */}
-                    <button
-                        className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-primary"
-                        style={{
-                            background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.72) 100%)`,
-                            boxShadow: `0 4px 18px hsl(var(--primary) / 0.32), 0 2px 6px hsl(var(--primary) / 0.22)`,
-                            marginBottom: '2px',
-                        }}
-                        onClick={() => navigate('/explore?create=true')}
-                        aria-label={ui("Crear publicación")}
-                    >
-                        <Plus className="w-5 h-5" style={{ color: 'hsl(var(--primary-foreground))' }} />
-                    </button>
-
-                    {/* Right tabs */}
-                    {RIGHT_TABS.map(({ path, label, icon: Icon }) => {
-                        const active = isActive(path);
-                        return (
-                            <Link
-                                key={path}
-                                to={path}
-                                aria-label={ui(label)}
-                                aria-current={active ? 'page' : undefined}
-                                className="relative flex flex-col items-center justify-center min-w-0 flex-1 min-h-12 h-auto rounded-xl touch-manipulation px-1 focus-visible:ring-2 focus-visible:ring-primary"
-                            >
-                                <AnimatePresence>
-                                    {active && (
-                                        <motion.div
-                                            layoutId="bottom-active"
-                                            className="absolute inset-0 rounded-xl"
-                                            style={{
-                                                background: `hsl(var(--sidebar-active-bg-from))`,
-                                                border: `1px solid hsl(var(--sidebar-active-border))`,
-                                            }}
-                                            initial={false}
-                                            transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                                        />
-                                    )}
-                                </AnimatePresence>
-                                <Icon
-                                    className="w-5 h-5 relative z-10 transition-colors"
-                                    style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
-                                />
-                                <span
-                                    className="text-[9px] min-[360px]:text-[9.5px] font-semibold mt-0.5 tracking-tight relative z-10 w-full truncate text-center leading-tight whitespace-nowrap"
-                                    style={{ color: active ? PRIMARY : 'hsl(var(--muted-foreground))' }}
-                                >
-                                    {ui(label)}
                                 </span>
                             </Link>
                         );

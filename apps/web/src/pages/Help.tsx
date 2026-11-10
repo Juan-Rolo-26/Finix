@@ -2,10 +2,8 @@ import { UiText as FinixUiText } from '@/i18n/UiText';
 import { useTranslation as useFinixUiTranslation } from '@/i18n';
 import WatchlistLimitsSummary from '@/components/watchlist/WatchlistLimitsSummary';
 import { useState, useMemo, useEffect } from 'react';
-import { Search, HelpCircle, Mail, ChevronRight, X } from 'lucide-react';
+import { Search, HelpCircle, Mail, ChevronRight, X, ArrowUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowUp } from 'lucide-react';
 import { InformationPageTabs } from '@/components/legal/InformationPageTabs';
 import { InvestorQuote } from '@/components/common/InvestorQuote';
 
@@ -364,15 +362,12 @@ function FaqAccordion({ faq }: { faq: FaqItem }) {
 export default function Help() {
     const { ui: finixUi } = useFinixUiTranslation();
 
-    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [scrolled, setScrolled] = useState(false);
     const [showBackTop, setShowBackTop] = useState(false);
 
     useEffect(() => {
         const fn = () => {
-            setScrolled(window.scrollY > 10);
             setShowBackTop(window.scrollY > 400);
         };
         window.addEventListener('scroll', fn, { passive: true });
@@ -393,32 +388,12 @@ export default function Help() {
 
     return (
         <div className="info-page min-h-screen finix-unified-bg text-foreground font-sans selection:bg-primary/30">
-            {/* ── Navbar ── */}
-            <nav aria-label={finixUi("Volver a Finix")} className={`info-page__mobile-nav fixed top-0 w-full z-50 border-b transition-all ${scrolled ? 'border-border/50 bg-background/80 backdrop-blur-xl' : 'border-transparent bg-transparent'}`}>
-                <div className="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label={finixUi("Volver")}
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="hidden sm:inline">{""}<FinixUiText text={"Volver"} />{""}</span>
-                    </button>
-                    <Link to="/dashboard" className="flex items-center gap-3 group cursor-pointer">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border border-black/20 dark:border-white/30 bg-white dark:bg-zinc-900 shadow-2xs transition-transform group-hover:scale-105">
-                            <img src="/logo-small.webp" alt={finixUi("Finix")} className="h-5 w-5 object-contain" />
-                        </div>
-                        <span className="font-heading font-black text-xl tracking-tight text-foreground">{""}<FinixUiText text={"Finix"} />{""}</span>
-                    </Link>
-                </div>
-            </nav>
-
-            <main className="info-page__container container mx-auto px-4 md:px-8 pt-24 pb-20 max-w-4xl">
+            <main className="info-page__container container mx-auto px-4 md:px-8 pt-5 sm:pt-8 pb-20 max-w-4xl">
                 {/* ── Legal nav tabs ── */}
                 <InformationPageTabs />
 
                 {/* ── Header ── */}
-                <header className="info-page__header text-center max-w-2xl mx-auto mb-12 space-y-4">
+                <header className="info-page__header text-center max-w-2xl mx-auto mb-10 space-y-4">
                     <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
                         <HelpCircle className="w-6 h-6" />
                     </div>
@@ -456,7 +431,7 @@ export default function Help() {
                         <div
                             role="tablist"
                             aria-label={finixUi("Categorías de ayuda")}
-                            className="flex flex-row flex-wrap gap-2 lg:flex-col lg:gap-1 pb-3 lg:pb-0 mb-6 lg:mb-0 overflow-x-auto scrollbar-hide"
+                            className="flex flex-row flex-nowrap lg:flex-col gap-2 lg:gap-1 pb-3 lg:pb-0 mb-6 lg:mb-0 overflow-x-auto scrollbar-hide -mx-4 px-4 lg:mx-0 lg:px-0"
                         >
                             {CATEGORIES.map(cat => {
                                 const active = selectedCategory === cat.id;
@@ -466,9 +441,9 @@ export default function Help() {
                                         role="tab"
                                         aria-selected={active}
                                         onClick={() => setSelectedCategory(cat.id)}
-                                        className={`flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all lg:rounded-lg lg:text-sm lg:font-medium lg:w-full lg:justify-start ${
+                                        className={`flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all lg:rounded-lg lg:text-sm lg:font-medium lg:w-full lg:justify-start cursor-pointer ${
                                             active
-                                                ? 'bg-primary/10 text-primary'
+                                                ? 'bg-primary text-primary-foreground shadow-xs font-bold'
                                                 : 'bg-card border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 lg:border-0 lg:bg-transparent'
                                         }`}
                                     >

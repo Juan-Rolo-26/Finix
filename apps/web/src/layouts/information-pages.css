@@ -3,6 +3,9 @@
 .info-page__body,
 .info-page__help-sidebar { display: contents; }
 
+/* The shell's DesktopNavigation already provides the unified header on all viewports */
+.info-page__mobile-nav { display: none !important; }
+
 @media (min-width: 1024px) {
     .finix-desktop-shell .info-page {
         min-height: calc(100dvh - 56px);

@@ -19,8 +19,6 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const PostDetail = lazy(() => import('./pages/PostDetail'));
-const SocialDashboard = lazy(() => import('./pages/Dashboard'));
 const FinancialLaboratory = lazy(() => import('./pages/FinancialLaboratory'));
 const FinanceWorkspace = lazy(() => import('./pages/FinanceWorkspace'));
 
@@ -37,7 +35,6 @@ const Markets = lazy(() => import('./pages/Markets'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const ProUpgrade = lazy(() => import('./pages/ProUpgrade'));
-const Explore = lazy(() => import('./pages/Explore'));
 const PaymentResult = lazy(() => import('./pages/PaymentResult'));
 const NewsPage = lazy(() => import('./pages/News'));
 const NotificationsPage = lazy(() => import('./pages/Notifications'));
@@ -155,7 +152,7 @@ export default function App() {
                         element={
                             !token && !user
                                 ? <AuthPage />
-                                : <Navigate to="/dashboard" replace />
+                                : <Navigate to="/" replace />
                         }
                     />
 
@@ -164,7 +161,7 @@ export default function App() {
                         element={
                             !token && !user
                                 ? <AuthPage />
-                                : <Navigate to="/dashboard" replace />
+                                : <Navigate to="/" replace />
                         }
                     />
 
@@ -173,7 +170,7 @@ export default function App() {
                         element={
                             !token && !user
                                 ? <AuthPage />
-                                : <Navigate to="/dashboard" replace />
+                                : <Navigate to="/" replace />
                         }
                     />
 
@@ -208,12 +205,12 @@ export default function App() {
                             </AccessGuard>
                         }
                     >
-                        <Route path="/dashboard" element={<SocialDashboard />} />
-                        <Route path="/social" element={<SocialDashboard />} />
-                        <Route path="/posts/:id" element={<PostDetail />} />
-                        <Route path="/post/:id" element={<PostDetail />} />
+                        <Route path="/dashboard" element={<Navigate to="/" replace />} />
+                        <Route path="/social" element={<Navigate to="/" replace />} />
+                        <Route path="/posts/:id" element={<Navigate to="/" replace />} />
+                        <Route path="/post/:id" element={<Navigate to="/" replace />} />
                         <Route path="/comunidades/invite/:code" element={<Navigate to="/" replace />} />
-                        <Route path="/explore" element={<Explore />} />
+                        <Route path="/explore" element={<Navigate to="/market" replace />} />
                         <Route path="/market" element={<Markets />} />
                         {isWatchlistEnabled() ? (
                             <>
@@ -248,8 +245,8 @@ export default function App() {
                             </>
                         ) : (
                             <>
-                                <Route path="/educativa" element={<Navigate to="/dashboard" replace />} />
-                                <Route path="/educativa/*" element={<Navigate to="/dashboard" replace />} />
+                                <Route path="/educativa" element={<Navigate to="/" replace />} />
+                                <Route path="/educativa/*" element={<Navigate to="/" replace />} />
                             </>
                         )}
                         <Route path="/profile/:username" element={<Profile />} />

@@ -2,7 +2,7 @@ import { useTranslation } from '@/i18n';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Sun, Moon, Plus } from 'lucide-react';
+import { Bell, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { usePreferencesStore } from '../stores/preferencesStore';
 import { resolveMediaUrl } from '../lib/mediaUrl';
@@ -48,7 +48,7 @@ export function MobileTopBar() {
             }}
         >
             {/* Logo */}
-            <Link to="/dashboard" aria-label={ui("Finix · Inicio")} className="flex items-center gap-1.5 min-h-11 shrink-0 focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
+            <Link to="/" aria-label={ui("Finix · Inicio")} className="flex items-center gap-1.5 min-h-11 shrink-0 focus-visible:ring-2 focus-visible:ring-primary rounded-lg">
                 <img
                     src="/logo-small.webp"
                     alt="Finix"
@@ -80,16 +80,6 @@ export function MobileTopBar() {
                         <div className="hidden min-[430px]:flex items-center shrink-0">
                             <InvestorStreakPill />
                         </div>
-
-                        {/* Create post */}
-                        <button
-                            className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary"
-                            style={{ color: 'hsl(var(--muted-foreground))' }}
-                            onClick={() => navigate('/explore?create=true')}
-                            aria-label={ui("Crear publicación")}
-                        >
-                            <Plus className="w-[18px] h-[18px]" />
-                        </button>
 
                         {/* Notifications */}
                         <div className="relative">

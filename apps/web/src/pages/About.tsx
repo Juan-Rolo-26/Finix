@@ -24,7 +24,7 @@ export default function About() {
                 </div>
             </nav>
 
-            <main className="info-page__container container mx-auto px-4 md:px-8 pt-28 pb-20 max-w-5xl">
+            <main className="info-page__container container mx-auto px-4 md:px-8 pt-5 sm:pt-8 pb-20 max-w-5xl">
                 {/* ── Navigation Tabs between Legal & Info pages ── */}
                 <InformationPageTabs />
 
@@ -32,7 +32,7 @@ export default function About() {
                 <header className="info-page__header text-center max-w-3xl mx-auto mb-16 space-y-5">
                     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/25">
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>{""}<FinixUiText text={"Red Social & Plataforma Financiera"} />{""}</span>
+                        <span>{""}<FinixUiText text={"Plataforma Financiera & Mercados"} />{""}</span>
                     </div>
                     <h1 className="text-3xl sm:text-5xl font-heading font-black tracking-tight leading-tight">
                         {" "}<FinixUiText text={"Democratizando la información y el análisis financiero"} />{" "}</h1>

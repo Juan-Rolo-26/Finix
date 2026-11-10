@@ -14,8 +14,6 @@ import {
     MessageSquare,
     Bell,
     Search,
-    Plus,
-    Compass,
     ChevronRight,
     Loader2,
     Sun,
@@ -293,15 +291,14 @@ export function Sidebar() {
     }, [collapsed, user?.id]);
 
     const isActive = (p: string) =>
-        location.pathname === p ||
-        (p !== '/dashboard' && location.pathname.startsWith(`${p}/`));
+        p === '/' ? location.pathname === '/' || location.pathname === '/home' :
+        location.pathname === p || location.pathname.startsWith(`${p}/`);
 
     const sections = [
         {
-            label: 'Social',
+            label: ui("Plataforma"),
             links: [
-                { name: ui("Inicio"), path: '/dashboard', icon: LayoutDashboard, badge: 0 },
-                { name: ui("Explorar"), path: '/explore', icon: Compass, badge: 0 },
+                { name: ui("Inicio"), path: '/', icon: LayoutDashboard, badge: 0 },
             ],
         },
         {
@@ -362,7 +359,7 @@ export function Sidebar() {
                 style={{ borderBottom: '1px solid hsl(var(--sidebar-border))' }}>
                 <div
                     className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer border border-black/30 dark:border-white/35 bg-white dark:bg-zinc-900 shadow-2xs transition-transform hover:scale-105"
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/')}
                 >
                     <img src="/logo-small.webp" alt="Finix" className="h-5 w-5 object-contain" />
                 </div>
@@ -636,23 +633,6 @@ export function Sidebar() {
                         </div>
                     </div>
                 )}
-            </div>
-
-            {/* ── CREATE POST BUTTON ──────────────────────── */}
-            <div className="px-3 pt-3 flex-shrink-0">
-                <button
-                    onClick={() => navigate('/explore?create=true')}
-                    className="w-full flex items-center gap-2.5 rounded-xl font-semibold text-[13px] transition-all group btn-primary-glow"
-                    style={{
-                        background: `linear-gradient(135deg, ${PRIMARY} 0%, hsl(var(--primary) / 0.72) 100%)`,
-                        color: 'hsl(var(--primary-foreground))',
-                        padding: collapsed ? '10px' : '10px 14px',
-                        justifyContent: collapsed ? 'center' : undefined,
-                    }}
-                >
-                    <Plus className="w-4 h-4 flex-shrink-0" />
-                    {!collapsed && <span className="flex-1">{ui("Crear publicación")}</span>}
-                </button>
             </div>
 
             {/* ── NAV ─────────────────────────────────────── */}

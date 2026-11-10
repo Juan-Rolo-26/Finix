@@ -1,14 +1,20 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LEGAL_NAV } from './LegalPageLayout';
+import { useRef, useEffect } from 'react';
 
 export function InformationPageTabs() {
     const { pathname } = useLocation();
     const currentPath = pathname.replace(/^\/legal\//, '/');
+    const activeRef = useRef<HTMLAnchorElement>(null);
+
+    useEffect(() => {
+        activeRef.current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, [currentPath]);
 
     return (
         <nav aria-label="Información de Finix" className="mb-6 md:mb-8">
             {/* Mobile compact pill bar: keeps title and content immediately reachable without pushing below fold */}
-            <div className="flex sm:hidden items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-0.5">
+            <div className="flex sm:hidden items-center gap-2 overflow-x-auto scrollbar-hide py-1.5 px-4 -mx-4">
                 {LEGAL_NAV.map(item => {
                     const isActive = currentPath === item.to;
                     const Icon = item.icon;
@@ -16,8 +22,9 @@ export function InformationPageTabs() {
                         <Link
                             key={item.to}
                             to={item.to}
+                            ref={isActive ? activeRef : undefined}
                             aria-current={isActive ? 'page' : undefined}
-                            className={`min-h-[44px] px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all border ${
+                            className={`min-h-[40px] px-3.5 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all border ${
                                 isActive
                                     ? 'bg-primary text-primary-foreground border-primary shadow-xs'
                                     : 'bg-card/80 text-muted-foreground border-border/50 hover:bg-card hover:text-foreground'

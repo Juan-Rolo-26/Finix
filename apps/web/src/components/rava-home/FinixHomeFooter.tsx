@@ -77,7 +77,15 @@ export function FinixHomeFooter() {
                                     </span>
                                 </Link>
                             </li>
-                            <li><Link to="/calendario" className="hover:text-primary transition-colors">Calendario Económico</Link></li>
+                            <li>
+                                <Link to="/calendario" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
+                                    <span>Calendario Económico</span>
+                                    <span className="inline-flex items-center gap-0.5 px-1 py-0.2 rounded text-[0.5625rem] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                        <Crown className="w-2 h-2 fill-amber-400 text-amber-500 shrink-0" />
+                                        PRO
+                                    </span>
+                                </Link>
+                            </li>
                             <li>
                                 <Link to="/portfolio" className="hover:text-primary transition-colors inline-flex items-center gap-1.5">
                                     <span>Mi Portafolio</span>
